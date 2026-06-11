@@ -1,0 +1,179 @@
+// ============================================================
+// Atlas Ride-Hailing Platform - Canonical Schema v1.0
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Identity Domain ---
+
+model User {
+  id            String    @id @default(uuid())
+  email         String?   @unique  // Optional — set during onboarding, not OTP flow
+  fullName      String
+  phoneNumber   String    @unique
+  role          UserRole  @default(PASSENGER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  customerRides Ride[]    @relation("PassengerRides")
+  driverProfile Driver?
+}
+
+enum UserRole {
+  PASSENGER
+  DRIVER
+  ADMIN
+}
+
+// --- Driver Domain ---
+
+model Driver {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id])
+  status          DriverStatus @default(OFFLINE)
+  currentLat      Float?
+  currentLng      Float?
+  lastLocationAt  DateTime?
+  
+  vehicleInfo     Json?        // Details: make, model, year, plate
+  rating          Float        @default(5.0)
+  
+  rides           Ride[]
+  ledgerEntries   RideLedger[]
+  account         DriverAccount?
+  locationHistory DriverLocationHistory[]
+}
+
+enum DriverStatus {
+  OFFLINE
+  AVAILABLE
+  BUSY
+  ON_TRIP
+}
+
+// --- Ride Domain ---
+
+model Ride {
+  id              String      @id @default(uuid())
+  passengerId     String
+  passenger       User        @relation("PassengerRides", fields: [passengerId], references: [id])
+  driverId        String?
+  driver          Driver?     @relation(fields: [driverId], references: [id])
+  
+  status          RideStatus  @default(REQUESTED)
+  serviceType     String      @default("ECONOMY")
+  
+  pickupLat       Float
+  pickupLng       Float
+  pickupAddress   String
+  dropoffLat      Float
+  dropoffLng      Float
+  dropoffAddress  String
+  
+  estimatedPrice  Decimal     @db.Decimal(10, 2)
+  actualPrice     Decimal?    @db.Decimal(10, 2)
+  currency        String      @default("MAD")
+  
+  otpCode         String?     // For physical handshake
+  
+  requestedAt     DateTime    @default(now())
+  acceptedAt      DateTime?
+  arrivedAt       DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  
+  statusHistory   RideStatusHistory[]
+  ledgerRecord    RideLedger?
+
+  // Performance: Compound index for active ride queries
+  @@index([passengerId, status])
+}
+
+enum RideStatus {
+  REQUESTED
+  DISPATCHED
+  DRIVER_ACCEPTED
+  ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model RideStatusHistory {
+  id          String     @id @default(uuid())
+  rideId      String
+  ride        Ride       @relation(fields: [rideId], references: [id])
+  fromStatus  RideStatus
+  toStatus    RideStatus
+  timestamp   DateTime   @default(now())
+}
+
+// --- Financial Domain (The Ledger) ---
+
+model RideLedger {
+  id              String   @id @default(uuid())
+  rideId          String   @unique
+  ride            Ride     @relation(fields: [rideId], references: [id])
+  driverId        String
+  driver          Driver   @relation(fields: [driverId], references: [id])
+  
+  totalAmount     Decimal  @db.Decimal(10, 2)
+  driverEarnings  Decimal  @db.Decimal(10, 2) // Total - Company Fee
+  companyFee      Decimal  @db.Decimal(10, 2)
+  taxes           Decimal  @db.Decimal(10, 2)
+  
+  status          LedgerStatus @default(PENDING)
+  createdAt       DateTime @default(now())
+  settledAt       DateTime?
+}
+
+enum LedgerStatus {
+  PENDING
+  PROCESSED
+  SETTLED
+  DISPUTED
+}
+
+model DriverAccount {
+  id              String   @id @default(uuid())
+  driverId        String   @unique
+  driver          Driver   @relation(fields: [driverId], references: [id])
+  balance         Decimal  @db.Decimal(10, 2) @default(0.0)
+  totalEarned     Decimal  @db.Decimal(10, 2) @default(0.0)
+  updatedAt       DateTime @updatedAt
+}
+
+// --- Event Infrastructure (Outbox Pattern) ---
+
+model OutboxEvent {
+  id            String    @id @default(uuid())
+  aggregateType String    // e.g., 'Ride', 'Driver'
+  aggregateId   String    // e.g., rideId
+  eventType     String    // e.g., 'ride.status.changed'
+  payload       Json      // Full event payload
+  published     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  publishedAt   DateTime?
+
+  @@index([published, createdAt])
+}
+
+model DriverLocationHistory {
+  id        String   @id @default(uuid())
+  driverId  String
+  driver    Driver   @relation(fields: [driverId], references: [id])
+  lat       Float
+  lng       Float
+  timestamp DateTime @default(now())
+
+  @@index([driverId, timestamp])
+}
