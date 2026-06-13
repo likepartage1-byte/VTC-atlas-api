@@ -29,37 +29,55 @@ export class AuthService {
       throw new UnauthorizedException('Invalid OTP code.');
     }
 
-    // Identity Resolution - upsert using phoneNumber (matches schema)
     const user = await this.prisma.user.upsert({
       where: { phoneNumber },
       update: {},
       create: {
         phoneNumber,
-        fullName: 'New User', // Updated during onboarding
-        // email is now optional — no more placeholder needed
+        fullName: 'New User',
+        role: 'PASSENGER',
       },
     });
 
     await this.eventBus.publish(new OtpVerifiedEvent(user.id, phoneNumber));
     await this.eventBus.publish(new SessionCreatedEvent(user.id, deviceId));
 
-    // Generate REAL JWT tokens with actual user data
+    return this.generateTokens(user.id, user.role, deviceId);
+  }
+
+  async refreshToken(oldRefreshToken: string): Promise<any> {
+    try {
+      const payload = await this.jwtService.verifyAsync(oldRefreshToken);
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid refresh token.');
+      }
+
+      return this.generateTokens(payload.userId, payload.role, payload.deviceId);
+    } catch (e) {
+      throw new UnauthorizedException('Refresh token expired or invalid.');
+    }
+  }
+
+  private async generateTokens(userId: string, role: string, deviceId: string) {
     const jwtPayload: JwtPayload = {
-      userId: user.id,
-      role: user.role,
+      userId,
+      role,
       deviceId,
       sid: crypto.randomUUID(),
     };
 
-    const accessToken = await this.jwtService.signAsync(jwtPayload, { expiresIn: '24h' });
+    const accessToken = await this.jwtService.signAsync(jwtPayload, { 
+      expiresIn: '24h',
+      secret: this.jwtService.getInternalOptions().secret // Fallback to config
+    });
+
     const refreshToken = await this.jwtService.signAsync(
       { ...jwtPayload, type: 'refresh' },
       { expiresIn: '30d' },
     );
 
     return {
-      userId: user.id,
-      phoneNumber: user.phoneNumber,
+      userId,
       accessToken,
       refreshToken,
     };

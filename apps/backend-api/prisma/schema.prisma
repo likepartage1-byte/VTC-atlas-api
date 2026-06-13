@@ -63,6 +63,7 @@ enum DriverStatus {
 
 model Ride {
   id              String      @id @default(uuid())
+  version         Int         @default(1)
   passengerId     String
   passenger       User        @relation("PassengerRides", fields: [passengerId], references: [id])
   driverId        String?
@@ -93,9 +94,35 @@ model Ride {
   
   statusHistory   RideStatusHistory[]
   ledgerRecord    RideLedger?
+  negotiations    Negotiation[]
 
   // Performance: Compound index for active ride queries
   @@index([passengerId, status])
+}
+
+model Negotiation {
+  id              String            @id @default(uuid())
+  rideId          String
+  ride            Ride              @relation(fields: [rideId], references: [id])
+  passengerId     String
+  driverId        String
+  
+  proposedPrice   Decimal           @db.Decimal(10, 2)
+  counterPrice    Decimal?          @db.Decimal(10, 2)
+  
+  status          NegotiationStatus @default(PENDING)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([rideId, driverId])
+}
+
+enum NegotiationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }
 
 enum RideStatus {
@@ -156,15 +183,17 @@ model DriverAccount {
 
 model OutboxEvent {
   id            String    @id @default(uuid())
-  aggregateType String    // e.g., 'Ride', 'Driver'
-  aggregateId   String    // e.g., rideId
-  eventType     String    // e.g., 'ride.status.changed'
-  payload       Json      // Full event payload
-  published     Boolean   @default(false)
+  aggregateType String
+  aggregateId   String
+  eventType     String
+  payload       Json
+  status        String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  sequence      Int       @default(autoincrement())
+  version       Int       @default(1)
   createdAt     DateTime  @default(now())
-  publishedAt   DateTime?
+  processedAt   DateTime?
 
-  @@index([published, createdAt])
+  @@index([status, createdAt])
 }
 
 model DriverLocationHistory {

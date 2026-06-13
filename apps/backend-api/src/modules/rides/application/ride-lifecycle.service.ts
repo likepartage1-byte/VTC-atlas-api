@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { LocationService } from '../../location/application/location.service';
+import { DriverLocationRepository } from '../../location/infrastructure/repositories/driver-location.repository';
 import { RideOtpService } from './ride-otp.service';
 import { RideStateMachine } from '../domain/state-machine/ride-transitions';
-import { DomainEventBus } from '../../../core/events/domain-event-bus';
+import { OutboxService } from '../../../core/events/outbox.service';
 import { RideStatusChangedEvent } from '../domain/events/ride-status-changed.event';
 import { calculateHaversineDistance } from '../../../core/common/geo.utils';
 
@@ -13,39 +13,41 @@ export class RideLifecycleService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly location: LocationService,
+    private readonly driverLocationRepo: DriverLocationRepository,
     private readonly otp: RideOtpService,
-    private readonly eventBus: DomainEventBus,
+    private readonly outbox: OutboxService,
   ) {}
 
   /**
    * Driver reports arrival at Pickup.
-   * Enforces Geofencing Rule (B - Explicit Class/Guard).
+   * v3 Hardened: Atomic DB transaction + Outbox Event + Repository abstraction.
    */
   async reportArrival(rideId: string, driverId: string): Promise<string> {
     this.logger.log(`Arrival reported for ride ${rideId} by driver ${driverId}`);
 
+    // 1. Fetch Ride State (System of Record)
     const ride = await this.prisma.ride.findUniqueOrThrow({
       where: { id: rideId },
     });
 
-    // Authorization: Verify calling driver is assigned to this ride
     if (ride.driverId !== driverId) {
-      throw new BadRequestException('You are not the assigned driver for this ride.');
+      throw new BadRequestException('Unauthorized: You are not the assigned driver.');
     }
 
-    // 1. Geofence & Anti-Spoofing Guard
-    const driverLoc = await this.location.getDriverLocation(driverId);
-    if (!driverLoc) throw new BadRequestException('Driver location unavailable for verification.');
+    // 2. Fetch Driver Location (v3: Repository Abstraction)
+    const driverLoc = await this.driverLocationRepo.get(driverId);
+    if (!driverLoc) {
+      throw new BadRequestException('Driver location unavailable for verification.');
+    }
 
-    // Freshness Check: Ensure location heartbeat is recent (< 30s)
+    // 3. Precision Validation (Geofencing & Freshness)
     const lastUpdate = new Date(driverLoc.updatedAt).getTime();
     if (Date.now() - lastUpdate > 30000) {
-      throw new BadRequestException('Driver location is stale. Please wait for a fresh GPS ping.');
+      throw new BadRequestException('GPS data is stale. Please wait for a fresh heartbeat.');
     }
 
     const dist = calculateHaversineDistance(
-      Number(driverLoc.lat), Number(driverLoc.lng),
+      driverLoc.lat, driverLoc.lng,
       Number(ride.pickupLat), Number(ride.pickupLng)
     );
 
@@ -54,53 +56,59 @@ export class RideLifecycleService {
       throw new BadRequestException(`Too far from pickup point (${dist.toFixed(0)}m). Must be < 150m.`);
     }
 
-    // 2. State Machine Validation
+    // 4. State Machine Validation
     RideStateMachine.validate(ride.status as any, 'ARRIVED');
 
-    // 3. Persist and Generate OTP (The Handshake Proof)
-    const verificationCode = await this.otp.generateForRide(rideId);
-    
-    await this.prisma.ride.update({
-      where: { id: rideId },
-      data: { 
-        status: 'ARRIVED', 
-        arrivedAt: new Date(),
-      },
+    // 5. ATOMIC EXECUTION (PRISMA TRANSACTION)
+    // Ensures status update AND outbox event are committed or rolled back together.
+    return await this.prisma.$transaction(async (tx) => {
+      const verificationCode = await this.otp.generateForRide(rideId);
+      
+      await tx.ride.update({
+        where: { id: rideId },
+        data: { 
+          status: 'ARRIVED', 
+          arrivedAt: new Date(),
+        },
+      });
+
+      // Stage durable event
+      await this.outbox.stage(new RideStatusChangedEvent(rideId, {
+        from: ride.status as any,
+        to: 'ARRIVED',
+        timestamp: new Date(),
+      }), tx);
+
+      return verificationCode;
     });
-
-    // Post-commit event publishing (safe — data is persisted)
-    await this.eventBus.publish(new RideStatusChangedEvent(rideId, {
-      from: ride.status as any,
-      to: 'ARRIVED',
-      timestamp: new Date(),
-    }));
-
-    return verificationCode;
   }
 
   /**
    * Verified start of the ride via OTP Handshake.
    */
-  async startTrip(rideId: string, inputOtp: string): Promise<void> {
+  async startTrip(rideId: string, driverId: string, inputOtp: string): Promise<void> {
     const ride = await this.prisma.ride.findUniqueOrThrow({ where: { id: rideId } });
 
-    // 1. Verify OTP (Handshake)
+    if (ride.driverId !== driverId) {
+      throw new BadRequestException('Unauthorized: You are not the assigned driver.');
+    }
+
     const isValid = await this.otp.validate(rideId, inputOtp);
     if (!isValid) throw new BadRequestException('Invalid verification code.');
 
-    // 2. Transition to IN_PROGRESS
     RideStateMachine.validate(ride.status as any, 'IN_PROGRESS');
 
-    await this.prisma.ride.update({
-      where: { id: rideId },
-      data: { status: 'IN_PROGRESS', startedAt: new Date() },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.ride.update({
+        where: { id: rideId },
+        data: { status: 'IN_PROGRESS', startedAt: new Date() },
+      });
 
-    // Post-commit event publishing
-    await this.eventBus.publish(new RideStatusChangedEvent(rideId, {
-      from: ride.status as any,
-      to: 'IN_PROGRESS',
-      timestamp: new Date(),
-    }));
+      await this.outbox.stage(new RideStatusChangedEvent(rideId, {
+        from: ride.status as any,
+        to: 'IN_PROGRESS',
+        timestamp: new Date(),
+      }), tx);
+    });
   }
 }
