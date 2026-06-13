@@ -1,37 +1,4 @@
-# Dependencies
-node_modules
-.pnpm-debug.log*
-
-# Build outputs
-dist
-build
-.next
-out
-
-# Flutter
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
-.pub-cache/
-.packages
-build/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Environment
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Turbo
-.turbo
+/generated/prisma
+node_modules
+dist
