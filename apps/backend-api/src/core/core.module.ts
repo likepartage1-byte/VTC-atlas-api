@@ -10,12 +10,16 @@ import { OutboxProcessor } from './events/outbox.processor';
 import { EventWorker } from './events/event.worker';
 import { QueueModule } from './queues/queue.module';
 import { CorrelationMiddleware } from './common/middleware/correlation.middleware';
+import { validate } from './common/env.validation';
 
 @Global()
 @Module({
   imports: [
     EventEmitterModule.forRoot({ wildcard: false, delimiter: '.' }),
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ 
+      isGlobal: true,
+      validate,
+    }),
     ScheduleModule.forRoot(),
     QueueModule,
   ],

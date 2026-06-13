@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": false,
     "jsx": "react-jsx"
   },
-  "exclude": ["node_modules", "dist", "apps/admin-dashboard", "apps/driver-app", "apps/passenger-app"]
+  "exclude": ["node_modules", "dist", "apps", "src_stale_backup"]
 }
