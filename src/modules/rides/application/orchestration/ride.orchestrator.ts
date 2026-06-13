@@ -119,9 +119,9 @@ export class RideOrchestrator {
   /**
    * Orchestrates the "Handshake & Execution" phase.
    */
-  async startTrip(rideId: string, otp: string): Promise<void> {
+  async startTrip(rideId: string, driverId: string, otp: string): Promise<void> {
     try {
-      await this.rideLifecycle.startTrip(rideId, otp);
+      await this.rideLifecycle.startTrip(rideId, driverId, otp);
       
       await this.trace.capture(rideId, {
         step: 'TRIP_STARTED_VIA_OTP',

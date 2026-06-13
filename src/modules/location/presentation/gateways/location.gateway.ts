@@ -44,6 +44,7 @@ export class LocationGateway implements OnGatewayConnection, OnGatewayDisconnect
         lat: event.lat,
         lng: event.lng,
         timestamp: event.timestamp,
+        seq: event.timestamp, // Simple timestamp-based sequencing
       });
     }
   }

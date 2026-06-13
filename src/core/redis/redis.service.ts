@@ -30,4 +30,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     const results = await this.client.georadius(key, lng, lat, radiusKm, 'km');
     return results as string[];
   }
+
+  /**
+   * Hardened Distributed Locking (v2.0 - Lua Powered)
+   * Prevents race conditions during expiry and ensure lock ownership.
+   */
+  async acquireLock(resource: string, ownerId: string, ttlMs: number = 5000): Promise<boolean> {
+    const lockKey = `lock:${resource}`;
+    const luaScript = `
+      if redis.call('set', KEYS[1], ARGV[1], 'NX', 'PX', ARGV[2]) then
+        return 1
+      else
+        return 0
+      end
+    `;
+    const result = await this.client.eval(luaScript, 1, lockKey, ownerId, ttlMs);
+    return result === 1;
+  }
+
+  async releaseLock(resource: string, ownerId: string): Promise<void> {
+    const lockKey = `lock:${resource}`;
+    const luaScript = `
+      if redis.call('get', KEYS[1]) == ARGV[1] then
+        return redis.call('del', KEYS[1])
+      else
+        return 0
+      end
+    `;
+    await this.client.eval(luaScript, 1, lockKey, ownerId);
+  }
 }

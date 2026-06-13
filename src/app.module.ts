@@ -8,9 +8,21 @@ import { PricingModule } from './modules/pricing/pricing.module';
 import { LocationModule } from './modules/location/location.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { SimulationModule } from './modules/simulation/simulation.module';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
   imports: [
+    LoggerModule.forRoot({
+      pinoHttp: {
+        customProps: (req, res) => ({
+          context: 'HTTP',
+        }),
+        transport: process.env.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { colorize: true } }
+          : undefined,
+      },
+    }),
     // Layer 0: Infrastructure (Global)
     CoreModule,
 
@@ -31,6 +43,9 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 
     // Layer 5: Insights
     AnalyticsModule,
+
+    // Layer 6: Debug & Simulation
+    SimulationModule,
   ],
 })
 export class AppModule {}

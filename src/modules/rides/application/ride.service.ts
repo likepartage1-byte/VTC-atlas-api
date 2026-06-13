@@ -39,15 +39,38 @@ export class RideService extends BaseApplicationService {
       // 1. Fetch current state
       const ride = await tx.ride.findUniqueOrThrow({
         where: { id: rideId },
-        select: { status: true },
+        select: { status: true, driverId: true, passengerId: true },
       });
 
       const currentStatus = ride.status as RideStatus;
 
-      // 2. Validate via Pure Domain State Machine
+      // 2. Ownership & Permission check
+      if (userId) {
+        const isPassenger = ride.passengerId === userId;
+        const isDriver = ride.driverId === userId;
+
+        // Passenger can only cancel
+        if (isPassenger && targetStatus !== 'CANCELLED') {
+          throw new Error('Passengers can only cancel rides.');
+        }
+
+        // Driver must be assigned to update status
+        if (targetStatus !== 'CANCELLED' && targetStatus !== 'REQUESTED' && !isDriver) {
+           // Check if it's a new acceptance
+           if (targetStatus === 'DRIVER_ACCEPTED' && ride.driverId) {
+             throw new Error('Ride already has an assigned driver.');
+           }
+           // Otherwise, if trying to progress ride without being the driver
+           if (targetStatus !== 'DRIVER_ACCEPTED' && !isDriver) {
+             throw new Error('Unauthorized: You are not the assigned driver for this ride.');
+           }
+        }
+      }
+
+      // 3. Validate via Pure Domain State Machine
       RideStateMachine.transition(currentStatus, targetStatus);
 
-      // 3. Update State & Audit History
+      // 4. Update State & Audit History
       await tx.ride.update({
         where: { id: rideId },
         data: { status: targetStatus },

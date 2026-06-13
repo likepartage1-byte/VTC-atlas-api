@@ -35,10 +35,11 @@ export class DriverRideController {
   @Version('1')
   async startTrip(
     @Param('id') rideId: string,
+    @CurrentUser('userId') driverId: string,
     @Body('otp') otp: string,
   ) {
     if (!otp) throw new BadRequestException('OTP is required to start the trip.');
-    await this.orchestrator.startTrip(rideId, otp);
+    await this.orchestrator.startTrip(rideId, driverId, otp);
     return { message: 'Trip started successfully.' };
   }
 

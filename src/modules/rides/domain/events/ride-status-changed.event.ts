@@ -5,6 +5,7 @@ export interface RideStatusChangedPayload {
   from: RideStatus | null;
   to: RideStatus;
   timestamp: Date;
+  reason?: string;
 }
 
 export class RideStatusChangedEvent extends BaseDomainEvent<RideStatusChangedPayload> {

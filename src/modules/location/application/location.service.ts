@@ -37,8 +37,13 @@ export class LocationService {
     const redisClient = this.redis.getClient();
     const { lat, lng } = data;
 
+    // 1. BACKPRESSURE: 2-second Throttle Gate (Redis-based)
+    const throttleKey = `driver:${driverId}:throttle:ping`;
+    const isThrottled = await redisClient.set(throttleKey, '1', 'PX', 2000, 'NX');
+    if (!isThrottled) return;
+
     const driverState = (await redisClient.get(`driver:${driverId}:state`)) || 'OFFLINE';
-    const activeRideId = await redisClient.get(`driver:${driverId}:active_ride`); // Cached link
+    const activeRideId = await redisClient.get(`driver:${driverId}:active_ride`); 
 
     if (driverState === 'OFFLINE') return;
 
@@ -53,6 +58,15 @@ export class LocationService {
     } else if (driverState === 'ON_TRIP') {
       pipeline.geoadd(this.ON_TRIP_KEY, lng, lat, driverId);
     }
+
+    // 2. DURABLE EVENT STREAM: Redis XADD
+    pipeline.xadd('driver:location:stream', 'MAXLEN', '~', 100000, '*', 
+      'driverId', driverId,
+      'rideId', activeRideId || '',
+      'lat', String(lat),
+      'lng', String(lng),
+      'timestamp', String(Date.now())
+    );
 
     await pipeline.exec();
 

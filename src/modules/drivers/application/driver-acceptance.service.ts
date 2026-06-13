@@ -8,7 +8,7 @@ import { BaseApplicationService } from '../../../core/common/base-application.se
 import { DomainEventBus } from '../../../core/events/domain-event-bus';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
-import { DispatchClaimService } from '../../dispatch/domain/claims/dispatch-claim.service';
+import { DispatchEngine } from '../../dispatch/application/dispatch.engine';
 import { RideStatusChangedEvent } from '../../rides/domain/events/ride-status-changed.event';
 import { RideStateMachine } from '../../rides/domain/state-machine/ride-state-machine';
 
@@ -20,7 +20,7 @@ export class DriverAcceptanceService extends BaseApplicationService {
     eventBus: DomainEventBus,
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
-    private readonly claimService: DispatchClaimService,
+    private readonly dispatchEngine: DispatchEngine,
   ) {
     super(eventBus);
   }
@@ -33,7 +33,7 @@ export class DriverAcceptanceService extends BaseApplicationService {
     this.logger.log(`Driver [${driverId}] attempting ACCEPT for Ride [${rideId}]`);
 
     // 1. Validate & consume Redis Claim (first gate)
-    const isClaimValid = await this.claimService.validateAndConsume(rideId, driverId);
+    const isClaimValid = await this.dispatchEngine.validateAndConsume(rideId, driverId);
     if (!isClaimValid) {
       this.logger.warn(`Stale/missing claim: Driver [${driverId}] / Ride [${rideId}]`);
       throw new ConflictException('Ride is no longer available or claim has expired.');

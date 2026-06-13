@@ -188,7 +188,7 @@ model OutboxEvent {
   eventType     String
   payload       Json
   status        String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  sequence      Int       @default(autoincrement())
+  sequence      Int       @unique @default(autoincrement())
   version       Int       @default(1)
   createdAt     DateTime  @default(now())
   processedAt   DateTime?
