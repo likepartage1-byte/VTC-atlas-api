@@ -1,8 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "apps/backend-api/src",
   "monorepo": true,
+  "root": "apps/backend-api",
+  "sourceRoot": "apps/backend-api/src",
   "projects": {
     "backend-api": {
       "type": "application",
@@ -11,6 +12,7 @@
       "sourceRoot": "apps/backend-api/src",
       "compilerOptions": {
         "tsConfigPath": "apps/backend-api/tsconfig.app.json",
+        "assets": [],
         "deleteOutDir": true
       }
     }
