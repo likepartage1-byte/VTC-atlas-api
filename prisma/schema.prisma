@@ -96,7 +96,7 @@ model Ride {
   ledgerRecord    RideLedger?
   negotiations    Negotiation[]
 
-  // Performance: Compound index for active ride queries
+  requestId       String?     // Primary request that created this ride
   @@index([passengerId, status])
 }
 
@@ -142,6 +142,7 @@ model RideStatusHistory {
   fromStatus  RideStatus
   toStatus    RideStatus
   timestamp   DateTime   @default(now())
+  requestId   String?    // The request that triggered this status change
 }
 
 // --- Financial Domain (The Ledger) ---
@@ -190,6 +191,7 @@ model OutboxEvent {
   status        String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
   sequence      Int       @unique @default(autoincrement())
   version       Int       @default(1)
+  correlationId String?   // Cross-system trace ID
   createdAt     DateTime  @default(now())
   processedAt   DateTime?
 
@@ -205,4 +207,178 @@ model DriverLocationHistory {
   timestamp DateTime @default(now())
 
   @@index([driverId, timestamp])
+}
+
+// --- System Configuration Domain ---
+
+model SystemSetting {
+  key       String   @id
+  value     Json     // Dynamic config: notification strategy, platform fees, etc.
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String?  // Admin or User ID who performed the action
+  action      String   // e.g., 'UPDATE_COMMISSION', 'SUSPEND_DRIVER'
+  entityType  String   // e.g., 'Driver', 'SystemSetting'
+  entityId    String?  // The ID of the affected record
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+}
+
+// --- Integrity & Security Domain ---
+
+model FraudEvent {
+  id            String      @id @default(uuid())
+  userId        String?
+  entityType    String      // 'DRIVER' or 'PASSENGER'
+  eventType     FraudType
+  severity      RiskLevel   @default(LOW)
+  metadata      Json?       // Details like { velocity: '500km/h', mockApp: 'FakeGPS' }
+  ipAddress     String?
+  deviceId      String?
+  createdAt     DateTime    @default(now())
+
+  @@index([userId, eventType])
+}
+
+enum FraudType {
+  IMPOSSIBLE_TRAVEL
+  GPS_SPOOFING
+  PRICE_MANIPULATION
+  DEVICE_CLONING
+  SUSPICIOUS_REFUND
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// --- Growth & Marketing Domain ---
+
+model RewardCampaign {
+  id            String         @id @default(uuid())
+  name          String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean        @default(true)
+  prizes        RewardPrize[]
+  promoCodes    PromoCode[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model RewardPrize {
+  id            String         @id @default(uuid())
+  campaignId    String
+  campaign      RewardCampaign @relation(fields: [campaignId], references: [id])
+  type          PrizeType      // DISCOUNT, CASHBACK, FREE_RIDE, PHYSICAL
+  name          String
+  description   String?
+  imageUrl      String?
+  probWeight    Int            @default(1) // Weight for weighted-random selection
+  stockLimit    Int            @default(0) // 0 for unlimited
+  claimedCount  Int            @default(0)
+  value         Decimal?       @db.Decimal(10, 2)
+  userRewards   UserReward[]
+}
+
+enum PrizeType {
+  DISCOUNT
+  CASHBACK
+  FREE_RIDE
+  PHYSICAL
+}
+
+model PromoCode {
+  id              String         @id @default(uuid())
+  code            String         @unique
+  campaignId      String?
+  campaign        RewardCampaign? @relation(fields: [campaignId], references: [id])
+  
+  type            PromoType      @default(DISCOUNT)
+  discountType    DiscountType   @default(PERCENTAGE)
+  discountValue   Decimal        @db.Decimal(10, 2)
+  
+  maxUsageTotal   Int?
+  maxUsagePerUser Int            @default(1)
+  usedCount       Int            @default(0)
+  
+  minRideValue    Decimal?       @db.Decimal(10, 2)
+  cityRestrictions Json?         // Array of allowed city IDs
+  serviceTypes    Json?          // Array of allowed services: Taxi, Delivery, etc.
+  
+  expiresAt       DateTime
+  isActive        Boolean        @default(true)
+  usageRecords    PromoUsage[]
+  createdAt       DateTime       @default(now())
+}
+
+enum PromoType {
+  DISCOUNT
+  REWARD_TICKET
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  WALLET_CREDIT
+}
+
+model PromoUsage {
+  id          String   @id @default(uuid())
+  promoId     String
+  promoCode   PromoCode @relation(fields: [promoId], references: [id])
+  userId      String
+  rideId      String?
+  createdAt   DateTime @default(now())
+
+  @@index([promoId, userId])
+}
+
+model UserReward {
+  id          String      @id @default(uuid())
+  userId      String
+  prizeId     String
+  prize       RewardPrize @relation(fields: [prizeId], references: [id])
+  status      RewardStatus @default(PENDING)
+  claimCode   String      @unique // Secret code for physical prize claiming
+  wonAt       DateTime    @default(now())
+  claimedAt   DateTime?
+}
+
+enum RewardStatus {
+  PENDING
+  CLAIMED
+}
+
+// --- Referral Domain ---
+
+model ReferralProgram {
+  id              String   @id @default(uuid())
+  name            String
+  rewardAmount    Decimal  @db.Decimal(10, 2)
+  isActive        Boolean  @default(true)
+  referralRewards ReferralReward[]
+}
+
+model ReferralReward {
+  id          String   @id @default(uuid())
+  programId   String
+  program     ReferralProgram @relation(fields: [programId], references: [id])
+  referrerId  String
+  refereeId   String   @unique
+  status      String   @default("PENDING") // PENDING, COMPLETED (after first ride)
+  rewardedAt  DateTime?
 }

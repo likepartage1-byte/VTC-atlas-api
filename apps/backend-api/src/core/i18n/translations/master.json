@@ -1,0 +1,25 @@
+{
+  "AUTH": {
+    "OTP_SENT": {
+      "en": "Verification code has been sent to your phone.",
+      "fr": "Le code de vérification a été envoyé à votre téléphone.",
+      "ar": "تم إرسال رمز التحقق إلى هاتفك.",
+      "es": "El código de verificación ha sido enviado a su teléfono."
+    },
+    "INVALID_OTP": {
+      "en": "The provided code is incorrect or expired.",
+      "fr": "Le code fourni est incorrect ou expiré.",
+      "ar": "الرمز المدخل غير صحيح أو انتهت صلاحيته.",
+      "es": "El código proporcionado هو incorrecto o ha expirado."
+    }
+  },
+  "RIDE": {
+    "ERRORS": {
+      "INVALID_TRANSITION": {
+        "en": "Illegal ride state change from {from} to {to}.",
+        "fr": "Changement d'état de trajet illégal de {from} à {to}.",
+        "ar": "تغيير حالة الرحلة غير قانوني من {from} إلى {to}."
+      }
+    }
+  }
+}

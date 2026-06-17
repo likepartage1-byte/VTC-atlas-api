@@ -4,13 +4,13 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaService } from './prisma/prisma.service';
 import { RedisService } from './redis/redis.service';
-import { DomainEventBus } from './events/domain-event-bus';
-import { OutboxService } from './events/outbox.service';
-import { OutboxProcessor } from './events/outbox.processor';
-import { EventWorker } from './events/event.worker';
-import { QueueModule } from './queues/queue.module';
+import { TraceService } from './common/services/trace.service';
+import { DiagnosticService } from './common/services/diagnostic.service';
 import { CorrelationMiddleware } from './common/middleware/correlation.middleware';
 import { validate } from './common/env.validation';
+import { OutboxService } from './outbox/services/outbox.service';
+import { OutboxProcessor } from './outbox/services/outbox.processor';
+import { DomainEventBus } from './events/domain-event-bus';
 
 @Global()
 @Module({
@@ -21,22 +21,24 @@ import { validate } from './common/env.validation';
       validate,
     }),
     ScheduleModule.forRoot(),
-    QueueModule,
   ],
   providers: [
     PrismaService, 
     RedisService, 
-    DomainEventBus, 
-    OutboxService, 
-    OutboxProcessor, 
-    EventWorker,
+    TraceService,
+    DiagnosticService,
+    OutboxService,
+    OutboxProcessor,
+    DomainEventBus,
     CorrelationMiddleware
   ],
   exports: [
     PrismaService, 
     RedisService, 
-    DomainEventBus, 
-    OutboxService, 
+    TraceService,
+    DiagnosticService,
+    OutboxService,
+    DomainEventBus,
     CorrelationMiddleware
   ],
 })

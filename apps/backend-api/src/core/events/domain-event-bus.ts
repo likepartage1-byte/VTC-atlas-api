@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { IDomainEvent } from './domain-event.interface';
-import { OutboxService } from './outbox.service';
+import { OutboxService } from '../outbox/services/outbox.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -25,10 +25,15 @@ export class DomainEventBus {
   }
 
   /**
-   * Safely stages an event within a database transaction.
-   * Event will be published by the OutboxProcessor after commit.
+   * Safely stages an event within a database transaction (Outbox Pattern).
    */
   async stage(event: IDomainEvent, tx: Prisma.TransactionClient): Promise<void> {
-    await this.outbox.stage(event, tx);
+    await this.outbox.schedule(
+        tx, 
+        event.constructor.name, 
+        event.aggregateId, 
+        event.eventType, 
+        event
+    );
   }
 }

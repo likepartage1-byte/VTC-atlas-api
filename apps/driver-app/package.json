@@ -1,0 +1,43 @@
+{
+  "name": "driver-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "lint": "eslint .",
+    "start": "react-native start",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-community/geolocation": "^3.4.0",
+    "@react-navigation/bottom-tabs": "^7.2.0",
+    "@react-navigation/native": "^7.0.14",
+    "@react-navigation/stack": "^7.1.1",
+    "@reduxjs/toolkit": "^2.6.0",
+    "axios": "^1.8.1",
+    "i18next": "^24.2.2",
+    "lucide-react-native": "^0.477.0",
+    "react": "18.3.1",
+    "react-hook-form": "^7.54.2",
+    "react-i18next": "^15.4.1",
+    "react-native": "0.77.1",
+    "react-native-gesture-handler": "^2.26.1",
+    "react-native-maps": "^1.20.1",
+    "react-native-reanimated": "^3.17.1",
+    "react-native-safe-area-context": "^5.2.0",
+    "react-native-screens": "^4.7.0",
+    "react-native-svg": "^15.11.1",
+    "react-native-vector-icons": "^10.2.0",
+    "react-redux": "^9.2.0",
+    "socket.io-client": "^4.8.1",
+    "zod": "^3.24.2",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.6",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.7.3"
+  }
+}

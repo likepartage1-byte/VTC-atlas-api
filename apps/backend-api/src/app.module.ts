@@ -9,7 +9,14 @@ import { LocationModule } from './modules/location/location.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { SimulationModule } from './modules/simulation/simulation.module';
+import { RealtimeModule } from './modules/realtime/realtime.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { GrowthModule } from './modules/growth/growth.module';
+import { IntegrityModule } from './modules/integrity/integrity.module';
+import { HealthModule } from './core/health/health.module';
 import { LoggerModule } from 'nestjs-pino';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { I18nInterceptor } from './core/i18n/interceptors/i18n.interceptor';
 
 @Module({
   imports: [
@@ -24,7 +31,10 @@ import { LoggerModule } from 'nestjs-pino';
       },
     }),
     // Layer 0: Infrastructure (Global)
+    AdminModule,
+    IntegrityModule,
     CoreModule,
+    HealthModule,
 
     // Layer 1: Trust & Identity
     IdentityModule,
@@ -34,9 +44,11 @@ import { LoggerModule } from 'nestjs-pino';
     DispatchModule,
     DriversModule,
     RidesModule,
+    GrowthModule,
 
     // Layer 3: Real-time
     LocationModule,
+    RealtimeModule,
 
     // Layer 4: Reactions
     NotificationsModule,
@@ -46,6 +58,12 @@ import { LoggerModule } from 'nestjs-pino';
 
     // Layer 6: Debug & Simulation
     SimulationModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: I18nInterceptor,
+    },
   ],
 })
 export class AppModule {}

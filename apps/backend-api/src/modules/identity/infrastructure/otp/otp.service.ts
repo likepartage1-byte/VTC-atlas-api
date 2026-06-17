@@ -1,63 +1,48 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { parsePhoneNumberWithError, CountryCode } from 'libphonenumber-js';
 import { RedisService } from '../../../../core/redis/redis.service';
 
 @Injectable()
 export class OtpService {
   private readonly logger = new Logger(OtpService.name);
-  private readonly OTP_TTL = 300; // 5 minutes
-  private readonly COOLDOWN_TTL = 60; // 1 minute
-  private readonly MAX_ATTEMPTS = 5;
+  private readonly OTP_TTL = 300; 
 
   constructor(private readonly redis: RedisService) {}
 
-  async generateAndStore(phone: string): Promise<string> {
-    const redisClient = this.redis.getClient();
-
-    // 1. Check Cooldown
-    const cooldown = await redisClient.get(`otp:cooldown:${phone}`);
-    if (cooldown) {
-      throw new BadRequestException('Please wait before requesting a new code.');
-    }
-
-    // 2. Generate numeric 6-digit code
+  /**
+   * PURE SYNC CALL: Generate and store. No events.
+   */
+  async generateAndSave(rawPhone: string): Promise<string> {
+    const phone = this.normalizePhone(rawPhone);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // 3. Store in Redis
-    await redisClient.set(`otp:code:${phone}`, code, 'EX', this.OTP_TTL);
-    await redisClient.set(`otp:cooldown:${phone}`, '1', 'EX', this.COOLDOWN_TTL);
     
-    // Reset attempts on new request
+    const redisClient = this.redis.getClient();
+    await redisClient.set(`otp:code:${phone}`, code, 'EX', this.OTP_TTL);
     await redisClient.del(`otp:attempts:${phone}`);
 
-    this.logger.log(`OTP generated for ${phone}: ${code} (SIMULATED SMS)`);
+    this.logger.log(`[OTP] Generated successfully for ${phone}`);
     return code;
   }
 
-  async verify(phone: string, inputCode: string): Promise<boolean> {
+  async verify(rawPhone: string, inputCode: string): Promise<boolean> {
+    const phone = this.normalizePhone(rawPhone);
     const redisClient = this.redis.getClient();
-    const storedCode = await redisClient.get(`otp:code:${phone}`);
-    const attemptsKey = `otp:attempts:${phone}`;
+    const key = `otp:code:${phone}`;
 
-    if (!storedCode) {
-      throw new BadRequestException('OTP expired or not found.');
-    }
+    const storedCode = await redisClient.get(key);
+    if (!storedCode) return false;
 
-    // 1. Check Attempt Limit
-    const attempts = await redisClient.incr(attemptsKey);
-    if (attempts > this.MAX_ATTEMPTS) {
-      await redisClient.del(`otp:code:${phone}`); // Kill the code on too many failures
-      throw new BadRequestException('Too many failed attempts. Request a new code.');
-    }
+    if (storedCode !== inputCode) return false;
 
-    // 2. Compare
-    if (storedCode !== inputCode) {
-      return false;
-    }
-
-    // 3. Success -> Cleanup
-    await redisClient.del(`otp:code:${phone}`);
-    await redisClient.del(attemptsKey);
-    
+    await redisClient.del(key); // Burn after use
     return true;
+  }
+
+  private normalizePhone(phone: string, defaultCountry: CountryCode = 'MA'): string {
+    try {
+      return parsePhoneNumberWithError(phone, defaultCountry).format('E.164');
+    } catch (e) {
+      throw new BadRequestException('Invalid phone number format.');
+    }
   }
 }

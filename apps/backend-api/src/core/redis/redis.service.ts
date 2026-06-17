@@ -48,6 +48,23 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return result === 1;
   }
 
+  /**
+   * إدارة التواجد (Presence Management)
+   */
+  async setPresence(userId: string, status: string, ttl: number = 3600): Promise<void> {
+    const key = `presence:driver:${userId}`;
+    await this.client.setex(key, ttl, status);
+  }
+
+  async getPresence(userId: string): Promise<string | null> {
+    const key = `presence:driver:${userId}`;
+    return this.client.get(key);
+  }
+
+  async deletePresence(userId: string): Promise<void> {
+    await this.client.del(`presence:driver:${userId}`);
+  }
+
   async releaseLock(resource: string, ownerId: string): Promise<void> {
     const lockKey = `lock:${resource}`;
     const luaScript = `

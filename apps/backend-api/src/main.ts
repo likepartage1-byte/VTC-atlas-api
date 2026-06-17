@@ -12,7 +12,8 @@ import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.useLogger(app.get(Logger));
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
   const redisIoAdapter = new RedisIoAdapter(app);
   await redisIoAdapter.connectToRedis();
@@ -25,7 +26,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  // Strict Validation Contract
+  // Global Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -38,5 +39,6 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   await app.listen(process.env.PORT ?? 3000);
+  logger.log('Application is running on port ' + (process.env.PORT ?? 3000));
 }
 bootstrap();

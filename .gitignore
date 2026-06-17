@@ -1,4 +1,14 @@
+.DS_Store
+
+logs/
+*.log
+
+dist/
+node_modules/
+
 .env
+.env.local
+.env.production
+
+# Managed by Prisma
 /generated/prisma
-node_modules
-dist

@@ -1,9 +1,10 @@
 module.exports = {
   apps: [
     {
-      name: 'atlas-backend',
+      name: 'atlas-api',
       script: 'dist/apps/backend-api/main.js',
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
       watch: false,
       max_memory_restart: '1G',

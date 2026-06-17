@@ -5,12 +5,22 @@ import { Logger } from '@nestjs/common';
 const logger = new Logger('OpenTelemetry');
 
 export const otelSDK = new NodeSDK({
-  // Temporarily simplified to fix build blocker
   serviceName: 'atlas-backend-api',
-  instrumentations: [getNodeAutoInstrumentations()],
+  instrumentations: [
+    getNodeAutoInstrumentations({
+      // إسكات الضجيج الناتج عن طلبات الـ Health Check المتكررة
+      '@opentelemetry/instrumentation-http': {
+        enabled: true,
+      },
+      // محاولة تقليل تحذيرات الـ Legacy Route Converter
+      '@opentelemetry/instrumentation-express': {
+        enabled: true,
+      }
+    }),
+  ],
 });
 
-// Graceful shutdown
+// التعامل مع الإغلاق النظيف
 process.on('SIGTERM', () => {
   otelSDK
     .shutdown()
