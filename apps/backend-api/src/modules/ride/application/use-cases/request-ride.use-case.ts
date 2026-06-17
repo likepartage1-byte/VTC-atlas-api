@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException, Inject } from '@nestjs/common';
-import { IRideRepository } from '../../domain/repositories/ride.repository.interface';
+import type { IRideRepository } from '../../domain/repositories/ride.repository.interface';
 import { PricingService } from '../../domain/services/pricing.service';
 import { Ride } from '../../domain/entities/ride.entity';
 import { Location } from '../../domain/value-objects/location.vo';

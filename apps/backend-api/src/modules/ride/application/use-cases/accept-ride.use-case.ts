@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException, Inject, Logger } from '@nestjs/common';
-import { IRideRepository } from '../../domain/repositories/ride.repository.interface';
+import type { IRideRepository } from '../../domain/repositories/ride.repository.interface';
 import { AssignmentLockService } from '../../infrastructure/services/assignment-lock.service';
 import { DispatchSessionManager } from '../../../dispatch/application/services/dispatch-session.manager';
 import { SocketGateway } from '../../../realtime/presentation/gateways/socket.gateway';

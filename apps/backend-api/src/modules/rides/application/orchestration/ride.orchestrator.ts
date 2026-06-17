@@ -119,7 +119,7 @@ export class RideOrchestrator {
   /**
    * Orchestrates the "Handshake & Execution" phase.
    */
-  async startTrip(rideId: string, driverId: string, otp: string): Promise<void> {
+  async startTrip(driverId: string, rideId: string, otp: string): Promise<void> {
     try {
       await this.rideLifecycle.startTrip(rideId, driverId, otp);
       
@@ -143,7 +143,7 @@ export class RideOrchestrator {
    * Orchestrates the "Closure & Settlement" phase.
    * Now requires driverId for authorization check.
    */
-  async completeRide(rideId: string, driverId: string): Promise<void> {
+  async completeRide(driverId: string, rideId: string): Promise<void> {
     try {
       // Authoritative complete & settle via unified finalizer
       await this.tripFinalizer.finalizeTrip(rideId, driverId);

@@ -39,7 +39,7 @@ export class DriverRideController {
     @Body('otp') otp: string,
   ) {
     if (!otp) throw new BadRequestException('OTP is required to start the trip.');
-    await this.orchestrator.startTrip(rideId, driverId, otp);
+    await this.orchestrator.startTrip(driverId, rideId, otp);
     return { message: 'Trip started successfully.' };
   }
 
@@ -49,7 +49,7 @@ export class DriverRideController {
     @Param('id') rideId: string,
     @CurrentUser('userId') driverId: string,  // NOW REQUIRED — Authorization fix
   ) {
-    await this.orchestrator.completeRide(rideId, driverId);
+    await this.orchestrator.completeRide(driverId, rideId);
     return { message: 'Trip completed.' };
   }
 }
