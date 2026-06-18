@@ -19,6 +19,9 @@ import { DomainEventBus } from './events/domain-event-bus';
     ConfigModule.forRoot({ 
       isGlobal: true,
       validate,
+      envFilePath: process.env.NODE_ENV === 'production' 
+        ? '/var/www/VTC-atlas-api/.env' 
+        : '.env',
     }),
     ScheduleModule.forRoot(),
   ],
