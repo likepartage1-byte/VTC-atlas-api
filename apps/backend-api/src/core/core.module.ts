@@ -20,7 +20,7 @@ import { DomainEventBus } from './events/domain-event-bus';
       isGlobal: true,
       validate,
       envFilePath: process.env.NODE_ENV === 'production' 
-        ? '/var/www/VTC-atlas-api/.env' 
+        ? '/var/www/VTC-atlas-api/current/.env' 
         : '.env',
     }),
     ScheduleModule.forRoot(),
