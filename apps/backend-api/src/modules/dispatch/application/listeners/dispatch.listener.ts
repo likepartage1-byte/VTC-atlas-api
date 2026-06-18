@@ -1,26 +1,30 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { RideStatusChangedEvent } from '../../../rides/domain/events/ride-status-changed.event';
+import { RideCreatedEvent } from '../../../rides/domain/events/ride-created.event';
+import { DispatchEngine } from '../dispatch.engine';
 
 @Injectable()
 export class DispatchListener {
   private readonly logger = new Logger(DispatchListener.name);
 
-  @OnEvent('Ride.StatusChanged.REQUESTED')
-  async handleRideRequested(event: RideStatusChangedEvent) {
+  constructor(private readonly dispatchEngine: DispatchEngine) {}
+
+  @OnEvent('Ride.Requested')
+  async handleRideRequested(event: RideCreatedEvent) {
     this.logger.log(`Dispatch responding to Ride.Requested event for ride: ${event.aggregateId}`);
     
-    // Logic:
-    // 1. Calculate search parameters (City radius)
-    // 2. Query Redis GEO for nearby Drivers
-    // 3. Emit Dispatch.CandidateFound if any
+    const { pickup } = event.payload;
     
-    // For now, this is the reactive skeleton
+    // Start the dispatch sequence
+    await this.dispatchEngine.dispatchRide(
+      event.aggregateId, 
+      pickup.lat, 
+      pickup.lng
+    );
   }
 
   @OnEvent('Ride.StatusChanged.DRIVER_ACCEPTED')
-  async handleStopSearch(event: RideStatusChangedEvent) {
+  async handleStopSearch(event: any) {
     this.logger.log(`Stop search command received for ride: ${event.aggregateId}`);
-    // Clear Redis locks or timers for this ride
   }
 }

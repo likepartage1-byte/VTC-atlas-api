@@ -11,6 +11,8 @@ import { RidesModule } from '../rides/rides.module';
 import { LocationModule } from '../location/location.module';
 import { forwardRef } from '@nestjs/common';
 
+import { DispatchListener } from './application/listeners/dispatch.listener';
+
 @Module({
   imports: [
     CoreModule,
@@ -24,6 +26,7 @@ import { forwardRef } from '@nestjs/common';
     DispatchEngine,
     AcceptRideUseCase,
     AssignmentLockService,
+    DispatchListener,
     {
       provide: 'IRideRepository',
       useClass: PrismaRideRepository,

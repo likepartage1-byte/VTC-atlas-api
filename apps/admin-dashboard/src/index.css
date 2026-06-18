@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #3b82f6;
-  --color-primary-dark: #2563eb;
-  --color-bg-main: #f8fafc;
-  --color-bg-card: #ffffff;
-  --color-text-main: #0f172a;
-  --color-text-muted: #64748b;
+  --color-primary: #2563EB;
+  --color-primary-dark: #1D4ED8;
+  --color-accent: #06B6D4;
+  --color-bg-main: #0B1220;
+  --color-bg-card: #111827;
+  --color-text-main: #FFFFFF;
+  --color-text-muted: #D1D5DB;
   
   --radius-xl: 12px;
   --radius-2xl: 16px;
@@ -38,11 +39,19 @@
 }
 
 .glass-card {
-  background: rgba(var(--bg-card), 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  @apply backdrop-blur-xl border-white/10 shadow-2xl;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
 }
 
 .premium-shadow {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.animate-glow {
+  animation: glow 4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
 }
