@@ -47,14 +47,27 @@ const Card = ({ children, title, subtitle }: { children: React.ReactNode, title?
   </div>
 );
 
+import { AuthPage } from './components/auth/AuthPage';
+
 // --- Main App ---
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [activeTab, setActiveTab] = useState('financial'); // financial, integrity, etc.
   const [commission, setCommission] = useState(0.08);
   const [isSaving, setIsSaving] = useState(false);
   const [rideSampleAmount] = useState(100);
+
+  useEffect(() => {
+    // Simulate finding an existing session
+    // const session = localStorage.getItem('isAuth');
+    // if (session) setIsAuthenticated(true);
+  }, []);
+
+  if (!isAuthenticated) {
+    return <AuthPage onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
