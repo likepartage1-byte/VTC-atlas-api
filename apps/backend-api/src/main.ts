@@ -9,6 +9,7 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './core/exceptions/global-exception.filter';
 import { RedisIoAdapter } from './core/redis/redis-io.adapter';
 import { Logger } from 'nestjs-pino';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -25,6 +26,16 @@ async function bootstrap() {
     type: VersioningType.URI,
     defaultVersion: '1',
   });
+
+  // Swagger
+  const config = new DocumentBuilder()
+    .setTitle('Atlas VTC API')
+    .setDescription('API documentation for Atlas VTC platform')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   // Global Validation
   app.useGlobalPipes(
