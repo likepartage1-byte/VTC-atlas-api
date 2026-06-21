@@ -1,22 +1,21 @@
+require('dotenv').config({ path: '/var/www/VTC-atlas-api/.env' });
+
 module.exports = {
   apps: [
     {
       name: "atlas-backend",
-      // نستخدم جذر المشروع كـ cwd للتوافق مع بنية الـ Monorepo
-      cwd: "/var/www/VTC-atlas-api/current",
-      script: "dist/apps/backend-api/main.js",
-      instances: 1,
-      exec_mode: "fork",
-      autorestart: true,
-      watch: false,
-      max_memory_restart: '1G',
-      env_production: {
+      script: "/var/www/VTC-atlas-api/dist/apps/backend-api/main.js",
+      cwd: "/var/www/VTC-atlas-api",
+      env: {
         NODE_ENV: "production",
-        PORT: 3000
+        PORT: process.env.PORT,
+        DATABASE_URL: process.env.DATABASE_URL,
+        REDIS_URL: process.env.REDIS_URL,
+        JWT_SECRET: process.env.JWT_SECRET
       },
-      log_date_format: "YYYY-MM-DD HH:mm:ss",
-      error_file: "/var/www/VTC-atlas-api/logs/backend-error.log",
-      out_file: "/var/www/VTC-atlas-api/logs/backend-out.log"
+      instances: 1,
+      autorestart: true,
+      watch: false
     }
   ]
 };

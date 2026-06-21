@@ -6,6 +6,10 @@ import { CurrentUser } from '../../../identity/presentation/decorators/current-u
 import { RideOrchestrator } from '../../application/orchestration/ride.orchestrator';
 import { UpdateDriverStatusDto } from '../dtos/update-driver-status.dto';
 
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiTags('Driver Rides')
+@ApiBearerAuth()
 @Controller('driver/rides')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('DRIVER')

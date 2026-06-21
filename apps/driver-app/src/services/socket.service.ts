@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SOCKET_URL = 'https://api.magda-guide.com'; // أو رابط السيرفر الخاص بك
+const SOCKET_URL = 'http://187.124.34.118'; // أو رابط السيرفر الخاص بك
 
 class SocketService {
   private socket: Socket | null = null;

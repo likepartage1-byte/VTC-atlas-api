@@ -6,7 +6,7 @@ class ApiClient {
   final storage = const FlutterSecureStorage();
   
   // In a real scenario, this would be an environment variable
-  final String baseUrl = "http://localhost:3000/api/v1";
+  final String baseUrl = "http://187.124.34.118/api/v1";
 
   ApiClient() {
     dio = Dio(BaseOptions(

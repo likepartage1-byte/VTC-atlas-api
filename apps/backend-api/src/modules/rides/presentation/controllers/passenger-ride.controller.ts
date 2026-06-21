@@ -8,6 +8,10 @@ import { RideOrchestrator } from '../../application/orchestration/ride.orchestra
 import { RequestRideDto } from '../dtos/request-ride.dto';
 import { RideResponseDto } from '../dtos/ride-response.dto';
 
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiTags('Passenger Rides')
+@ApiBearerAuth()
 @Controller('passenger/rides')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('PASSENGER')

@@ -13,6 +13,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { IntegrityModule } from './modules/integrity/integrity.module';
+import { FinancialModule } from './modules/financial/financial.module';
 import { HealthModule } from './core/health/health.module';
 import { LoggerModule } from 'nestjs-pino';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -58,6 +59,7 @@ import { I18nInterceptor } from './core/i18n/interceptors/i18n.interceptor';
 
     // Layer 6: Debug & Simulation
     SimulationModule,
+    FinancialModule,
   ],
   providers: [
     {

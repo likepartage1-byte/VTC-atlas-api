@@ -3,7 +3,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DriverLocationRepository } from '../../location/infrastructure/repositories/driver-location.repository';
 import { RideOtpService } from './ride-otp.service';
 import { RideStateMachine } from '../domain/state-machine/ride-transitions';
-import { OutboxService } from '../../../core/events/outbox.service';
+import { OutboxService } from '../../../core/outbox/services/outbox.service';
 import { RideStatusChangedEvent } from '../domain/events/ride-status-changed.event';
 import { calculateHaversineDistance } from '../../../core/common/geo.utils';
 

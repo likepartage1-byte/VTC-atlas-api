@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class RealtimeTrackingService {
   late io.Socket socket;
   final storage = const FlutterSecureStorage();
-  final String socketUrl = "http://localhost:3000";
+  final String socketUrl = "http://187.124.34.118";
 
   void connect() async {
     final token = await storage.read(key: 'jwt_token');
