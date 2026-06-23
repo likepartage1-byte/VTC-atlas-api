@@ -62,6 +62,14 @@ cd "$PROJECT_DIR"
 # ─── Step 4: Run Prisma migrations ───────────────────────────
 echo ""
 echo -e "${YELLOW}[4/5] Running Prisma DB migrations...${NC}"
+
+# Load .env for DB connection (now earlier so prisma can use it)
+if [ -f "$PROJECT_DIR/.env" ]; then
+  export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs) 2>/dev/null
+elif [ -f "$PROJECT_DIR/apps/backend-api/.env" ]; then
+  export $(grep -v '^#' "$PROJECT_DIR/apps/backend-api/.env" | xargs) 2>/dev/null
+fi
+
 cd "$PROJECT_DIR/apps/backend-api"
 npx prisma migrate deploy 2>&1 || warn "Migration failed or no pending migrations"
 ok "Database schema is up to date"
@@ -96,13 +104,6 @@ fi
 echo ""
 echo -e "${YELLOW}[BONUS] Seeding commission_rate if missing...${NC}"
 
-# Load .env for DB connection
-if [ -f "$PROJECT_DIR/.env" ]; then
-  export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs) 2>/dev/null
-elif [ -f "$PROJECT_DIR/apps/backend-api/.env" ]; then
-  export $(grep -v '^#' "$PROJECT_DIR/apps/backend-api/.env" | xargs) 2>/dev/null
-fi
-
 # Quick Node.js seed script for commission
 node -e "
 const { PrismaClient } = require('./apps/backend-api/node_modules/.prisma/client');
@@ -119,19 +120,17 @@ async function seed() {
 seed().catch(e => { console.error('Seed failed (non-fatal):', e.message); process.exit(0); });
 " 2>/dev/null && ok "Commission seed done" || warn "Commission seed skipped (non-fatal)"
 
-# ─── Final Health Check ───────────────────────────────────────
 echo ""
-echo -e "${YELLOW}Waiting 3s for process to stabilize...${NC}"
-sleep 3
+echo -e "${YELLOW}Waiting 5s for process to stabilize...${NC}"
+sleep 5
 
-HEALTH=$(curl -sf "http://localhost:${PORT:-3000}/api/health" 2>/dev/null || echo '{}')
-DB_STATUS=$(echo "$HEALTH" | grep -o '"database":{"status":"up"}' | head -1)
+HEALTH=$(curl -sf "http://localhost:3000/api/health" 2>/dev/null || echo '{}')
 
 if echo "$HEALTH" | grep -q '"status":"ok"'; then
   ok "Health check PASSED"
   echo "$HEALTH" | python3 -m json.tool 2>/dev/null || echo "$HEALTH"
 else
-  warn "Health check did not return OK. Check: pm2 logs atlas-backend --lines 50"
+  warn "Health check did not return OK. Is the app running on port 3000?"
   echo "Response: $HEALTH"
 fi
 
