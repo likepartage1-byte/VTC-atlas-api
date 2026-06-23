@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Lock, UserCheck } from 'lucide-react';
-import { Button, Input, cn } from './ui';
+import { Button, Input } from './ui';
 
-export const EmailAuth: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+export const EmailAuth: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);

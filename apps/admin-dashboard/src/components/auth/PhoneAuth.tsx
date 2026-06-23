@@ -2,17 +2,19 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ShieldEllipsis, RefreshCw, MessageCircle } from 'lucide-react';
 import { Button, Input, cn } from './ui';
+import api from '../../lib/api';
 
 export const PhoneAuth: React.FC<{ 
   isDarkMode: boolean; 
   onLoginSuccess: () => void; 
-  role: 'PASSENGER' | 'DRIVER' 
+  role: 'PASSENGER' | 'DRIVER' | 'ADMIN'; 
 }> = ({ isDarkMode, onLoginSuccess, role }) => {
   const [step, setStep] = useState<'input' | 'otp' | 'success'>('input');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [timer, setTimer] = useState(30);
   const [isLoading, setIsLoading] = useState(false);
+  const [deviceId, setDeviceId] = useState('');
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -23,13 +25,36 @@ export const PhoneAuth: React.FC<{
     return () => clearInterval(interval);
   }, [step, timer]);
 
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const storedDeviceId = localStorage.getItem('admin_device_id');
+    if (storedDeviceId) {
+      setDeviceId(storedDeviceId);
+      return;
+    }
+
+    const generatedDeviceId = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? (crypto as any).randomUUID()
+      : `web-admin-${Date.now()}`;
+
+    localStorage.setItem('admin_device_id', generatedDeviceId);
+    setDeviceId(generatedDeviceId);
+  }, []);
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await api.post('/auth/otp/request', {
+        phoneNumber: `+212${phone.replace(/\s/g, '')}`,
+        deviceId,
+        role,
+      });
       setStep('otp');
-    }, 1500);
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Failed to request OTP');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleWhatsAppLogin = () => {
@@ -57,26 +82,33 @@ export const PhoneAuth: React.FC<{
 
   const [simulationStep, setSimulationStep] = useState<string>('');
 
-  const handleOtpVerify = (code: string) => {
+  const handleOtpVerify = async (code: string) => {
     setIsLoading(true);
+    setSimulationStep('Verifying secure session...');
     
-    // Stage 1: Crypto Handshake
-    setSimulationStep('Establishing secure gateway...');
-    
-    setTimeout(() => {
-      // Stage 2: Manifest Check
-      setSimulationStep('Verifying driver credentials...');
+    try {
+      const response = await api.post('/auth/otp/verify', {
+        phoneNumber: `+212${phone.replace(/\s/g, '')}`,
+        code,
+        deviceId,
+        role,
+      });
+
+      const { accessToken } = response.data;
+      if (!accessToken) {
+        throw new Error('Authentication failed.');
+      }
+      localStorage.setItem('admin_token', accessToken);
       
-      setTimeout(() => {
-        // Stage 3: Integrity Check
-        setSimulationStep('Validating device integrity...');
-        
-        setTimeout(() => {
-          setIsLoading(false);
-          setStep('success');
-        }, 1500);
-      }, 1200);
-    }, 1200);
+      setSimulationStep('Authentication successful.');
+      setStep('success');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Invalid OTP code');
+      setOtp(['', '', '', '', '', '']);
+      otpRefs.current[0]?.focus();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (step === 'success') {
@@ -193,7 +225,7 @@ export const PhoneAuth: React.FC<{
             {otp.map((digit, idx) => (
               <input
                 key={idx}
-                ref={el => otpRefs.current[idx] = el}
+                ref={(el) => { otpRefs.current[idx] = el; }}
                 type="text"
                 inputMode="numeric"
                 value={digit}

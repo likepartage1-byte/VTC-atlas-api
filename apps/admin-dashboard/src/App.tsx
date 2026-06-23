@@ -7,13 +7,13 @@ import {
   Settings, 
   Moon, 
   Sun, 
-  Bell, 
   TrendingUp, 
-  ArrowRight,
   ShieldCheck,
   ShieldAlert,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpRight,
+  RefreshCw
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -48,38 +48,79 @@ const Card = ({ children, title, subtitle }: { children: React.ReactNode, title?
 );
 
 import { AuthPage } from './components/auth/AuthPage';
+import api from './lib/api';
 
 // --- Main App ---
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDark, setIsDark] = useState(false);
-  const [activeTab, setActiveTab] = useState('financial'); // financial, integrity, etc.
+  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, financial, integrity, etc.
   const [commission, setCommission] = useState(0.08);
   const [isSaving, setIsSaving] = useState(false);
   const [rideSampleAmount] = useState(100);
+  const [securityEvents, setSecurityEvents] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any>(null);
 
   useEffect(() => {
-    // Simulate finding an existing session
-    // const session = localStorage.getItem('isAuth');
-    // if (session) setIsAuthenticated(true);
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      setIsAuthenticated(true);
+    }
   }, []);
 
-  if (!isAuthenticated) {
-    return <AuthPage onLoginSuccess={() => setIsAuthenticated(true)} />;
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchInitialData();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setIsAuthenticated(false);
+    setSecurityEvents([]);
   }
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-  }, [isDark]);
+  const fetchInitialData = async () => {
+    try {
+      // Fetch Current Commission
+      const settingsRes = await api.get('/admin/settings');
+      if (settingsRes.data?.commission) {
+         setCommission(settingsRes.data.commission);
+      }
 
-  const handleSave = () => {
+      // Fetch Integrity events
+      const integrityRes = await api.get('/admin/integrity/events');
+      setSecurityEvents(integrityRes.data || []);
+
+      // Fetch Dashboard Insights
+      const insightsRes = await api.get('/admin/dashboard/insights');
+      setInsights(insightsRes.data);
+    } catch (error) {
+      console.error("Failed to load admin data", error);
+    }
+  };
+
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 1000); // Simulate API call
+    try {
+      await api.patch('/admin/settings/commission', {
+        rate: commission,
+      });
+      alert('Commission rate updated globally.');
+    } catch (error) {
+      alert('Failed to update settings.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const driverEarnings = rideSampleAmount * (1 - commission);
   const companyFee = rideSampleAmount * commission;
+
+  if (!isAuthenticated) {
+    return <AuthPage onLoginSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="min-h-screen flex bg-bg-main text-text-main">
@@ -116,10 +157,12 @@ export default function App() {
         <header className="flex justify-between items-center mb-10">
           <div>
             <h2 className="text-3xl font-black">
-              {activeTab === 'financial' ? 'Financial Control' : 'Integrity Monitor'}
+              {activeTab === 'dashboard' ? 'Operations Dashboard' : activeTab === 'financial' ? 'Financial Control' : 'Integrity Monitor'}
             </h2>
             <p className="text-text-muted mt-1">
-              {activeTab === 'financial' 
+              {activeTab === 'dashboard'
+                ? 'Real-time platform metrics and operational insights.'
+                : activeTab === 'financial' 
                 ? 'Manage global commission rates and financial policies.' 
                 : 'Real-time fraud detection and security events feed.'}
             </p>
@@ -129,11 +172,103 @@ export default function App() {
               <span className="font-bold">Admin #001</span>
               <span className="text-xs text-green-500 flex items-center gap-1"><ShieldCheck size={12}/> Verified Session</span>
             </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm font-bold text-text-main bg-gray-100 dark:bg-gray-800 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+            >
+              Logout
+            </button>
             <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden border-2 border-white">
                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="avatar" />
             </div>
           </div>
         </header>
+
+        {activeTab === 'dashboard' && (
+          <div className="space-y-10">
+             {/* KPI Cards */}
+             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Card>
+                  <span className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] block mb-3">Gross Revenue</span>
+                  <div className="flex items-end justify-between">
+                    <span className="text-3xl font-black">{insights ? Number(insights.totalRevenue).toLocaleString('fr-MA') : '—'} MAD</span>
+                    <div className="bg-green-500/10 text-green-500 px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 mb-1">
+                      <ArrowUpRight size={12} /> LIVE
+                    </div>
+                  </div>
+                </Card>
+                <Card>
+                  <span className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] block mb-3">Active Rides</span>
+                  <div className="flex items-end justify-between">
+                    <span className="text-3xl font-black">{insights ? insights.activeRidesCount : '—'}</span>
+                    <div className="bg-primary/10 text-primary px-2 py-1 rounded-lg text-[10px] font-black flex items-center gap-1 mb-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" /> LIVE
+                    </div>
+                  </div>
+                </Card>
+                <Card>
+                  <span className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] block mb-3">Drivers</span>
+                  <div className="flex items-end justify-between">
+                    <span className="text-3xl font-black">{insights ? insights.totalDriversCount : '—'}</span>
+                    <div className="bg-blue-500/10 text-blue-500 px-2 py-1 rounded-lg text-[10px] font-black mb-1">
+                      <Car size={12} />
+                    </div>
+                  </div>
+                </Card>
+                <Card>
+                  <span className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] block mb-3">Passengers</span>
+                  <div className="flex items-end justify-between">
+                    <span className="text-3xl font-black">{insights ? insights.totalPassengersCount : '—'}</span>
+                    <div className="bg-purple-500/10 text-purple-500 px-2 py-1 rounded-lg text-[10px] font-black mb-1">
+                      <Users size={12} />
+                    </div>
+                  </div>
+                </Card>
+             </div>
+
+             {/* Status Badges */}
+             {insights && (
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div className="bg-bg-card rounded-2xl p-4 border border-gray-100 dark:border-gray-800 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500">
+                     <ShieldCheck size={20} />
+                   </div>
+                   <div>
+                     <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">Platform Status</p>
+                     <p className="font-black text-green-500">{insights.health}</p>
+                   </div>
+                 </div>
+                 <div className="bg-bg-card rounded-2xl p-4 border border-gray-100 dark:border-gray-800 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                     <TrendingUp size={20} />
+                   </div>
+                   <div>
+                     <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">Growth</p>
+                     <p className="font-black text-primary">+{insights.kpi?.growth}%</p>
+                   </div>
+                 </div>
+                 <div className="bg-bg-card rounded-2xl p-4 border border-gray-100 dark:border-gray-800 flex items-center gap-4">
+                   <div className="w-10 h-10 rounded-xl bg-teal-500/10 flex items-center justify-center text-teal-500">
+                     <ShieldAlert size={20} />
+                   </div>
+                   <div>
+                     <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">Reliability</p>
+                     <p className="font-black text-teal-500">{insights.kpi?.reliability}%</p>
+                   </div>
+                 </div>
+               </div>
+             )}
+
+             {!insights && (
+               <div className="flex items-center justify-center h-40 text-text-muted">
+                 <div className="flex flex-col items-center gap-3">
+                   <RefreshCw className="animate-spin" size={24} />
+                   <span className="text-sm font-medium">Loading live data...</span>
+                 </div>
+               </div>
+             )}
+          </div>
+        )}
 
         {activeTab === 'financial' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -265,49 +400,56 @@ export default function App() {
                      </tr>
                    </thead>
                    <tbody className="text-sm">
-                     {[
-                       { type: 'GPS_SPOOFING', id: 'D-542', sev: 'CRITICAL', score: 92, time: '2m ago', color: 'text-red-500' },
-                       { type: 'IMPOSSIBLE_TRAVEL', id: 'D-129', sev: 'CRITICAL', score: 85, time: '15m ago', color: 'text-red-500' },
-                       { type: 'PRICE_BOT', id: 'P-981', sev: 'HIGH', score: 65, time: '1h ago', color: 'text-orange-500' },
-                       { type: 'DEVICE_CLONE', id: 'P-441', sev: 'MEDIUM', score: 45, time: '3h ago', color: 'text-yellow-500' },
-                     ].map((item, i) => (
-                       <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                         <td className="py-4">
-                           <div className="font-bold">{item.type}</div>
-                           <div className="text-[10px] text-text-muted font-mono">{item.id}</div>
-                         </td>
-                         <td className="py-4">
-                           <div className="flex items-center gap-2">
-                             <div className="w-16 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                               <div 
-                                 className={cn("h-full", 
-                                   item.score >= 80 ? "bg-red-500" : 
-                                   item.score >= 50 ? "bg-orange-500" : "bg-yellow-500"
-                                 )} 
-                                 style={{ width: `${item.score}%` }} 
-                               />
+                     {securityEvents.length > 0 ? securityEvents.map((event, i) => {
+                       const score = event.metadata?.riskScore ?? 50;
+                       const severity = event.severity || 'LOW';
+                       const time = new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                       return (
+                         <tr key={event.id ?? i} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                           <td className="py-4">
+                             <div className="font-bold">{event.eventType}</div>
+                             <div className="text-[10px] text-text-muted font-mono">{event.entityType || event.userId || 'unknown'}</div>
+                           </td>
+                           <td className="py-4">
+                             <div className="flex items-center gap-2">
+                               <div className="w-16 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                 <div 
+                                   className={cn("h-full", 
+                                     score >= 80 ? "bg-red-500" : 
+                                     score >= 50 ? "bg-orange-500" : "bg-yellow-500"
+                                   )} 
+                                   style={{ width: `${score}%` }} 
+                                 />
+                               </div>
+                               <span className="font-black text-xs">{score}</span>
                              </div>
-                             <span className="font-black text-xs">{item.score}</span>
-                           </div>
-                         </td>
-                         <td className="py-4">
-                           <span className={cn("px-2 py-1 rounded-md text-[10px] font-black border", 
-                             item.sev === 'CRITICAL' ? "bg-red-500/10 border-red-500/20 text-red-500" :
-                             item.sev === 'HIGH' ? "bg-orange-500/10 border-orange-500/20 text-orange-500" :
-                             "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
-                           )}>
-                             {item.sev}
-                           </span>
-                         </td>
-                         <td className="py-4 text-text-muted text-xs">{item.time}</td>
-                         <td className="py-4">
-                            <div className="flex gap-2">
-                              <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-bold text-[10px] transition-all">BLOCK</button>
-                              <button className="bg-gray-100 dark:bg-gray-800 text-text-main px-3 py-1 rounded-lg font-bold text-[10px] transition-all">REVIEW</button>
-                            </div>
+                           </td>
+                           <td className="py-4">
+                             <span className={cn("px-2 py-1 rounded-md text-[10px] font-black border", 
+                               severity === 'CRITICAL' ? "bg-red-500/10 border-red-500/20 text-red-500" :
+                               severity === 'HIGH' ? "bg-orange-500/10 border-orange-500/20 text-orange-500" :
+                               "bg-yellow-500/10 border-yellow-500/20 text-yellow-500"
+                             )}>
+                               {severity}
+                             </span>
+                           </td>
+                           <td className="py-4 text-text-muted text-xs">{time}</td>
+                           <td className="py-4">
+                              <div className="flex gap-2">
+                                <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg font-bold text-[10px] transition-all">BLOCK</button>
+                                <button className="bg-gray-100 dark:bg-gray-800 text-text-main px-3 py-1 rounded-lg font-bold text-[10px] transition-all">REVIEW</button>
+                              </div>
+                           </td>
+                         </tr>
+                       );
+                     }) : (
+                       <tr>
+                         <td className="py-6 text-center text-text-muted" colSpan={5}>
+                           No security events loaded yet.
                          </td>
                        </tr>
-                     ))}
+                     )}
                    </tbody>
                  </table>
                </div>

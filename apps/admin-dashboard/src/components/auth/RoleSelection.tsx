@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Car, Globe } from 'lucide-react';
+import { User, Car } from 'lucide-react';
 import { cn } from './ui';
 
 interface RoleSelectionProps {

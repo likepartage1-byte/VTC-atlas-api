@@ -2,56 +2,30 @@
 
 @theme {
   --color-primary: #2563EB;
-  --color-primary-dark: #1D4ED8;
-  --color-accent: #06B6D4;
-  --color-bg-main: #0B1220;
-  --color-bg-card: #111827;
-  --color-text-main: #FFFFFF;
-  --color-text-muted: #D1D5DB;
-  
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
+  --color-primary-dark: #1E40AF;
+  --color-bg-main: #F8FAFC;
+  --color-bg-card: #FFFFFF;
+  --color-text-main: #0F172A;
+  --color-text-muted: #64748B;
+}
+
+[data-theme='dark'] {
+  --color-bg-main: #05080F;
+  --color-bg-card: #0B1220;
+  --color-text-main: #F8FAFC;
+  --color-text-muted: #94A3B8;
 }
 
 @layer base {
-  :root {
-    --bg-main: #f8fafc;
-    --bg-card: #ffffff;
-    --text-main: #0f172a;
-    --text-muted: #64748b;
-    --accent: #3b82f6;
-  }
-
-  [data-theme="dark"] {
-    --bg-main: #0f172a;
-    --bg-card: #1e293b;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent: #60a5fa;
-  }
-
   body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    font-family: 'Inter', system-ui, sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    @apply antialiased;
   }
-}
-
-.glass-card {
-  @apply backdrop-blur-xl border-white/10 shadow-2xl;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
 }
 
 .premium-shadow {
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
 }
 
-.animate-glow {
-  animation: glow 4s ease-in-out infinite;
-}
-
-@keyframes glow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+.dark .premium-shadow {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 }

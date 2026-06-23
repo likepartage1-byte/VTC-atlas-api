@@ -3,22 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldCheck, 
   MapPin, 
-  Smartphone, 
-  Mail, 
-  Apple, 
-  ChevronLeft,
-  Navigation,
-  Globe,
-  Wind
 } from 'lucide-react';
-import { Button, cn } from './ui';
 import { PhoneAuth } from './PhoneAuth';
-import { EmailAuth } from './EmailAuth';
-import { RoleSelection, LanguageSelector } from './RoleSelection';
+import { LanguageSelector } from './RoleSelection';
 
 export const AuthPage: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSuccess }) => {
-  const [authMethod, setAuthMethod] = useState<'selection' | 'phone' | 'email'>('selection');
-  const [role, setRole] = useState<'PASSENGER' | 'DRIVER'>('PASSENGER');
   const [lang, setLang] = useState('EN');
 
   return (
@@ -124,27 +113,23 @@ export const AuthPage: React.FC<{ onLoginSuccess: () => void }> = ({ onLoginSucc
           
           <div className="relative z-10 p-8 sm:p-10 space-y-8">
             <AnimatePresence mode="wait">
-              {authMethod === 'selection' && (
-                <motion.div 
-                  key="selection"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="space-y-8"
-                >
-                  <PhoneAuth 
-                     isDarkMode={true} 
-                     onLoginSuccess={onLoginSuccess} 
-                     role={role} 
-                  />
-                  
-                  {/* Integrated Language Selection - Primary Secondary Action */}
-                  <div className="pt-2">
-                    <LanguageSelector current={lang} onSelect={setLang} />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <motion.div 
+            key="phone-auth"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-8"
+          >
+            <PhoneAuth 
+               isDarkMode={true} 
+               onLoginSuccess={onLoginSuccess} 
+               role="ADMIN" 
+            />
+            <div className="pt-2">
+              <LanguageSelector current={lang} onSelect={setLang} />
+            </div>
+          </motion.div>
+        </AnimatePresence>
           </div>
         </motion.main>
 
