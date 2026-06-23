@@ -14,9 +14,15 @@ export class AdminSettingsController {
   @Get()
   async getAllSettings() {
     return {
-      commissionRate: await this.settings.getCommissionRate(),
+      commission: await this.settings.getCommissionRate(),
       theme: await this.settings.getThemeConfig(),
-      // Add other settings as we build them
+    };
+  }
+
+  @Get('commission')
+  async getCommission() {
+    return { 
+      commission: await this.settings.getCommissionRate() 
     };
   }
 

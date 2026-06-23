@@ -1,27 +1,36 @@
 {
 	"info": {
 		"_postman_id": "a54b3b7e-cf48-46f5-b648-c56d6ed37894",
-		"name": "Atlas VTC - Golden Path Test",
-		"description": "End-to-end testing collection for the Atlas Ride-Hailing platform golden path.",
+		"name": "Atlas VTC — Golden Path Test (Complete)",
+		"description": "End-to-end testing collection for the Atlas Ride-Hailing platform.\nCovers the complete Golden Path: Register → Request Ride → Accept → Arrive → OTP → Start → Complete → Commission → Dashboard.\n\nBase URL: {{baseUrl}} (default: http://187.124.34.118/api/v1)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "System Health",
+			"name": "0. System Health",
 			"item": [
 				{
-					"name": "Check Backend Health",
+					"name": "✅ Check Backend Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Backend is healthy', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/health",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"health"
-							]
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
 						}
 					},
 					"response": []
@@ -29,38 +38,28 @@
 			]
 		},
 		{
-			"name": "Authentication",
+			"name": "1. Passenger Auth",
 			"item": [
 				{
-					"name": "1. Request OTP",
+					"name": "1a. Request OTP (Passenger)",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"phoneNumber\": \"+212600000001\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"phoneNumber\": \"+212600000001\",\n    \"deviceId\": \"postman-passenger-device-001\"\n}",
+							"options": { "raw": { "language": "json" } }
 						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/otp/request",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"otp",
-								"request"
-							]
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "otp", "request"]
 						}
 					},
 					"response": []
 				},
 				{
-					"name": "2. Verify OTP",
+					"name": "1b. Verify OTP (Passenger) → sets passengerToken",
 					"event": [
 						{
 							"listen": "test",
@@ -68,7 +67,10 @@
 								"exec": [
 									"var jsonData = pm.response.json();",
 									"if (jsonData.accessToken) {",
-									"    pm.collectionVariables.set(\"accessToken\", jsonData.accessToken);",
+									"    pm.collectionVariables.set('passengerToken', jsonData.accessToken);",
+									"    console.log('✅ Passenger token set');",
+									"} else {",
+									"    console.error('❌ No accessToken in response');",
 									"}"
 								],
 								"type": "text/javascript"
@@ -80,23 +82,13 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"phoneNumber\": \"+212600000001\",\n    \"code\": \"123456\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"phoneNumber\": \"+212600000001\",\n    \"code\": \"{{passengerOtpCode}}\",\n    \"deviceId\": \"postman-passenger-device-001\",\n    \"role\": \"PASSENGER\"\n}",
+							"options": { "raw": { "language": "json" } }
 						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/otp/verify",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"otp",
-								"verify"
-							]
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "otp", "verify"]
 						}
 					},
 					"response": []
@@ -104,37 +96,398 @@
 			]
 		},
 		{
-			"name": "Ride Lifecycle",
+			"name": "2. Driver Auth",
 			"item": [
 				{
-					"name": "3. Request Ride (Passenger)",
+					"name": "2a. Request OTP (Driver)",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{accessToken}}",
-								"type": "text"
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phoneNumber\": \"+212600000002\",\n    \"deviceId\": \"postman-driver-device-001\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/otp/request",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "otp", "request"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2b. Verify OTP (Driver) → sets driverToken",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('driverToken', jsonData.accessToken);",
+									"    console.log('✅ Driver token set');",
+									"} else {",
+									"    console.error('❌ No accessToken in response');",
+									"}"
+								],
+								"type": "text/javascript"
 							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phoneNumber\": \"+212600000002\",\n    \"code\": \"{{driverOtpCode}}\",\n    \"deviceId\": \"postman-driver-device-001\",\n    \"role\": \"DRIVER\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/otp/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "otp", "verify"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2c. Set Driver AVAILABLE",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{driverToken}}", "type": "text" }
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"pickupLat\": 31.6295,\n  \"pickupLng\": -7.9811,\n  \"pickupAddress\": \"جامع الفنا، مراكش\",\n  \"dropoffLat\": 31.6340,\n  \"dropoffLng\": -8.0089,\n  \"dropoffAddress\": \"حي الحمراء، مراكش\",\n  \"serviceType\": \"ECONOMY\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"isAvailable\": true\n}",
+							"options": { "raw": { "language": "json" } }
 						},
 						"url": {
-							"raw": "{{baseUrl}}/rides/request",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"rides",
-								"request"
-							]
+							"raw": "{{baseUrl}}/driver/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "status"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Ride Lifecycle (Golden Path)",
+			"item": [
+				{
+					"name": "3a. POST Request Ride (Passenger) → sets rideId",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.id) {",
+									"    pm.collectionVariables.set('rideId', jsonData.id);",
+									"    console.log('✅ Ride ID set:', jsonData.id);",
+									"    console.log('Status:', jsonData.status);",
+									"    console.log('Estimated Price:', jsonData.estimatedPrice);",
+									"} else {",
+									"    console.error('❌ No ride ID. Response:', JSON.stringify(jsonData));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{passengerToken}}", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"pickupLat\": 31.6295,\n    \"pickupLng\": -7.9811,\n    \"pickupAddress\": \"جامع الفنا، مراكش\",\n    \"dropoffLat\": 31.6340,\n    \"dropoffLng\": -8.0089,\n    \"dropoffAddress\": \"حي الحمراء، مراكش\",\n    \"serviceType\": \"ECONOMY\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/passenger/rides",
+							"host": ["{{baseUrl}}"],
+							"path": ["passenger", "rides"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3b. GET Ride Status (Passenger)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{passengerToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/passenger/rides/{{rideId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["passenger", "rides", "{{rideId}}"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3c. POST Accept Ride (Driver)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Driver accepted ride', function () {",
+									"    pm.response.to.have.status(201);",
+									"    console.log('✅ Ride accepted by driver');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{driverToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/driver/rides/{{rideId}}/accept",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "rides", "{{rideId}}", "accept"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3d. POST Arrive at Pickup (Driver) → gets OTP",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"console.log('Arrive response:', JSON.stringify(jsonData));",
+									"// OTP is sent to passenger - in test environment check DB or logs for OTP value",
+									"// Then manually set the rideOtp variable before running step 3e"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{driverToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/driver/rides/{{rideId}}/arrive",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "rides", "{{rideId}}", "arrive"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3e. POST Start Trip with OTP (Driver)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Trip started', function() {",
+									"    pm.response.to.have.status(201);",
+									"    var jsonData = pm.response.json();",
+									"    console.log('✅ Trip started:', jsonData.message);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{driverToken}}", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"otp\": \"{{rideOtp}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/driver/rides/{{rideId}}/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "rides", "{{rideId}}", "start"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3f. POST Complete Ride (Driver) → triggers ledger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Ride completed and settled', function() {",
+									"    pm.response.to.have.status(201);",
+									"    var jsonData = pm.response.json();",
+									"    console.log('✅ Ride completed:', jsonData.message);",
+									"    console.log('🎉 GOLDEN PATH COMPLETE — Check Dashboard Now!');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{driverToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/driver/rides/{{rideId}}/complete",
+							"host": ["{{baseUrl}}"],
+							"path": ["driver", "rides", "{{rideId}}", "complete"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Admin Verification",
+			"item": [
+				{
+					"name": "4a. Admin Auth → sets adminToken",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.accessToken) {",
+									"    pm.collectionVariables.set('adminToken', jsonData.accessToken);",
+									"    console.log('✅ Admin token set');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"phoneNumber\": \"+212600000099\",\n    \"code\": \"{{adminOtpCode}}\",\n    \"deviceId\": \"postman-admin-device-001\",\n    \"role\": \"ADMIN\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/otp/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "otp", "verify"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4b. GET Dashboard Insights (verifies ride appeared)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Dashboard insights loaded', function() {",
+									"    pm.response.to.have.status(200);",
+									"    var data = pm.response.json();",
+									"    console.log('📊 Dashboard Data:');",
+									"    console.log('  Total Revenue:', data.totalRevenue, data.currency);",
+									"    console.log('  Completed Rides:', data.completedRides);",
+									"    console.log('  Active Rides:', data.activeRidesCount);",
+									"    console.log('  Total Drivers:', data.totalDriversCount);",
+									"    console.log('  Total Passengers:', data.totalPassengersCount);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/dashboard/insights",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "dashboard", "insights"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4c. GET Commission Rate",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/settings/commission",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "settings", "commission"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4d. PATCH Update Commission to 10%",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rate\": 0.10\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": {
+							"raw": "{{baseUrl}}/admin/settings/commission",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "settings", "commission"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4e. GET Integrity Events (Fraud Feed)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/integrity/events",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "integrity", "events"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4f. GET Integrity Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{ "key": "Authorization", "value": "Bearer {{adminToken}}", "type": "text" }
+						],
+						"url": {
+							"raw": "{{baseUrl}}/admin/integrity/stats",
+							"host": ["{{baseUrl}}"],
+							"path": ["admin", "integrity", "stats"]
 						}
 					},
 					"response": []
@@ -145,33 +498,22 @@
 	"event": [
 		{
 			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
+			"script": { "type": "text/javascript", "exec": [""] }
 		},
 		{
 			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
+			"script": { "type": "text/javascript", "exec": [""] }
 		}
 	],
 	"variable": [
-		{
-			"key": "baseUrl",
-			"value": "http://187.124.34.118/api/v1",
-			"type": "string"
-		},
-		{
-			"key": "accessToken",
-			"value": "",
-			"type": "string"
-		}
+		{ "key": "baseUrl", "value": "http://187.124.34.118/api/v1", "type": "string" },
+		{ "key": "passengerToken", "value": "", "type": "string" },
+		{ "key": "driverToken", "value": "", "type": "string" },
+		{ "key": "adminToken", "value": "", "type": "string" },
+		{ "key": "rideId", "value": "", "type": "string" },
+		{ "key": "rideOtp", "value": "", "type": "string", "description": "Set manually after step 3d — get from DB: SELECT otp_code FROM rides WHERE id = '{{rideId}}'"},
+		{ "key": "passengerOtpCode", "value": "", "type": "string", "description": "Set from DB or SMS logs after step 1a"},
+		{ "key": "driverOtpCode", "value": "", "type": "string", "description": "Set from DB or SMS logs after step 2a"},
+		{ "key": "adminOtpCode", "value": "", "type": "string", "description": "Set from DB or SMS logs"}
 	]
 }
