@@ -54,6 +54,8 @@ import { RideOtpService } from './application/ride-otp.service';
   exports: [
     RideService,
     RideOrchestrator,
+    RideLifecycleService,
+    RideOtpService,
     RequestRideUseCase,
     'IRideRepository'
   ],
