@@ -124,7 +124,7 @@ echo ""
 echo -e "${YELLOW}Waiting 5s for process to stabilize...${NC}"
 sleep 5
 
-HEALTH=$(curl -sf "http://localhost:3000/api/health" 2>/dev/null || echo '{}')
+HEALTH=$(curl -sf "http://localhost:3000/health" 2>/dev/null || curl -sf "http://localhost:3000/api/v1/health" 2>/dev/null || echo '{}')
 
 if echo "$HEALTH" | grep -q '"status":"ok"'; then
   ok "Health check PASSED"
