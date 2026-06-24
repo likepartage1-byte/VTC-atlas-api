@@ -1,4 +1,5 @@
 import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -20,9 +21,7 @@ import { DomainEventBus } from './events/domain-event-bus';
     ConfigModule.forRoot({ 
       isGlobal: true,
       validate,
-      envFilePath: process.env.NODE_ENV === 'production' 
-        ? '/var/www/VTC-atlas-api/current/.env' 
-        : '.env',
+      envFilePath: '.env',
     }),
     BullModule.forRoot({
       connection: {
@@ -30,6 +29,7 @@ import { DomainEventBus } from './events/domain-event-bus';
       },
     }),
     ScheduleModule.forRoot(),
+    DiscoveryModule,
   ],
   providers: [
     PrismaService, 
