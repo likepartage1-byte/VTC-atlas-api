@@ -1,12 +1,11 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { initializeApp, cert, getApp, getApps, App } from 'firebase-admin/app';
-import { getMessaging } from 'firebase-admin/messaging';
+import * as admin from 'firebase-admin';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class FCMService implements OnModuleInit {
   private readonly logger = new Logger(FCMService.name);
-  private firebaseApp: App | null = null;
+  private firebaseApp: admin.app.App | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -15,13 +14,13 @@ export class FCMService implements OnModuleInit {
     
     if (serviceAccountPath) {
       try {
-        if (getApps().length === 0) {
-          this.firebaseApp = initializeApp({
-            credential: cert(serviceAccountPath),
+        if (admin.apps.length === 0) {
+          this.firebaseApp = admin.initializeApp({
+            credential: admin.credential.cert(serviceAccountPath),
           });
           this.logger.log('FCM Initialized with service account file.');
         } else {
-          this.firebaseApp = getApp();
+          this.firebaseApp = admin.app();
         }
       } catch (error: any) {
         this.logger.error(`FCM Initialization failed: ${error.message}`);
@@ -59,7 +58,7 @@ export class FCMService implements OnModuleInit {
         },
       };
 
-      await getMessaging(this.firebaseApp).send(message);
+      await admin.messaging(this.firebaseApp!).send(message);
       return true;
     } catch (error: any) {
       this.logger.error(`Failed to send FCM message to token ${token.slice(0, 10)}...: ${error.message}`);
