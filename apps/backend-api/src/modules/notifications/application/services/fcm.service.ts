@@ -3,20 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
 
 // Dynamic require to bypass monorepo module resolution in the compiled dist output.
-// firebase-admin is installed in apps/backend-api/node_modules, but PM2 runs from
-// the dist folder where sub-path exports (firebase-admin/app) cannot be resolved.
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// We use a try-catch to ensure the app doesn't crash if the package is missing.
 const firebaseAdmin = (() => {
   try {
-    // Try local node_modules first (production monorepo path)
-    return require(path.resolve(
-      __dirname,
-      '../../../../../../../apps/backend-api/node_modules/firebase-admin',
-    ));
-  } catch {
-    // Fallback: standard resolution (works in local dev)
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('firebase-admin');
+  } catch (e) {
+    console.error('Failed to load firebase-admin:', e.message);
+    return null;
   }
 })();
 
@@ -36,6 +30,10 @@ export class FCMService implements OnModuleInit {
     }
 
     try {
+      if (!firebaseAdmin) {
+        this.logger.warn('firebase-admin package not found. FCM skipped.');
+        return;
+      }
       if (firebaseAdmin.apps.length === 0) {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const serviceAccount = require(serviceAccountPath);
