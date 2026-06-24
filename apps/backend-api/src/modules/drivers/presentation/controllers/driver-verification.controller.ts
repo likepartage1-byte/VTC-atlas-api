@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, UseGuards, Req } from '@nestjs/common';
-import { DriverVerificationService } from '../application/services/driver-verification.service';
+import { DriverVerificationService } from '../../application/services/driver-verification.service';
 
 @Controller('v1/driver/verification')
 export class DriverVerificationController {
