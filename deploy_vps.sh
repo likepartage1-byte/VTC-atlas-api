@@ -92,8 +92,14 @@ fi
 
 info "Detected executable: $BUILT_MAIN"
 
-# NODE_PATH ensures all packages from apps/backend-api/node_modules are found
-# when Node.js resolves modules from the dist/ output directory.
+# THE MONOREPO FIX: Symlink node_modules into the dist directory
+# This ensures that compiled code can resolve dependencies without complex NODE_PATH logic
+DIST_DIR=$(dirname "$BUILT_MAIN")
+info "Creating node_modules symlink in $DIST_DIR..."
+rm -f "$DIST_DIR/node_modules"
+ln -s "$PROJECT_DIR/apps/backend-api/node_modules" "$DIST_DIR/node_modules"
+
+# Fallback NODE_PATH just in case
 export NODE_PATH="$PROJECT_DIR/apps/backend-api/node_modules"
 
 if pm2 describe atlas-backend > /dev/null 2>&1; then
