@@ -65,8 +65,8 @@ model DriverVerification {
   status          DriverVerificationStatus @default(PENDING)
   rejectionReason String?
   
-  metadata        Json?        // Risk scores, flags
-  flags           VerificationFlag[]
+  metadata        Json?        // Risk scores, summary
+  flags           Json?        // Array of VerificationFlag
   
   reviewedBy      String?      // Admin ID
   reviewedAt      DateTime?
