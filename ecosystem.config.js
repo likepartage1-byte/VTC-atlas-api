@@ -1,21 +1,22 @@
-require('dotenv').config({ path: '/var/www/VTC-atlas-api/.env' });
+const PROJECT_DIR = '/root/VTC-atlas-api';
 
 module.exports = {
   apps: [
     {
-      name: "atlas-backend",
-      script: "/var/www/VTC-atlas-api/dist/apps/backend-api/main.js",
-      cwd: "/var/www/VTC-atlas-api",
-      env: {
-        NODE_ENV: "production",
-        PORT: process.env.PORT,
-        DATABASE_URL: process.env.DATABASE_URL,
-        REDIS_URL: process.env.REDIS_URL,
-        JWT_SECRET: process.env.JWT_SECRET
+      name: 'atlas-backend',
+      script: `${PROJECT_DIR}/dist/apps/backend-api/main.js`,
+      cwd: `${PROJECT_DIR}/apps/backend-api`,
+      env_production: {
+        NODE_ENV: 'production',
+        NODE_PATH: `${PROJECT_DIR}/apps/backend-api/node_modules`,
       },
       instances: 1,
+      exec_mode: 'fork',
       autorestart: true,
-      watch: false
-    }
-  ]
+      max_restarts: 5,
+      restart_delay: 3000,
+      watch: false,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss',
+    },
+  ],
 };

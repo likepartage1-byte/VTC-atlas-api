@@ -92,12 +92,16 @@ fi
 
 info "Detected executable: $BUILT_MAIN"
 
+# NODE_PATH ensures all packages from apps/backend-api/node_modules are found
+# when Node.js resolves modules from the dist/ output directory.
+export NODE_PATH="$PROJECT_DIR/apps/backend-api/node_modules"
+
 if pm2 describe atlas-backend > /dev/null 2>&1; then
-  pm2 reload atlas-backend --update-env
+  NODE_PATH="$PROJECT_DIR/apps/backend-api/node_modules" pm2 reload atlas-backend --update-env
   ok "PM2 process 'atlas-backend' reloaded (zero-downtime)"
 else
   warn "PM2 process not found, starting fresh..."
-  pm2 start "$BUILT_MAIN" \
+  NODE_PATH="$PROJECT_DIR/apps/backend-api/node_modules" pm2 start "$BUILT_MAIN" \
     --name atlas-backend \
     --cwd "$PROJECT_DIR/apps/backend-api" \
     --env production \
