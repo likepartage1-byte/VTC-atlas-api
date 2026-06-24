@@ -5,6 +5,7 @@ import { NotificationService } from './application/services/notification.service
 import { FCMService } from './application/services/fcm.service';
 import { NotificationProcessor } from './application/queues/notification.processor';
 import { NotificationOrchestrator } from './application/orchestrators/notification.orchestrator';
+import { WhatsAppService } from './infrastructure/whatsapp/whatsapp.service';
 import { NotificationController } from './presentation/controllers/notification.controller';
 
 @Global()
@@ -29,6 +30,7 @@ import { NotificationController } from './presentation/controllers/notification.
     NotificationProcessor,
     NotificationRouter,
     NotificationOrchestrator,
+    WhatsAppService,
   ],
   controllers: [NotificationController],
   exports: [NotificationService, NotificationOrchestrator],
