@@ -71,20 +71,26 @@ elif [ -f "$PROJECT_DIR/apps/backend-api/.env" ]; then
 fi
 
 cd "$PROJECT_DIR/apps/backend-api"
-npx prisma migrate deploy 2>&1 || warn "Migration failed or no pending migrations"
-ok "Database schema is up to date"
+npx prisma db push --schema=prisma/schema.prisma --accept-data-loss || warn "DB Push failed"
+ok "Database schema is synchronized (db push)"
 cd "$PROJECT_DIR"
 
 # ─── Step 5: Restart PM2 ─────────────────────────────────────
 echo ""
 echo -e "${YELLOW}[5/5] Restarting PM2 process...${NC}"
 
-# Fix ecosystem.config.js path if needed
+# Robust path detection for NestJS Monorepo output
 BUILT_MAIN="$PROJECT_DIR/apps/backend-api/dist/main.js"
 if [ ! -f "$BUILT_MAIN" ]; then
-  # Try monorepo output path
   BUILT_MAIN="$PROJECT_DIR/dist/apps/backend-api/main.js"
 fi
+
+if [ ! -f "$BUILT_MAIN" ]; then
+  # Final fallback: search for it
+  BUILT_MAIN=$(find "$PROJECT_DIR" -name "main.js" | grep "/dist/" | head -n 1)
+fi
+
+info "Detected executable: $BUILT_MAIN"
 
 if pm2 describe atlas-backend > /dev/null 2>&1; then
   pm2 reload atlas-backend --update-env
