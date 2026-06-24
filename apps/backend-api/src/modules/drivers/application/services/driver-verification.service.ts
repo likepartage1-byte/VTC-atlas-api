@@ -97,14 +97,25 @@ export class DriverVerificationService {
       'PROFILE_PHOTO',
     ];
 
-    const presentTypes = verification.documents.map((d) => d.type);
+    const currentDocuments = verification.documents.map(doc => ({
+      type: doc.type,
+      status: doc.status,
+      url: doc.url,
+      expiresAt: doc.expiresAt,
+      rejectionReason: doc.rejectionReason,
+      updatedAt: doc.updatedAt
+    }));
+
+    const presentTypes = currentDocuments.map((d) => d.type);
     const missingDocuments = requiredTypes.filter((t) => !presentTypes.includes(t as any));
 
     return {
       status: verification.status,
-      missingDocuments,
-      documents: verification.documents,
       rejectionReason: verification.rejectionReason,
+      missingDocuments,
+      uploadedDocuments: currentDocuments,
+      isComplete: missingDocuments.length === 0,
+      updatedAt: verification.updatedAt
     };
   }
 
@@ -171,6 +182,100 @@ export class DriverVerificationService {
       }, tx);
 
       return doc;
+    });
+  }
+
+  /**
+   * Admin action to update the overall verification status.
+   */
+  async reviewVerification(
+    verificationId: string,
+    status: DriverVerificationStatus,
+    reason?: string,
+    adminId?: string
+  ) {
+    const verification = await this.prisma.driverVerification.findUnique({
+      where: { id: verificationId },
+    });
+
+    if (!verification) throw new NotFoundException('Verification not found');
+
+    const updated = await this.prisma.driverVerification.update({
+      where: { id: verificationId },
+      data: {
+        status,
+        rejectionReason: status === DriverVerificationStatus.REJECTED ? reason : null,
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    const eventType = status === DriverVerificationStatus.APPROVED ? VerificationEventType.APPROVED : VerificationEventType.REJECTED;
+
+    await this.logEvent(verificationId, {
+      type: eventType,
+      statusFrom: verification.status,
+      statusTo: status,
+      reason,
+      actorId: adminId,
+      actorType: 'ADMIN',
+    });
+
+    return updated;
+  }
+
+  /**
+   * Admin action to approve/reject an individual document.
+   */
+  async reviewDocument(
+    documentId: string,
+    status: DocumentStatus,
+    reason?: string,
+    adminId?: string
+  ) {
+    const doc = await this.prisma.driverDocument.findUnique({
+      where: { id: documentId },
+    });
+
+    if (!doc) throw new NotFoundException('Document not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const updatedDoc = await tx.driverDocument.update({
+        where: { id: documentId },
+        data: {
+          status,
+          rejectionReason: status === DocumentStatus.REJECTED ? reason : null,
+        },
+      });
+
+      // Log specific event
+      await this.logEvent(doc.verificationId, {
+        type: status === DocumentStatus.APPROVED ? VerificationEventType.APPROVED : VerificationEventType.REJECTED,
+        reason: `Document ${doc.type} reviewed: ${status}. ${reason || ''}`,
+        actorId: adminId,
+        actorType: 'ADMIN',
+        metadata: { docId: documentId, type: doc.type },
+      }, tx);
+
+      return updatedDoc;
+    });
+  }
+
+  /**
+   * Lists drivers awaiting review.
+   */
+  async listPendingVerifications() {
+    return this.prisma.driverVerification.findMany({
+      where: {
+        status: { in: [DriverVerificationStatus.PENDING, DriverVerificationStatus.UNDER_REVIEW] }
+      },
+      include: {
+        driver: {
+          include: { user: { select: { fullName: true, phoneNumber: true } } }
+        },
+        documents: { where: { isCurrent: true } }
+      },
+      orderBy: { updatedAt: 'asc' }
     });
   }
 }
