@@ -18,7 +18,8 @@ export type RideStatus =
  * Every possible (from → to[]) mapping is defined here.
  */
 export const ALLOWED_TRANSITIONS: Record<RideStatus, RideStatus[]> = {
-  REQUESTED: ['DISPATCHED', 'CANCELLED'],
+  REQUESTED: ['DISPATCHED', 'DRIVER_ACCEPTED', 'CANCELLED'],
+
   DISPATCHED: ['DRIVER_ACCEPTED', 'CANCELLED'],
   DRIVER_ACCEPTED: ['ARRIVED', 'CANCELLED'],
   ARRIVED: ['IN_PROGRESS', 'CANCELLED'],

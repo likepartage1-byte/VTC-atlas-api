@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { PrismaService } from '../../core/prisma/prisma.service';
 
 @Injectable()
-export class AuditLogService {
-  private readonly logger = new Logger(AuditLogService.name);
+export class AuditService {
+  private readonly logger = new Logger(AuditService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -18,7 +18,7 @@ export class AuditLogService {
     userAgent?: string;
   }) {
     try {
-      await this.prisma.auditLog.create({
+      return await this.prisma.auditLog.create({
         data: {
           actorId: params.actorId,
           action: params.action,
@@ -31,8 +31,7 @@ export class AuditLogService {
         },
       });
     } catch (error) {
-      this.logger.error(`Failed to save audit log: ${error.message}`);
-      // We don't throw here to avoid crashing the main business process if logging fails
+      this.logger.error(`Failed to create AuditLog: ${error.message}`, error.stack);
     }
   }
 }

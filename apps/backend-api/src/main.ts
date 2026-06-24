@@ -4,7 +4,7 @@ otelSDK.start();
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './core/exceptions/global-exception.filter';
+
 import { RedisIoAdapter } from './core/redis/redis-io.adapter';
 import { Logger } from 'nestjs-pino';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -19,7 +19,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api', { exclude: ['health'] });
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-  app.useGlobalFilters(new GlobalExceptionFilter());
+
   
   const config = new DocumentBuilder().setTitle('Atlas VTC API').setVersion('1.0').addBearerAuth().build();
   const document = SwaggerModule.createDocument(app, config);

@@ -19,7 +19,7 @@ export class TripFinalizerService {
   /**
    * Authoritative Finalization of a Ride.
    */
-  async finalizeTrip(rideId: string, driverId: string): Promise<any> {
+  async finalizeTrip(rideId: string, userId: string): Promise<any> {
     this.logger.log(`Initiating production closure for ride: ${rideId}`);
 
     // 1. Fetch & Lock (Simulated lock via updateMany)
@@ -28,7 +28,9 @@ export class TripFinalizerService {
     });
 
     if (!ride) throw new BadRequestException(`Ride ${rideId} not found`);
-    if (ride.driverId !== driverId) throw new BadRequestException('Unauthorized.');
+    // Resolve userId → Driver entity (JWT carries userId, ride stores driver.id)
+    const driverEntity = await this.prisma.driver.findFirst({ where: { userId } });
+    if (!driverEntity || ride.driverId !== driverEntity.id) throw new BadRequestException('Unauthorized.');
     if (ride.status === 'COMPLETED') return { result: 'ALREADY_COMPLETED' };
     if (ride.status !== 'IN_PROGRESS') throw new BadRequestException('Must be IN_PROGRESS');
 

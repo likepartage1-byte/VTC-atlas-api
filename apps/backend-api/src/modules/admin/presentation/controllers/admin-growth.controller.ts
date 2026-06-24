@@ -4,7 +4,7 @@ import { Roles } from '../../../identity/presentation/decorators/roles.decorator
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { AuditLogService } from '../../application/services/audit-log.service';
+import { AuditService } from '../../../audit/audit.service';
 
 @Controller('admin/growth')
 @UseGuards(AuthGuard, RolesGuard)
@@ -12,7 +12,7 @@ import { AuditLogService } from '../../application/services/audit-log.service';
 export class AdminGrowthController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLog: AuditLogService,
+    private readonly auditLog: AuditService,
   ) {}
 
   // --- Campaign Management ---

@@ -26,7 +26,7 @@ export class DashboardController {
       totalPassengersCount,
       revenueResult
     ] = await Promise.all([
-      this.prisma.ride.count(),
+      this.prisma.ride.count({ where: { status: 'COMPLETED' } }),
       this.prisma.ride.count({
         where: {
           status: {
@@ -41,7 +41,7 @@ export class DashboardController {
           totalAmount: true,
         },
         where: {
-          status: 'SETTLED',
+          status: { in: ['PROCESSED', 'SETTLED'] },
         },
       }),
     ]);

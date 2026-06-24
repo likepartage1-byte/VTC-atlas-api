@@ -14,10 +14,13 @@ import { AdminModule } from './modules/admin/admin.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { IntegrityModule } from './modules/integrity/integrity.module';
 import { FinancialModule } from './modules/financial/financial.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { MonitoringModule } from './core/monitoring/monitoring.module';
 import { HealthModule } from './core/health/health.module';
 import { LoggerModule } from 'nestjs-pino';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { I18nInterceptor } from './core/i18n/interceptors/i18n.interceptor';
+import { GlobalExceptionFilter } from './core/exceptions/global-exception.filter';
 
 @Module({
   imports: [
@@ -36,6 +39,8 @@ import { I18nInterceptor } from './core/i18n/interceptors/i18n.interceptor';
     IntegrityModule,
     CoreModule,
     HealthModule,
+    AuditModule,
+    MonitoringModule,
 
     // Layer 1: Trust & Identity
     IdentityModule,
@@ -65,6 +70,10 @@ import { I18nInterceptor } from './core/i18n/interceptors/i18n.interceptor';
     {
       provide: APP_INTERCEPTOR,
       useClass: I18nInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
     },
   ],
 })

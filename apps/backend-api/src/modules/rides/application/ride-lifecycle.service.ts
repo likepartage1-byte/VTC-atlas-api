@@ -22,20 +22,26 @@ export class RideLifecycleService {
    * Driver reports arrival at Pickup.
    * v3 Hardened: Atomic DB transaction + Outbox Event + Repository abstraction.
    */
-  async reportArrival(rideId: string, driverId: string): Promise<string> {
-    this.logger.log(`Arrival reported for ride ${rideId} by driver ${driverId}`);
+  async reportArrival(rideId: string, userId: string): Promise<string> {
+    this.logger.log(`Arrival reported for ride ${rideId} by user ${userId}`);
 
     // 1. Fetch Ride State (System of Record)
     const ride = await this.prisma.ride.findUniqueOrThrow({
       where: { id: rideId },
     });
 
-    if (ride.driverId !== driverId) {
+    // 2. Resolve userId → Driver entity (JWT carries userId, ride stores driver.id)
+    const driver = await this.prisma.driver.findFirst({ where: { userId } });
+    if (!driver) {
+      throw new BadRequestException('No driver profile found for this user.');
+    }
+
+    if (ride.driverId !== driver.id) {
       throw new BadRequestException('Unauthorized: You are not the assigned driver.');
     }
 
-    // 2. Fetch Driver Location (v3: Repository Abstraction)
-    const driverLoc = await this.driverLocationRepo.get(driverId);
+    // 3. Fetch Driver Location (v3: Repository Abstraction)
+    const driverLoc = await this.driverLocationRepo.get(driver.id);
     if (!driverLoc) {
       throw new BadRequestException('Driver location unavailable for verification.');
     }
@@ -52,7 +58,7 @@ export class RideLifecycleService {
     );
 
     if (!RideStateMachine.checkGeofence(dist)) {
-      this.logger.warn(`Geofence rejection: Driver ${driverId} is ${dist.toFixed(0)}m from pickup`);
+      this.logger.warn(`Geofence rejection: Driver ${driver.id} is ${dist.toFixed(0)}m from pickup`);
       throw new BadRequestException(`Too far from pickup point (${dist.toFixed(0)}m). Must be < 150m.`);
     }
 
@@ -86,10 +92,12 @@ export class RideLifecycleService {
   /**
    * Verified start of the ride via OTP Handshake.
    */
-  async startTrip(rideId: string, driverId: string, inputOtp: string): Promise<void> {
+  async startTrip(rideId: string, userId: string, inputOtp: string): Promise<void> {
     const ride = await this.prisma.ride.findUniqueOrThrow({ where: { id: rideId } });
 
-    if (ride.driverId !== driverId) {
+    // Resolve userId → Driver entity
+    const driver = await this.prisma.driver.findFirst({ where: { userId } });
+    if (!driver || ride.driverId !== driver.id) {
       throw new BadRequestException('Unauthorized: You are not the assigned driver.');
     }
 

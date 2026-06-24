@@ -1,11 +1,34 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { NotificationRouter } from './application/routers/notification.router';
-import { SmsAdapter, PushAdapter } from './infrastructure/adapters/channel-adapters';
-import { WhatsAppService } from './infrastructure/whatsapp/whatsapp.service';
-import { NotificationOrchestrator } from './application/orchestrators/notification.orchestrator';
+import { NotificationService } from './application/services/notification.service';
+import { FCMService } from './application/services/fcm.service';
+import { NotificationProcessor } from './application/queues/notification.processor';
+import { NotificationController } from './presentation/controllers/notification.controller';
 
+@Global()
 @Module({
-  providers: [NotificationRouter, SmsAdapter, PushAdapter, WhatsAppService, NotificationOrchestrator],
-  exports: [NotificationRouter, WhatsAppService, NotificationOrchestrator],
+  imports: [
+    BullModule.registerQueue({
+      name: 'notifications',
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    }),
+  ],
+  providers: [
+    NotificationService,
+    FCMService,
+    NotificationProcessor,
+    NotificationRouter,
+  ],
+  controllers: [NotificationController],
+  exports: [NotificationService],
 })
 export class NotificationsModule {}

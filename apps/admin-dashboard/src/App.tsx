@@ -13,7 +13,9 @@ import {
   ChevronRight,
   AlertTriangle,
   ArrowUpRight,
-  RefreshCw
+  RefreshCw,
+  History,
+  Activity
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -49,6 +51,8 @@ const Card = ({ children, title, subtitle }: { children: React.ReactNode, title?
 
 import { AuthPage } from './components/auth/AuthPage';
 import api from './lib/api';
+import { OperationsCenter } from './modules/operations/OperationsCenter';
+import { AuditCenter } from './modules/audit/AuditCenter';
 
 // --- Main App ---
 
@@ -133,12 +137,13 @@ export default function App() {
         
         <nav className="flex-1 flex flex-col gap-2">
           <div onClick={() => setActiveTab('dashboard')}><SidebarItem icon={LayoutDashboard} label="Dashboard" active={activeTab === 'dashboard'} /></div>
+          <div onClick={() => setActiveTab('operations')}><SidebarItem icon={Activity} label="Live Operations" active={activeTab === 'operations'} /></div>
+          <div onClick={() => setActiveTab('audit')}><SidebarItem icon={History} label="Audit Center" active={activeTab === 'audit'} /></div>
           <div onClick={() => setActiveTab('users')}><SidebarItem icon={Users} label="Users" active={activeTab === 'users'} /></div>
           <div onClick={() => setActiveTab('drivers')}><SidebarItem icon={Car} label="Drivers" active={activeTab === 'drivers'} /></div>
           <div onClick={() => setActiveTab('financial')}><SidebarItem icon={Wallet} label="Financials" active={activeTab === 'financial'} /></div>
           <div onClick={() => setActiveTab('integrity')}><SidebarItem icon={ShieldAlert} label="Integrity" active={activeTab === 'integrity'} /></div>
-          <SidebarItem icon={TrendingUp} label="Campaigns" />
-          <SidebarItem icon={Settings} label="System Settings" />
+          <SidebarItem icon={Settings} label="Settings" />
         </nav>
 
         <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
@@ -157,14 +162,17 @@ export default function App() {
         <header className="flex justify-between items-center mb-10">
           <div>
             <h2 className="text-3xl font-black">
-              {activeTab === 'dashboard' ? 'Operations Dashboard' : activeTab === 'financial' ? 'Financial Control' : 'Integrity Monitor'}
+              {activeTab === 'dashboard' ? 'Operations Dashboard' : 
+               activeTab === 'operations' ? 'Live Operations' :
+               activeTab === 'audit' ? 'Forensic Audit Center' :
+               activeTab === 'financial' ? 'Financial Control' : 'Integrity Monitor'}
             </h2>
             <p className="text-text-muted mt-1">
-              {activeTab === 'dashboard'
-                ? 'Real-time platform metrics and operational insights.'
-                : activeTab === 'financial' 
-                ? 'Manage global commission rates and financial policies.' 
-                : 'Real-time fraud detection and security events feed.'}
+              {activeTab === 'dashboard' ? 'Real-time platform metrics and operational insights.' : 
+               activeTab === 'operations' ? 'Real-time tracking of drivers and active trip statuses.' :
+               activeTab === 'audit' ? 'Centralized ledger of system actions and administrative changes.' :
+               activeTab === 'financial' ? 'Manage global commission rates and financial policies.' : 
+               'Real-time fraud detection and security events feed.'}
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -456,6 +464,9 @@ export default function App() {
             </Card>
           </div>
         )}
+
+        {activeTab === 'operations' && <OperationsCenter />}
+        {activeTab === 'audit' && <AuditCenter />}
       </main>
     </div>
   );

@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { AuditLogService } from '../../../admin/application/services/audit-log.service';
+import { AuditService } from '../../../audit/audit.service';
 import { RewardEngine } from '../../domain/services/reward-engine.service';
 import { UserRole } from '@prisma/client';
 
@@ -10,7 +10,7 @@ export class GrowthService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLog: AuditLogService,
+    private readonly auditLog: AuditService,
     private readonly rewardEngine: RewardEngine,
   ) {}
 

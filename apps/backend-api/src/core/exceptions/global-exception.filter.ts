@@ -8,9 +8,13 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+import { ObservabilityService } from '../monitoring/observability.service';
+
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
+
+  constructor(private readonly observability: ObservabilityService) {}
 
   catch(exception: any, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -25,6 +29,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const message =
       exception instanceof Error ? exception.message : 'Internal server error';
 
+    // Observability: Capture exception in Sentry
+    this.observability.captureException(exception, {
+      path: request.url,
+      method: request.method,
+      status,
+    });
+    
     this.logger.error(`[${request.method}] ${request.url} - Status: ${status} - Error: ${message}`);
 
     response.status(status).json({

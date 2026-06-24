@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion as motionBase } from 'framer-motion';
+const motion = motionBase as any;
 import { Eye, EyeOff, Lock, UserCheck } from 'lucide-react';
 import { Button, Input } from './ui';
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { AuditLogService } from './audit-log.service';
+import { AuditService } from '../../../audit/audit.service';
 
 @Injectable()
 export class SystemSettingsService {
@@ -8,7 +8,7 @@ export class SystemSettingsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLog: AuditLogService,
+    private readonly auditService: AuditService,
   ) {}
 
   async getSetting<T>(key: string): Promise<T | null> {
@@ -32,7 +32,7 @@ export class SystemSettingsService {
       create: { key, value },
     });
 
-    await this.auditLog.log({
+    await this.auditService.log({
       actorId,
       action: 'UPDATE_SETTING',
       entityType: 'SystemSetting',

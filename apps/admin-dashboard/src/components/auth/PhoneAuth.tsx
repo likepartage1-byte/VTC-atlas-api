@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as motionBase, AnimatePresence } from 'framer-motion';
+const motion = motionBase as any;
 import { CheckCircle2, ShieldEllipsis, RefreshCw, MessageCircle } from 'lucide-react';
 import { Button, Input, cn } from './ui';
 import api from '../../lib/api';

@@ -2,6 +2,7 @@ import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { BullModule } from '@nestjs/bullmq';
 import { PrismaService } from './prisma/prisma.service';
 import { RedisService } from './redis/redis.service';
 import { TraceService } from './common/services/trace.service';
@@ -22,6 +23,11 @@ import { DomainEventBus } from './events/domain-event-bus';
       envFilePath: process.env.NODE_ENV === 'production' 
         ? '/var/www/VTC-atlas-api/current/.env' 
         : '.env',
+    }),
+    BullModule.forRoot({
+      connection: {
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
+      },
     }),
     ScheduleModule.forRoot(),
   ],

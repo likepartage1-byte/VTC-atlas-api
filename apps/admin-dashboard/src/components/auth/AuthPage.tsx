@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as motionBase, AnimatePresence } from 'framer-motion';
+const motion = motionBase as any;
 import { 
   ShieldCheck, 
   MapPin, 
