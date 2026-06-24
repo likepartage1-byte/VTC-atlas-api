@@ -49,13 +49,82 @@ model Driver {
   vehicleInfo     Json?        // Details: make, model, year, plate
   rating          Float        @default(5.0)
   
-  verificationStatus DriverVerificationStatus @default(PENDING)
-  documents       DriverDocument[]
+  verification    DriverVerification?
   
   rides           Ride[]
   ledgerEntries   RideLedger[]
   account         DriverAccount?
   locationHistory DriverLocationHistory[]
+}
+
+model DriverVerification {
+  id              String       @id @default(uuid())
+  driverId        String       @unique
+  driver          Driver       @relation(fields: [driverId], references: [id])
+  
+  status          DriverVerificationStatus @default(PENDING)
+  rejectionReason String?
+  
+  metadata        Json?        // Risk scores, flags
+  flags           VerificationFlag[]
+  
+  reviewedBy      String?      // Admin ID
+  reviewedAt      DateTime?
+  
+  documents       DriverDocument[]
+  events          VerificationEvent[]
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model DriverDocument {
+  id              String       @id @default(uuid())
+  verificationId  String
+  verification    DriverVerification @relation(fields: [verificationId], references: [id])
+  
+  type            DocumentType
+  status          DocumentStatus @default(PENDING)
+  
+  // Storage Abstraction
+  storageProvider String       @default("LOCAL") // LOCAL, S3, R2
+  storageKey      String       // The path or key in the bucket
+  url             String?      // Optional cached public URL
+  
+  mimeType        String?
+  fileSize        Int?
+  checksum        String?
+  
+  version         Int          @default(1)
+  isCurrent       Boolean      @default(true)
+  
+  expiresAt       DateTime?
+  rejectionReason String?
+  
+  metadata        Json?        // Serial number, issue date
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([verificationId])
+}
+
+model VerificationEvent {
+  id              String       @id @default(uuid())
+  verificationId  String
+  verification    DriverVerification @relation(fields: [verificationId], references: [id])
+  
+  eventType       VerificationEventType
+  statusFrom      DriverVerificationStatus?
+  statusTo        DriverVerificationStatus?
+  
+  reason          String?
+  actorId         String?      // System or Admin ID
+  actorType       String       @default("SYSTEM") // SYSTEM, ADMIN, DRIVER
+  
+  metadata        Json?
+  timestamp       DateTime     @default(now())
+
+  @@index([verificationId])
 }
 
 enum DriverVerificationStatus {
@@ -66,19 +135,11 @@ enum DriverVerificationStatus {
   SUSPENDED
 }
 
-model DriverDocument {
-  id              String       @id @default(uuid())
-  driverId        String
-  driver          Driver       @relation(fields: [driverId], references: [id])
-  type            DocumentType
-  url             String       // S3 or stored path
-  status          DocStatus    @default(PENDING)
-  rejectionReason String?
-  metadata        Json?        // Expire date, document number, etc.
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  @@index([driverId])
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
 }
 
 enum DocumentType {
@@ -89,10 +150,23 @@ enum DocumentType {
   PROFILE_PHOTO
 }
 
-enum DocStatus {
-  PENDING
+enum VerificationEventType {
+  SUBMITTED
+  UNDER_REVIEW
   APPROVED
   REJECTED
+  DOCUMENT_REPLACED
+  DOCUMENT_EXPIRED
+  SUSPENDED
+  UNSUSPENDED
+}
+
+enum VerificationFlag {
+  BLURRY_DOCUMENT
+  EXPIRED_DOCUMENT
+  DUPLICATE_IDENTITY
+  PHOTO_MISMATCH
+  FRAUD_SUSPECTED
 }
 
 enum DriverStatus {
