@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DriverVerificationService } from '../../application/services/driver-verification.service';
+import { DocumentType } from '@prisma/client';
 
 @Controller('v1/driver/verification')
 export class DriverVerificationController {
@@ -7,21 +9,32 @@ export class DriverVerificationController {
 
   @Get('summary')
   async getSummary(@Req() req: any) {
-    // Note: In a real app, driverId would come from the JWT session.
-    // For now we assume req.user.driverId or similar.
-    const driverId = req.user?.driverId; 
+    const driverId = req.user?.driverId || req.headers['x-driver-id']; // Fallback for dev
+    if (!driverId) throw new BadRequestException('Driver ID missing in session/headers');
     return this.verificationService.getVerificationSummary(driverId);
   }
 
   @Post('documents/:type')
+  @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @Param('type') type: string,
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: any
   ) {
-    // Placeholder for Multipart upload logic
-    return {
-      message: `Upload logic for ${type} is being implemented.`,
-      status: 'PLANNING'
-    };
+    const driverId = req.user?.driverId || req.headers['x-driver-id'];
+    if (!driverId) throw new BadRequestException('Driver ID missing in session/headers');
+    
+    if (!file) throw new BadRequestException('No file uploaded');
+
+    // Validate type exists in enum
+    if (!Object.values(DocumentType).includes(type.toUpperCase() as any)) {
+      throw new BadRequestException(`Invalid document type: ${type}`);
+    }
+
+    return this.verificationService.uploadDocument(
+      driverId, 
+      type.toUpperCase() as DocumentType, 
+      file
+    );
   }
 }

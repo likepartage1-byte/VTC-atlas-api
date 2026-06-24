@@ -1,12 +1,17 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
-import { DriverVerificationStatus, VerificationEventType, DocumentStatus } from '@prisma/client';
+import { DriverVerificationStatus, VerificationEventType, DocumentStatus, DocumentType } from '@prisma/client';
+import { LocalStorageProvider } from '../../infrastructure/storage/storage.provider';
+import * as path from 'path';
 
 @Injectable()
 export class DriverVerificationService {
   private readonly logger = new Logger(DriverVerificationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: LocalStorageProvider,
+  ) {}
 
   /**
    * Initializes a verification record for a new driver.
@@ -101,5 +106,71 @@ export class DriverVerificationService {
       documents: verification.documents,
       rejectionReason: verification.rejectionReason,
     };
+  }
+
+  /**
+   * Handles document upload, versioning, and status update.
+   */
+  async uploadDocument(driverId: string, type: DocumentType, file: Express.Multer.File) {
+    const verification = await this.prisma.driverVerification.findUnique({
+      where: { driverId },
+      include: { documents: { where: { type, isCurrent: true } } }
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verification record not initialized');
+    }
+
+    const currentVersion = verification.documents[0];
+    const newVersionNumber = currentVersion ? currentVersion.version + 1 : 1;
+
+    // Generate unique storage key: drivers/{driverId}/{type}_v{version}.{ext}
+    const ext = path.extname(file.originalname) || '.jpg';
+    const storageKey = `drivers/${driverId}/${type.toLowerCase()}_v${newVersionNumber}${ext}`;
+
+    const { url, storageKey: finalKey } = await this.storage.uploadFile(file, storageKey);
+
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Mark previous version as not current
+      if (currentVersion) {
+        await tx.driverDocument.update({
+          where: { id: currentVersion.id },
+          data: { isCurrent: false },
+        });
+      }
+
+      // 2. Create new document record
+      const doc = await tx.driverDocument.create({
+        data: {
+          verificationId: verification.id,
+          type,
+          status: DocumentStatus.PENDING,
+          storageProvider: 'LOCAL',
+          storageKey: finalKey,
+          url,
+          mimeType: file.mimetype,
+          fileSize: file.size,
+          version: newVersionNumber,
+          isCurrent: true,
+        },
+      });
+
+      // 3. Update verification status if it was REJECTED
+      if (verification.status === DriverVerificationStatus.REJECTED) {
+        await tx.driverVerification.update({
+          where: { id: verification.id },
+          data: { status: DriverVerificationStatus.PENDING },
+        });
+      }
+
+      // 4. Log event
+      await this.logEvent(verification.id, {
+        type: VerificationEventType.DOCUMENT_REPLACED,
+        reason: `Uploaded new version of ${type}`,
+        metadata: { docId: doc.id, version: newVersionNumber },
+      }, tx);
+
+      return doc;
+    });
   }
 }
