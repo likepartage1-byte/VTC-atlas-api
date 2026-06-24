@@ -1,11 +1,15 @@
 import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { DriverVerificationService } from './driver-verification.service';
 
 @Injectable()
 export class DriverOnboardingService {
   private readonly logger = new Logger(DriverOnboardingService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly verificationService: DriverVerificationService,
+  ) {}
 
   /**
    * يحول مستخدم عادي إلى سائق بشكل متسق برمجياً
@@ -26,7 +30,7 @@ export class DriverOnboardingService {
       });
 
       if (!existingDriver) {
-        await tx.driver.create({
+        const driver = await tx.driver.create({
           data: {
             userId,
             status: 'OFFLINE',
@@ -34,9 +38,19 @@ export class DriverOnboardingService {
             vehicleInfo: {}, // تهيئة الحقل ليكون جاهزاً للـ JSON
           },
         });
-      }
 
-      // 3. (مستقبلاً) إنشاء المحفظة المالية DriverAccount هنا
+        // 3. تهيئة سجل التحقق (KYC)
+        await this.verificationService.initializeVerification(driver.id, tx);
+
+        // 4. تهيئة المحفظة المالية DriverAccount
+        await tx.driverAccount.create({
+          data: {
+            driverId: driver.id,
+            balance: 0,
+            totalEarned: 0,
+          },
+        });
+      }
       this.logger.log(`User [${userId}] is now a verified DRIVER.`);
     });
   }
