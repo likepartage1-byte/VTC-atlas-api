@@ -5,7 +5,6 @@ import { HealthService } from './health.service';
 export class HealthController {
   constructor(private healthService: HealthService) {}
 
-  @Version('1')
   @Get()
   async getHealth() {
     return this.healthService.check();
