@@ -49,10 +49,50 @@ model Driver {
   vehicleInfo     Json?        // Details: make, model, year, plate
   rating          Float        @default(5.0)
   
+  verificationStatus DriverVerificationStatus @default(PENDING)
+  documents       DriverDocument[]
+  
   rides           Ride[]
   ledgerEntries   RideLedger[]
   account         DriverAccount?
   locationHistory DriverLocationHistory[]
+}
+
+enum DriverVerificationStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model DriverDocument {
+  id              String       @id @default(uuid())
+  driverId        String
+  driver          Driver       @relation(fields: [driverId], references: [id])
+  type            DocumentType
+  url             String       // S3 or stored path
+  status          DocStatus    @default(PENDING)
+  rejectionReason String?
+  metadata        Json?        // Expire date, document number, etc.
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([driverId])
+}
+
+enum DocumentType {
+  IDENTITY_CARD
+  DRIVING_LICENSE
+  CARTE_GRISE
+  INSURANCE_POLICY
+  PROFILE_PHOTO
+}
+
+enum DocStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum DriverStatus {
