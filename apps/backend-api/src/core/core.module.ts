@@ -1,5 +1,5 @@
 import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { DiscoveryModule } from '@nestjs/core';
+import { DiscoveryModule, Reflector } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -39,7 +39,8 @@ import { DomainEventBus } from './events/domain-event-bus';
     OutboxService,
     OutboxProcessor,
     DomainEventBus,
-    CorrelationMiddleware
+    CorrelationMiddleware,
+    Reflector,
   ],
   exports: [
     PrismaService, 
@@ -48,7 +49,8 @@ import { DomainEventBus } from './events/domain-event-bus';
     DiagnosticService,
     OutboxService,
     DomainEventBus,
-    CorrelationMiddleware
+    CorrelationMiddleware,
+    Reflector,
   ],
 })
 export class CoreModule implements NestModule {
