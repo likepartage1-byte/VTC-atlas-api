@@ -1,4 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+const path = require('path');
+const clientPath = path.join(process.cwd(), 'apps/backend-api/node_modules/@prisma/client');
+const { PrismaClient } = require(clientPath);
 const prisma = new PrismaClient();
 
 async function main() {
