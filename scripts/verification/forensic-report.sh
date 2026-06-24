@@ -5,6 +5,13 @@
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m';
 section() { echo -e "\n${BLUE}━━━ $1 ━━━${NC}"; }
 
+# --- Load Environment Variables ---
+if [ -f ".env" ]; then
+  export $(grep -v '^#' .env | xargs)
+elif [ -f "apps/backend-api/.env" ]; then
+  export $(grep -v '^#' apps/backend-api/.env | xargs)
+fi
+
 section "1. PRISMA MIGRATION STATUS"
 cd apps/backend-api && npx prisma migrate status --schema=prisma/schema.prisma
 
