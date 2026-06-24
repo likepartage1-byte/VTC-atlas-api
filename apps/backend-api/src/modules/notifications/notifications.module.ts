@@ -4,6 +4,7 @@ import { NotificationRouter } from './application/routers/notification.router';
 import { NotificationService } from './application/services/notification.service';
 import { FCMService } from './application/services/fcm.service';
 import { NotificationProcessor } from './application/queues/notification.processor';
+import { NotificationOrchestrator } from './application/orchestrators/notification.orchestrator';
 import { NotificationController } from './presentation/controllers/notification.controller';
 
 @Global()
@@ -27,8 +28,9 @@ import { NotificationController } from './presentation/controllers/notification.
     FCMService,
     NotificationProcessor,
     NotificationRouter,
+    NotificationOrchestrator,
   ],
   controllers: [NotificationController],
-  exports: [NotificationService],
+  exports: [NotificationService, NotificationOrchestrator],
 })
 export class NotificationsModule {}
