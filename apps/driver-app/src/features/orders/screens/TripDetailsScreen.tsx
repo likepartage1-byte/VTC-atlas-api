@@ -1,7 +1,17 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Platform, Image, Dimensions } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Text,
+  SafeAreaView,
+  TouchableOpacity,
+  Platform,
+  Image,
+  Dimensions,
+  ActivityIndicator
+} from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import { useOrdersStore } from '../../../store/useOrdersStore';
+import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
 import { BidBottomSheet } from '../components/BidBottomSheet';
 import { useRoute, useNavigation } from '@react-navigation/native';
 
@@ -15,7 +25,7 @@ const darkMapStyle = [
   { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] }
 ];
 
-// Helper to decode Google Polyline string to Coordinates array
+// 🛠️ Utility: Decode Google Directions Polyline to Coordinate Array
 const decodePolyline = (encoded: string) => {
   if (!encoded) return [];
   let points = [];
@@ -51,10 +61,13 @@ export const TripDetailsScreen = () => {
   const { orderId } = route.params;
   const { orders } = useOrdersStore();
   
+  // Memoize order to prevent unnecessary reframes
   const order = useMemo(() => orders.find(o => o.id === orderId), [orders, orderId]);
+  
   const [timeLeft, setTimeLeft] = useState(30);
   const [mapReady, setMapReady] = useState(false);
 
+  // ⏱️ Start countdown and reset on orderId change
   useEffect(() => {
     setTimeLeft(30);
     const timer = setInterval(() => {
@@ -63,18 +76,20 @@ export const TripDetailsScreen = () => {
     return () => clearInterval(timer);
   }, [orderId]);
 
+  // 🚪 Auto-exit on timeout
   useEffect(() => {
     if (timeLeft === 0) {
       navigation.goBack();
     }
   }, [timeLeft, navigation]);
 
+  // 🛡️ Safe coordinate parsing to prevent NaN crashes
   const pickupLat = parseFloat(String(order?.pickupLat || '33.5731'));
   const pickupLng = parseFloat(String(order?.pickupLng || '-7.5898'));
   const dropoffLat = parseFloat(String(order?.dropoffLat || '34.0209'));
   const dropoffLng = parseFloat(String(order?.dropoffLng || '-6.8416'));
 
-  // Decode the real route if provided by Google Directions
+  // 🛣️ Real road route coordinates
   const routeCoordinates = useMemo(() => {
     if (order?.polyline) {
       return decodePolyline(order.polyline);
@@ -85,10 +100,11 @@ export const TripDetailsScreen = () => {
     ];
   }, [order, pickupLat, pickupLng, dropoffLat, dropoffLng]);
 
+  // 🏙️ Auto-zoom to fit the entire route
   useEffect(() => {
     if (mapReady && order && mapRef.current) {
       mapRef.current.fitToCoordinates(routeCoordinates, {
-        edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
+        edgePadding: { top: 150, right: 60, bottom: 60, left: 60 },
         animated: true,
       });
     }
@@ -96,19 +112,20 @@ export const TripDetailsScreen = () => {
 
   if (!order) {
     return (
-      <View style={styles.errorView}>
+      <View style={styles.centered}>
+        <ActivityIndicator color="#32FF7E" />
         <Text style={styles.errorText}>Détails non disponibles</Text>
       </View>
     );
   }
 
   const handleBidSubmit = (amount: number) => {
-    console.log(`[Socket] Sending real bid: ${amount} MAD for ride ${orderId}`);
+    console.log(`[Socket] Sending bid: ${amount} MAD for ride ${orderId}`);
     navigation.goBack();
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.mapZone}>
         <MapView
           ref={mapRef}
@@ -123,18 +140,21 @@ export const TripDetailsScreen = () => {
             longitudeDelta: 0.05,
           }}
         >
+          {/* Pickup Marker */}
           <Marker coordinate={{ latitude: pickupLat, longitude: pickupLng }}>
             <View style={[styles.customMarker, { borderColor: '#32FF7E' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#32FF7E' }]} />
             </View>
           </Marker>
 
+          {/* Dropoff Marker */}
           <Marker coordinate={{ latitude: dropoffLat, longitude: dropoffLng }}>
             <View style={[styles.customMarker, { borderColor: '#FF4D4D' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#FF4D4D' }]} />
             </View>
           </Marker>
 
+          {/* Phosphorus Path */}
           <Polyline
             coordinates={routeCoordinates}
             strokeColor="#32FF7E"
@@ -143,7 +163,7 @@ export const TripDetailsScreen = () => {
           />
         </MapView>
 
-        {/* Persona Card */}
+        {/* 👤 Passenger Card (Floating Top) */}
         <View style={styles.personaCard}>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${(timeLeft / 30) * 100}%` }]} />
@@ -159,11 +179,11 @@ export const TripDetailsScreen = () => {
                   {order.passengerName ? order.passengerName.split(' ')[0] : 'Client'}
                 </Text>
                 <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>⭐ {order.passengerRating}</Text>
+                  <Text style={styles.ratingText}>⭐ {String(order.passengerRating)}</Text>
                 </View>
               </View>
               <Text style={styles.verificationText}>
-                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {order.passengerTripsCount} trajets
+                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {String(order.passengerTripsCount)} trajets
               </Text>
             </View>
             <View style={styles.timerCircle}>
@@ -172,15 +192,20 @@ export const TripDetailsScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity 
+          style={styles.backBtn} 
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
+        >
            <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.bottomSection}>
+        {/* 💰 Fare Hero Section */}
         <View style={styles.fareHero}>
             <View>
-              <Text style={styles.fareAmount}>{order.offeredPrice}</Text>
+              <Text style={styles.fareAmount}>{String(order.offeredPrice)}</Text>
               <Text style={styles.fareCurrency}>MAD</Text>
             </View>
             <View style={styles.fareLabels}>
@@ -191,6 +216,7 @@ export const TripDetailsScreen = () => {
             </View>
         </View>
 
+        {/* 🚗 Info Chips */}
         <View style={styles.chipsRow}>
             {order.pickupEta && (
               <View style={styles.chip}>
@@ -204,11 +230,12 @@ export const TripDetailsScreen = () => {
             )}
             {!order.isNewPassenger && (
               <View style={[styles.chip, { backgroundColor: '#1A3324' }]}>
-                <Text style={[styles.chipText, { color: '#32FF7E' }]}>Client Fidèle</Text>
+                <Text style={[styles.chipText, { color: '#32FF7E' }]}>Fidèle</Text>
               </View>
             )}
         </View>
 
+        {/* 📍 Addresses */}
         <View style={styles.addressBox}>
             <View style={styles.addrLine}>
               <View style={[styles.dot, { backgroundColor: '#32FF7E' }]} />
@@ -220,6 +247,7 @@ export const TripDetailsScreen = () => {
             </View>
         </View>
 
+        {/* ⚡ Bidding Interaction */}
         <BidBottomSheet 
           basePrice={order.offeredPrice}
           onAccept={() => handleBidSubmit(order.offeredPrice)}
@@ -227,7 +255,7 @@ export const TripDetailsScreen = () => {
           onClose={() => navigation.goBack()}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -237,7 +265,7 @@ const styles = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
   personaCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
+    top: Platform.OS === 'ios' ? 20 : 20,
     left: 15,
     right: 15,
     backgroundColor: 'rgba(20, 20, 20, 0.95)',
@@ -303,6 +331,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  errorView: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  errorText: { color: '#444' }
+  centered: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
+  errorText: { color: '#444', marginTop: 10 }
 });
