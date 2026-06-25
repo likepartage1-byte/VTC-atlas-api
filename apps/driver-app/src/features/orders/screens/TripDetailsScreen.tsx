@@ -82,6 +82,9 @@ export const TripDetailsScreen = () => {
 
         {/* 1. Passenger Persona Card */}
         <View style={styles.personaCard}>
+          <View style={styles.progressBarBg}>
+            <View style={[styles.progressBarFill, { width: `${(timeLeft / 30) * 100}%` }]} />
+          </View>
           <View style={styles.personaRow}>
             <Image 
               source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
@@ -176,6 +179,19 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowRadius: 10,
     shadowOpacity: 0.5,
+    overflow: 'hidden',
+  },
+  progressBarBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+    backgroundColor: '#333',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#32FF7E',
   },
   personaRow: { flexDirection: 'row', alignItems: 'center' },
   avatar: { width: 45, height: 45, borderRadius: 22.5, marginRight: 12, backgroundColor: '#333' },
