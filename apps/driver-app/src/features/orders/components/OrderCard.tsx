@@ -7,7 +7,7 @@ interface Props {
   onPress: () => void;
 }
 
-export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
+const OrderCard: React.FC<Props> = ({ order, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.header}>
@@ -39,7 +39,6 @@ export const OrderCard: React.FC<Props> = ({ order, onPress }) => {
 
       <View style={styles.priceRow}>
         <Text style={styles.priceValue}>{Math.ceil(order.offeredPrice)} MAD</Text>
-        {/* Logic for 'Prix juste' - can be based on a field or a threshold */}
         <View style={styles.justPriceBadge}>
           <Text style={styles.justPriceText}>✓ PRIX JUSTE</Text>
         </View>
@@ -217,3 +216,5 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
 });
+
+export default React.memo(OrderCard);

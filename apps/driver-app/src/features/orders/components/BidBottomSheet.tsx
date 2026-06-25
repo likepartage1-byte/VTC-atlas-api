@@ -40,8 +40,9 @@ export const BidBottomSheet: React.FC<Props> = ({
   };
 
   const handleManualSubmit = () => {
-    const amount = parseInt(customBid);
-    if (!amount) return;
+    const amount = Number(customBid);
+    
+    if (Number.isNaN(amount) || amount <= 0) return;
 
     // قيد الـ 70% كحد أدنى
     if (amount < basePrice * 0.7) {
