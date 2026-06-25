@@ -7,7 +7,8 @@ interface Props {
   onPress: () => void;
 }
 
-const OrderCard: React.FC<Props> = ({ order, onPress }) => {
+// استخدام Named Export مع React.memo لضمان توافق الـ Build ومنع الـ Re-renders
+export const OrderCard = React.memo(({ order, onPress }: Props) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.header}>
@@ -67,7 +68,7 @@ const OrderCard: React.FC<Props> = ({ order, onPress }) => {
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -216,5 +217,3 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
 });
-
-export default React.memo(OrderCard);
