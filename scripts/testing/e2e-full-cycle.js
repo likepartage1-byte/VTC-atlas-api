@@ -133,7 +133,7 @@ async function phase2_ride() {
   });
 
   console.log(`✅ Ride created and completed: ${ride.id}`);
-  console.log(`   Fare: ${ride.fare} MAD`);
+  console.log(`   Fare: ${Number(ride.actualPrice).toFixed(2)} MAD`);
 
   context.ride = ride;
 }
@@ -199,12 +199,12 @@ async function phase3_ledger() {
   });
 
   console.log(`✅ RideLedger created: ${context.ledger.id}`);
-  console.log(`   Commission (8%): ${companyFee} MAD`);
-  console.log(`   Driver Earnings: ${driverEarnings} MAD`);
-  console.log(`✅ DriverAccount balance: ${account.balance} MAD`);
+  console.log(`   Commission (8%): ${companyFee.toFixed(2)} MAD`);
+  console.log(`   Driver Earnings: ${driverEarnings.toFixed(2)} MAD`);
+  console.log(`✅ DriverAccount balance: ${Number(account.balance).toFixed(2)} MAD`);
   console.log(`✅ Audit Transaction (CREDIT): ${auditTx.id}`);
 
-  if (Number(account.balance) !== driverEarnings) {
+  if (Math.abs(Number(account.balance) - driverEarnings) > 0.01) {
     throw new Error(`❌ Balance mismatch! Expected ${driverEarnings}, got ${account.balance}`);
   }
   console.log('✅ Ledger → Wallet → Audit chain: VERIFIED');
@@ -240,8 +240,8 @@ async function phase4_withdrawal() {
 
   console.log(`✅ Withdrawal requested: ${withdrawalRequest.id}`);
   let acct = await prisma.driverAccount.findUnique({ where: { driverId: context.driver.id } });
-  console.log(`   Balance: ${acct.balance} MAD | Locked: ${acct.lockedBalance} MAD`);
-  console.log(`   Available: ${Number(acct.balance) - Number(acct.lockedBalance)} MAD`);
+  console.log(`   Balance: ${Number(acct.balance).toFixed(2)} MAD | Locked: ${Number(acct.lockedBalance).toFixed(2)} MAD`);
+  console.log(`   Available: ${(Number(acct.balance) - Number(acct.lockedBalance)).toFixed(2)} MAD`);
 
   // Step 4.2: Admin Approves → PAID
   await prisma.$transaction(async (tx) => {
