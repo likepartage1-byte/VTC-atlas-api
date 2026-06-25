@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { RedisService } from '../../../../core/redis/redis.service';
+import { RideStatus } from '@prisma/client';
 
 @Injectable()
 export class RideAssignmentService {
@@ -18,23 +19,25 @@ export class RideAssignmentService {
     const lockKey = `lock:ride_assignment:${rideId}`;
     const client = this.redis.getClient();
 
-    // 1. محاولة الحصول على قفل Redis (NX = Only if not exists, EX = Expire in 5 seconds)
-    const acquired = await client.set(lockKey, driverId, 'NX', 'EX', 5);
+    // تصحيح نداء ioredis ليتوافق مع الـ Types (EX تأتي قبل NX في هذا التوقيع)
+    // نستخدم 'EX' (ثواني) و 'NX' (فقط إذا لم يكن موجوداً)
+    const acquired = await client.set(lockKey, driverId, 'EX', 5, 'NX');
 
-    if (!acquired) {
+    if (acquired !== 'OK') {
       this.logger.warn(`Race condition detected: Driver ${driverId} failed to lock ride ${rideId}`);
       throw new ConflictException('Désolé, cette course est en cours de traitement.');
     }
 
     try {
-      // 2. تحديث ذرّي في قاعدة البيانات (Atomic Transaction)
+      // تحديث ذرّي في قاعدة البيانات
       return await this.prisma.$transaction(async (tx) => {
         const ride = await tx.ride.findUnique({
           where: { id: rideId },
           select: { status: true }
         });
 
-        if (!ride || ride.status !== 'AVAILABLE') {
+        // التحقق من أن الحالة هي REQUESTED (أي متاحة للمزايدة)
+        if (!ride || ride.status !== RideStatus.REQUESTED) {
           throw new ConflictException('La course n’est plus disponible.');
         }
 
@@ -42,7 +45,7 @@ export class RideAssignmentService {
           where: { id: rideId },
           data: {
             driverId,
-            status: 'ASSIGNED',
+            status: RideStatus.DRIVER_ACCEPTED,
             assignedAt: new Date()
           }
         });
@@ -51,7 +54,6 @@ export class RideAssignmentService {
       this.logger.error(`Assignment failed for Driver ${driverId} on Ride ${rideId}: ${error.message}`);
       throw error;
     } finally {
-      // 3. تحرير القفل فور الانتهاء
       await client.del(lockKey);
     }
   }
