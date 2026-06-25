@@ -26,7 +26,6 @@ async function fullFlowSim() {
         id: passengerId,
         fullName: 'Omar Atlas',
         phoneNumber: `+212${Math.floor(Math.random() * 100000000)}`,
-        status: 'ACTIVE',
         role: 'PASSENGER'
       }
     });
