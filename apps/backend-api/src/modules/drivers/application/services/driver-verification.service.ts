@@ -3,6 +3,7 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { DriverVerificationStatus, VerificationEventType, DocumentStatus, DocumentType } from '@prisma/client';
 import { AuditService } from '../../../audit/audit.service';
 import { LocalStorageProvider } from '../../infrastructure/storage/storage.provider';
+import { DriverEligibilityService } from './driver-eligibility.service';
 import * as path from 'path';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class DriverVerificationService {
     private readonly prisma: PrismaService,
     private readonly storage: LocalStorageProvider,
     private readonly audit: AuditService,
+    private readonly eligibility: DriverEligibilityService,
   ) {}
 
   /**
@@ -248,6 +250,9 @@ export class DriverVerificationService {
       oldValue: { status: verification.status },
       newValue: { status, reason },
     });
+
+    // CRITICAL: Invalidate eligibility cache so the driver can go online/receive rides immediately
+    await this.eligibility.invalidateCache(verification.driverId);
 
     return updated;
   }

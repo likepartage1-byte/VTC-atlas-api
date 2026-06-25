@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../../core/redis/redis.service';
 import { PresenceService } from '../../realtime/infrastructure/services/presence.service';
+import { DriverEligibilityService } from '../../drivers/application/services/driver-eligibility.service';
 
 export interface DriverCandidate {
   driverId: string;
@@ -15,7 +16,8 @@ export class LocationDiscoveryService {
 
   constructor(
     private readonly redis: RedisService,
-    private readonly presence: PresenceService
+    private readonly presence: PresenceService,
+    private readonly eligibility: DriverEligibilityService
   ) {}
 
   /**
@@ -48,14 +50,17 @@ export class LocationDiscoveryService {
     for (const [driverId, distance] of rawResults as any[]) {
       // Check Real-time Presence (Is he still connected?)
       const socketId = await this.presence.getSocketId(driverId);
-      
-      if (socketId) {
-        candidates.push({
-          driverId,
-          distance: parseFloat(distance),
-          lastSeen: new Date().toISOString(), // In production, get actual timestamp from presence
-        });
-      }
+      if (!socketId) continue;
+
+      // Check Eligibility (KYC, Account Balance, etc.)
+      const isEligible = await this.eligibility.canReceiveRides(driverId);
+      if (!isEligible) continue;
+
+      candidates.push({
+        driverId,
+        distance: parseFloat(distance),
+        lastSeen: new Date().toISOString(),
+      });
       
       // Limit results for performance
       if (candidates.length >= 10) break;

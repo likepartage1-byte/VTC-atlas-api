@@ -3,6 +3,7 @@ import { CoreModule } from '../../core/core.module';
 import { DriverAcceptanceService } from './application/driver-acceptance.service';
 import { DriverOnboardingService } from './application/services/driver-onboarding.service';
 import { DriverVerificationService } from './application/services/driver-verification.service';
+import { DriverEligibilityService } from './application/services/driver-eligibility.service';
 import { LocalStorageProvider } from './infrastructure/storage/storage.provider';
 import { DispatchModule } from '../dispatch/dispatch.module';
 import { LocationModule } from '../location/location.module';
@@ -24,12 +25,14 @@ import { DriverVerificationController } from './presentation/controllers/driver-
     DriverAcceptanceService, 
     DriverOnboardingService,
     DriverVerificationService,
+    DriverEligibilityService,
     LocalStorageProvider
   ],
   exports: [
     DriverAcceptanceService, 
     DriverOnboardingService,
     DriverVerificationService,
+    DriverEligibilityService,
     LocalStorageProvider
   ],
 })

@@ -12,6 +12,9 @@ import { DispatchEngine } from '../../dispatch/application/dispatch.engine';
 import { RideStatusChangedEvent } from '../../rides/domain/events/ride-status-changed.event';
 import { RideStateMachine } from '../../rides/domain/state-machine/ride-state-machine';
 
+import { DriverOnboardingService } from './services/driver-onboarding.service';
+import { DriverEligibilityService } from './services/driver-eligibility.service';
+
 @Injectable()
 export class DriverAcceptanceService extends BaseApplicationService {
   private readonly logger = new Logger(DriverAcceptanceService.name);
@@ -21,6 +24,7 @@ export class DriverAcceptanceService extends BaseApplicationService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly dispatchEngine: DispatchEngine,
+    private readonly eligibility: DriverEligibilityService,
   ) {
     super(eventBus);
   }
@@ -31,6 +35,13 @@ export class DriverAcceptanceService extends BaseApplicationService {
    */
   async acceptRide(driverId: string, rideId: string): Promise<void> {
     this.logger.log(`Driver [${driverId}] attempting ACCEPT for Ride [${rideId}]`);
+
+    // 0. Eligibility Check (Security Gate)
+    const canAccept = await this.eligibility.canReceiveRides(driverId);
+    if (!canAccept) {
+      this.logger.warn(`Rejected acceptance: Driver [${driverId}] is not eligible (KYC/Account).`);
+      throw new ConflictException('You are not eligible to accept rides. Please check your verification status.');
+    }
 
     // 1. Validate & consume Redis Claim (first gate)
     const isClaimValid = await this.dispatchEngine.validateAndConsume(rideId, driverId);

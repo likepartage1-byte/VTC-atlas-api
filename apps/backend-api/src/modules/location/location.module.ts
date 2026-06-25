@@ -7,10 +7,12 @@ import { LocationGateway } from './presentation/gateways/location.gateway';
 import { ETAService } from './domain/eta/eta.service';
 import { DriverLocationRepository } from './infrastructure/repositories/driver-location.repository';
 import { RealtimeModule } from '../realtime/realtime.module';
+import { DriversModule } from '../drivers/drivers.module';
 
 @Module({
   imports: [
-    forwardRef(() => RealtimeModule)
+    forwardRef(() => RealtimeModule),
+    forwardRef(() => DriversModule)
   ],
   providers: [
     LocationService, 
