@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import { RideAssignmentService } from '../../application/services/ride-assignment.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },

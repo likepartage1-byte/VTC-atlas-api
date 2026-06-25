@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, Logger } from '@nestjs/common';
-import { PrismaService } from '../../../core/prisma/prisma.service'; // يتم تعديله حسب المسار الفعلي
-import { RedisService } from '../../../core/redis/redis.service';   // يتم تعديله حسب المسار الفعلي
+import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { RedisService } from '../../../../core/redis/redis.service';
 
 @Injectable()
 export class RideAssignmentService {
@@ -28,7 +28,6 @@ export class RideAssignmentService {
 
     try {
       // 2. تحديث ذرّي في قاعدة البيانات (Atomic Transaction)
-      // نتحقق من أن الحالة لا تزال 'AVAILABLE' داخل العملية نفسها
       return await this.prisma.$transaction(async (tx) => {
         const ride = await tx.ride.findUnique({
           where: { id: rideId },
