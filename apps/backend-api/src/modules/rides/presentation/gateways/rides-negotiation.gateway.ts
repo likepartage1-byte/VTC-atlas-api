@@ -16,6 +16,10 @@ export class RidesNegotiationGateway {
   @WebSocketServer()
   server: Server;
 
+  constructor(
+    private readonly rideAssignmentService: RideAssignmentService
+  ) {}
+
   /**
    * تقديم مزايدة من السائق
    */
@@ -41,18 +45,30 @@ export class RidesNegotiationGateway {
   }
 
   /**
-   * قبول الراكب لعرض السائق
+   * قبول الراكب لعرض السائق (الجوهر الذري)
    */
   @SubscribeMessage('accept_bid')
   async handleAcceptBid(
+    @ConnectedSocket() client: Socket,
     @MessageBody() data: { rideId: string; driverId: string }
   ) {
-    console.log(`[Success] Ride ${data.rideId} assigned to driver ${data.driverId}`);
+    try {
+      await this.rideAssignmentService.assignRide(data.rideId, data.driverId);
+      
+      console.log(`[Success] Ride ${data.rideId} atomically assigned to driver ${data.driverId}`);
 
-    // إخبار السائق الفائز
-    this.server.to(`driver_${data.driverId}`).emit('bid_accepted', { rideId: data.rideId });
+      // 1. إبلاغ السائق الفائز
+      this.server.to(`driver_${data.driverId}`).emit('assignment_success', { rideId: data.rideId });
 
-    // إخبار باقي السائقين بحذف الطلب
-    this.server.emit('ride_request_assigned', { rideId: data.rideId });
+      // 2. إبلاغ جميع السائقين الآخرين بأن الطلب قد تم تعيينه (لحذفه من القائمة)
+      this.server.emit('ride_request_assigned', { rideId: data.rideId });
+      
+    } catch (error) {
+      // إبلاغ السائق بحدوث تعارض (خسارة السباق التاريخية)
+      client.emit('assignment_failed', { 
+        message: 'Désolé, cette course a déjà été acceptée par un autre chauffeur.',
+        code: 'RACE_CONDITION_LOST'
+      });
+    }
   }
 }
