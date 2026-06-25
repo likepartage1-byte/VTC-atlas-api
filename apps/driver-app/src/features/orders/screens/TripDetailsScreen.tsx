@@ -11,9 +11,12 @@ import {
   ActivityIndicator
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
+import { useOrdersStore } from '../../../store/useOrdersStore';
 import { BidBottomSheet } from '../components/BidBottomSheet';
 import { useRoute, useNavigation } from '@react-navigation/native';
+
+// Import Socket instance (Assuming it exists in your infrastructure)
+// import { socket } from '../../../core/socket'; 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,7 +28,6 @@ const darkMapStyle = [
   { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] }
 ];
 
-// 🛠️ Utility: Decode Google Directions Polyline to Coordinate Array
 const decodePolyline = (encoded: string) => {
   if (!encoded) return [];
   let points = [];
@@ -61,46 +63,47 @@ export const TripDetailsScreen = () => {
   const { orderId } = route.params;
   const { orders } = useOrdersStore();
   
-  // Memoize order to prevent unnecessary reframes
   const order = useMemo(() => orders.find(o => o.id === orderId), [orders, orderId]);
   
   const [timeLeft, setTimeLeft] = useState(30);
   const [mapReady, setMapReady] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ⏱️ Start countdown and reset on orderId change
+  // 1. Production Logic: Listen for socket events to clear UI
   useEffect(() => {
+    // Simulated Socket Listeners
+    // socket.on('ride_assigned', (data) => { if(data.rideId === orderId) navigation.goBack(); });
+    // socket.on('ride_cancelled', (data) => { if(data.rideId === orderId) navigation.goBack(); });
+
     setTimeLeft(30);
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+            clearInterval(timerRef.current!);
+            navigation.goBack();
+            return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
-    return () => clearInterval(timer);
-  }, [orderId]);
 
-  // 🚪 Auto-exit on timeout
-  useEffect(() => {
-    if (timeLeft === 0) {
-      navigation.goBack();
-    }
-  }, [timeLeft, navigation]);
+    return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+        // socket.off('ride_assigned');
+        // socket.off('ride_cancelled');
+    };
+  }, [orderId, navigation]);
 
-  // 🛡️ Safe coordinate parsing to prevent NaN crashes
   const pickupLat = parseFloat(String(order?.pickupLat || '33.5731'));
   const pickupLng = parseFloat(String(order?.pickupLng || '-7.5898'));
   const dropoffLat = parseFloat(String(order?.dropoffLat || '34.0209'));
   const dropoffLng = parseFloat(String(order?.dropoffLng || '-6.8416'));
 
-  // 🛣️ Real road route coordinates
   const routeCoordinates = useMemo(() => {
-    if (order?.polyline) {
-      return decodePolyline(order.polyline);
-    }
-    return [
-      { latitude: pickupLat, longitude: pickupLng },
-      { latitude: dropoffLat, longitude: dropoffLng }
-    ];
+    if (order?.polyline) return decodePolyline(order.polyline);
+    return [{ latitude: pickupLat, longitude: pickupLng }, { latitude: dropoffLat, longitude: dropoffLng }];
   }, [order, pickupLat, pickupLng, dropoffLat, dropoffLng]);
 
-  // 🏙️ Auto-zoom to fit the entire route
   useEffect(() => {
     if (mapReady && order && mapRef.current) {
       mapRef.current.fitToCoordinates(routeCoordinates, {
@@ -120,7 +123,9 @@ export const TripDetailsScreen = () => {
   }
 
   const handleBidSubmit = (amount: number) => {
-    console.log(`[Socket] Sending bid: ${amount} MAD for ride ${orderId}`);
+    console.log(`[Socket] Submitting bid ${amount} MAD`);
+    // After emission, clear timer locally
+    if (timerRef.current) clearInterval(timerRef.current);
     navigation.goBack();
   };
 
@@ -133,57 +138,45 @@ export const TripDetailsScreen = () => {
           style={styles.map}
           customMapStyle={darkMapStyle}
           onMapReady={() => setMapReady(true)}
-          initialRegion={{
-            latitude: pickupLat,
-            longitude: pickupLng,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
         >
-          {/* Pickup Marker */}
           <Marker coordinate={{ latitude: pickupLat, longitude: pickupLng }}>
             <View style={[styles.customMarker, { borderColor: '#32FF7E' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#32FF7E' }]} />
             </View>
           </Marker>
-
-          {/* Dropoff Marker */}
           <Marker coordinate={{ latitude: dropoffLat, longitude: dropoffLng }}>
             <View style={[styles.customMarker, { borderColor: '#FF4D4D' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#FF4D4D' }]} />
             </View>
           </Marker>
-
-          {/* Phosphorus Path */}
-          <Polyline
-            coordinates={routeCoordinates}
-            strokeColor="#32FF7E"
-            strokeWidth={4}
-            lineCap="round"
-          />
+          <Polyline coordinates={routeCoordinates} strokeColor="#32FF7E" strokeWidth={4} lineCap="round" />
         </MapView>
 
-        {/* 👤 Passenger Card (Floating Top) */}
+        {/* 👤 Passenger Card */}
         <View style={styles.personaCard}>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${(timeLeft / 30) * 100}%` }]} />
           </View>
           <View style={styles.personaRow}>
-            <Image 
-              source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
-              style={styles.avatar} 
-            />
+            {/* 🛡️ Robust Avatar Fallback */}
+            <View style={styles.avatarContainer}>
+              {order.passengerAvatar ? (
+                <Image source={{ uri: order.passengerAvatar }} style={styles.avatar} />
+              ) : (
+                <View style={styles.initialsAvatar}>
+                  <Text style={styles.initialsText}>{order.passengerName?.charAt(0) || 'C'}</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.personaInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.passengerName}>
-                  {order.passengerName ? order.passengerName.split(' ')[0] : 'Client'}
-                </Text>
+                <Text style={styles.passengerName}>{order.passengerName?.split(' ')[0]}</Text>
                 <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>⭐ {String(order.passengerRating)}</Text>
+                  <Text style={styles.ratingText}>⭐ {order.passengerRating}</Text>
                 </View>
               </View>
               <Text style={styles.verificationText}>
-                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {String(order.passengerTripsCount)} trajets
+                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {order.passengerTripsCount} trajets
               </Text>
             </View>
             <View style={styles.timerCircle}>
@@ -192,50 +185,29 @@ export const TripDetailsScreen = () => {
           </View>
         </View>
 
-        <TouchableOpacity 
-          style={styles.backBtn} 
-          onPress={() => navigation.goBack()}
-          hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
-        >
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
            <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.bottomSection}>
-        {/* 💰 Fare Hero Section */}
         <View style={styles.fareHero}>
             <View>
-              <Text style={styles.fareAmount}>{String(order.offeredPrice)}</Text>
+              <Text style={styles.fareAmount}>{order.offeredPrice}</Text>
               <Text style={styles.fareCurrency}>MAD</Text>
             </View>
             <View style={styles.fareLabels}>
               <Text style={styles.fareStatus}>Prix proposé</Text>
-              <View style={styles.trustBadge}>
-                 <Text style={styles.trustText}>✓ Paiement vérifié</Text>
-              </View>
+              <View style={styles.trustBadge}><Text style={styles.trustText}>✓ Paiement vérifié</Text></View>
             </View>
         </View>
 
-        {/* 🚗 Info Chips */}
         <View style={styles.chipsRow}>
-            {order.pickupEta && (
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>🚗 {order.pickupEta}</Text>
-              </View>
-            )}
-            {order.distanceToPickup && (
-              <View style={styles.chip}>
-                <Text style={styles.chipText}>📍 {order.distanceToPickup}</Text>
-              </View>
-            )}
-            {!order.isNewPassenger && (
-              <View style={[styles.chip, { backgroundColor: '#1A3324' }]}>
-                <Text style={[styles.chipText, { color: '#32FF7E' }]}>Fidèle</Text>
-              </View>
-            )}
+            {order.pickupEta && <View style={styles.chip}><Text style={styles.chipText}>🚗 {order.pickupEta}</Text></View>}
+            {order.distanceToPickup && <View style={styles.chip}><Text style={styles.chipText}>📍 {order.distanceToPickup}</Text></View>}
+            {!order.isNewPassenger && <View style={[styles.chip, { backgroundColor: '#1A3324' }]}><Text style={[styles.chipText, { color: '#32FF7E' }]}>Fidèle</Text></View>}
         </View>
 
-        {/* 📍 Addresses */}
         <View style={styles.addressBox}>
             <View style={styles.addrLine}>
               <View style={[styles.dot, { backgroundColor: '#32FF7E' }]} />
@@ -247,7 +219,6 @@ export const TripDetailsScreen = () => {
             </View>
         </View>
 
-        {/* ⚡ Bidding Interaction */}
         <BidBottomSheet 
           basePrice={order.offeredPrice}
           onAccept={() => handleBidSubmit(order.offeredPrice)}
@@ -265,33 +236,18 @@ const styles = StyleSheet.create({
   map: { ...StyleSheet.absoluteFillObject },
   personaCard: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 20 : 20,
-    left: 15,
-    right: 15,
+    top: 20, left: 15, right: 15,
     backgroundColor: 'rgba(20, 20, 20, 0.95)',
-    borderRadius: 20,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#333',
-    shadowColor: '#000',
-    shadowRadius: 10,
-    shadowOpacity: 0.5,
-    overflow: 'hidden',
+    borderRadius: 20, padding: 15,
+    borderWidth: 1, borderColor: '#333', overflow: 'hidden',
   },
-  progressBarBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: '#333',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#32FF7E',
-  },
+  progressBarBg: { position: 'absolute', top: 0, left: 0, right: 0, height: 3, backgroundColor: '#333' },
+  progressBarFill: { height: '100%', backgroundColor: '#32FF7E' },
   personaRow: { flexDirection: 'row', alignItems: 'center' },
-  avatar: { width: 45, height: 45, borderRadius: 22.5, marginRight: 12, backgroundColor: '#333' },
+  avatarContainer: { marginRight: 12 },
+  avatar: { width: 45, height: 45, borderRadius: 22.5 },
+  initialsAvatar: { width: 45, height: 45, borderRadius: 22.5, backgroundColor: '#2A2A2A', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#444' },
+  initialsText: { color: '#32FF7E', fontSize: 20, fontWeight: 'bold' },
   personaInfo: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
   passengerName: { color: '#FFF', fontSize: 18, fontWeight: '700', marginRight: 8 },
@@ -317,20 +273,8 @@ const styles = StyleSheet.create({
   addrLine: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   addrText: { color: '#888', fontSize: 13, flex: 1 },
-  customMarker: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 3,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  markerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+  customMarker: { width: 24, height: 24, borderRadius: 12, borderWidth: 3, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  markerDot: { width: 8, height: 8, borderRadius: 4 },
   centered: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   errorText: { color: '#444', marginTop: 10 }
 });
