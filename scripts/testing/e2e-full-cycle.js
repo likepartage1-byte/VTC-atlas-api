@@ -153,12 +153,14 @@ async function phase3_ledger() {
     // 1. Create Ledger Entry
     const ledger = await tx.rideLedger.create({
       data: {
-        rideId: context.ride.id,
-        totalAmount: MAD(RIDE_AMOUNT),
-        companyFee: MAD(companyFee),
+        ride:   { connect: { id: context.ride.id } },
+        driver: { connect: { id: context.driver.id } },
+        totalAmount:    MAD(RIDE_AMOUNT),
+        companyFee:     MAD(companyFee),
         driverEarnings: MAD(driverEarnings),
-        taxes: MAD(0),
-        status: 'SETTLED',
+        taxes:          MAD(0),
+        status:         'SETTLED',
+        settledAt:      new Date(),
       },
     });
 
