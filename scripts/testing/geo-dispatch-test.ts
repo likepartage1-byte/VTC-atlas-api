@@ -43,23 +43,27 @@ async function geoDispatchTest() {
       console.log(`   ✅ ${d.label} registered.`);
     }
 
-    // 2. Query for nearby drivers (simulates Gateway dispatch logic)
+    // 2. Query using georadius (compatible with all Redis versions)
     console.log(`\n🔍 Step 2: Querying drivers within ${DISPATCH_RADIUS_KM}km of pickup...`);
-    const nearbyDriverIds = await (redis as any).geosearch(
+    const nearbyDriverIds: any[] = await redis.georadius(
       GEO_KEY,
-      'FROMLONLAT', PICKUP_LNG, PICKUP_LAT,
-      'BYRADIUS', DISPATCH_RADIUS_KM, 'km',
-      'ASC',
-      'WITHCOORD', 'WITHDIST'
+      PICKUP_LNG, PICKUP_LAT,
+      DISPATCH_RADIUS_KM, 'km',
+      'WITHCOORD', 'WITHDIST', 'ASC'
     );
 
     console.log('\n📊 Step 3: Dispatch Filter Results');
     console.log('------------------------------------');
 
+    if (nearbyDriverIds.length === 0) {
+      console.log('   ⚠️  No drivers found within radius. Check coordinates or Redis data.');
+    }
+
     const receivingIds = new Set<string>();
     for (const result of nearbyDriverIds) {
-      const id = result[0];
-      const dist = parseFloat(result[1]).toFixed(2);
+      // georadius with WITHDIST+WITHCOORD returns: [id, dist, [lng, lat]]
+      const id = result[0] as string;
+      const dist = parseFloat(result[1] as string).toFixed(2);
       receivingIds.add(id);
       const driver = drivers.find(d => d.id === id);
       console.log(`   📲 ${driver?.label ?? id} → ${dist} km → RECEIVES BROADCAST`);

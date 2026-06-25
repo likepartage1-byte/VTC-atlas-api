@@ -9,18 +9,12 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 /**
  * TEST-04: Load & Concurrency Stress Test
  * 
- * Simulates:
- *   - 50 concurrent ride requests
- *   - Multiple drivers attempting to accept each ride
- * 
- * Validates:
- *   - Zero double-assignments (Atomic lock holds under pressure)
- *   - Redis latency stays low
- *   - DB connection pool stability
+ * Simulates 50 concurrent rides with 3 drivers competing per ride.
+ * Validates zero double-assignments under pressure.
  */
 
 const CONCURRENT_RIDES = 50;
-const DRIVERS_PER_RIDE = 3; // Drivers competing per ride
+const DRIVERS_PER_RIDE = 3;
 
 async function loadTest() {
   const prisma = new PrismaClient();
@@ -28,28 +22,44 @@ async function loadTest() {
 
   console.log('⚡ ATLAS VTC - LOAD & CONCURRENCY STRESS TEST');
   console.log('===============================================');
-  console.log(`🚕 Concurrent Rides: ${CONCURRENT_RIDES}`);
-  console.log(`🏁 Drivers per Ride: ${DRIVERS_PER_RIDE}`);
-  console.log(`📊 Total operations: ${CONCURRENT_RIDES * DRIVERS_PER_RIDE}\n`);
+  console.log(`🚕 Concurrent Rides:  ${CONCURRENT_RIDES}`);
+  console.log(`🏁 Drivers per Ride:  ${DRIVERS_PER_RIDE}`);
+  console.log(`📊 Total operations:  ${CONCURRENT_RIDES * DRIVERS_PER_RIDE}\n`);
 
-  const results = { passed: 0, failed: 0, doubleAssigned: 0 };
+  const results = { passed: 0, noWinner: 0, doubleAssigned: 0 };
   const startTime = Date.now();
 
   try {
-    // 1. Create a passenger for all test rides
+    // 1. Create real DB users for passenger and drivers
+    console.log('👤 Step 1: Creating test users in DB...');
     const passengerId = randomUUID();
     await prisma.user.create({
       data: {
         id: passengerId,
         fullName: 'LoadTest Passenger',
-        phoneNumber: `+212${Math.floor(Math.random() * 900000000) + 100000000}`,
+        phoneNumber: `+212${Math.floor(Math.random() * 800000000) + 100000000}`,
         role: 'PASSENGER'
       }
     });
-    console.log('👤 Test passenger created.\n');
 
-    // 2. Run all rides concurrently
-    console.log('🔥 Launching concurrent ride requests...');
+    // Create a pool of real driver users (DRIVERS_PER_RIDE unique drivers)
+    const driverPool: string[] = [];
+    for (let i = 0; i < DRIVERS_PER_RIDE; i++) {
+      const driverId = randomUUID();
+      await prisma.user.create({
+        data: {
+          id: driverId,
+          fullName: `LoadTest Driver ${i + 1}`,
+          phoneNumber: `+212${Math.floor(Math.random() * 800000000) + 100000000}`,
+          role: 'DRIVER'
+        }
+      });
+      driverPool.push(driverId);
+    }
+    console.log(`   ✅ 1 passenger + ${DRIVERS_PER_RIDE} drivers created.\n`);
+
+    // 2. Create all rides and simulate concurrent acceptance
+    console.log('🔥 Step 2: Launching concurrent ride requests...');
     const rideTests = Array.from({ length: CONCURRENT_RIDES }, async (_, i) => {
       const rideId = randomUUID();
       const lockKey = `ride:lock:${rideId}`;
@@ -62,35 +72,28 @@ async function loadTest() {
           status: 'REQUESTED',
           pickupLat: 33.5731 + (Math.random() * 0.01),
           pickupLng: -7.5898 + (Math.random() * 0.01),
-          pickupAddress: `Point ${i}`,
+          pickupAddress: `Pickup ${i + 1}`,
           dropoffLat: 34.0209,
           dropoffLng: -6.8416,
           dropoffAddress: 'Rabat',
-          estimatedPrice: 50 + (i * 5)
+          estimatedPrice: 50 + (i * 2)
         }
       });
 
-      // Simulate multiple drivers racing to accept
-      const driverRace = Array.from({ length: DRIVERS_PER_RIDE }, async (_, j) => {
-        const driverId = randomUUID();
-
-        // Atomic lock attempt (mirrors RideAssignmentService)
+      // Simulate drivers racing to accept (using real driver IDs from pool)
+      const driverRace = driverPool.map(async (driverId) => {
+        // Atomic Redis lock (mirrors production RideAssignmentService)
         const lockAcquired = await redis.set(lockKey, driverId, 'NX', 'EX', 10);
         if (!lockAcquired) return { won: false, driverId };
 
-        // Conditional assignment
+        // Conditional Prisma update
         const updated = await prisma.ride.updateMany({
           where: { id: rideId, status: 'REQUESTED' },
           data: { status: 'DRIVER_ACCEPTED', driverId }
         });
 
-        if (updated.count === 1) {
-          await redis.del(lockKey);
-          return { won: true, driverId };
-        }
-
         await redis.del(lockKey);
-        return { won: false, driverId };
+        return { won: updated.count === 1, driverId };
       });
 
       const raceResults = await Promise.all(driverRace);
@@ -101,33 +104,34 @@ async function loadTest() {
     const allResults = await Promise.all(rideTests);
 
     // 3. Analyze results
-    console.log('\n📊 Analyzing results...\n');
+    console.log('\n📊 Step 3: Analyzing results...\n');
     for (const result of allResults) {
       if (result.winners === 1) {
         results.passed++;
       } else if (result.winners === 0) {
-        results.failed++;
+        results.noWinner++;
         console.log(`   ⚠️  Ride ${result.rideId.substring(0, 8)}... had NO winner.`);
       } else {
         results.doubleAssigned++;
-        console.log(`   ❌ CRITICAL: Ride ${result.rideId.substring(0, 8)}... had ${result.winners} winners! (Race condition!)`);
+        console.log(`   ❌ CRITICAL: Ride ${result.rideId.substring(0, 8)}... had ${result.winners} winners!`);
       }
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
-    console.log('\n' + '='.repeat(50));
-    console.log(`✅ Rides with exactly 1 winner:    ${results.passed}/${CONCURRENT_RIDES}`);
-    console.log(`⚠️  Rides with no assignment:       ${results.failed}`);
-    console.log(`💥 Rides with DOUBLE assignment:   ${results.doubleAssigned}`);
-    console.log(`⏱️  Total time:                     ${elapsed}s`);
-    console.log('='.repeat(50));
+    console.log('\n' + '='.repeat(52));
+    console.log(`✅  Rides with exactly 1 winner:   ${results.passed}/${CONCURRENT_RIDES}`);
+    console.log(`⚠️   Rides with no winner:           ${results.noWinner}`);
+    console.log(`💥  Rides DOUBLE assigned:           ${results.doubleAssigned}`);
+    console.log(`⏱️   Total time:                      ${elapsed}s`);
+    console.log(`📈  Throughput:                       ${(CONCURRENT_RIDES / parseFloat(elapsed)).toFixed(1)} rides/s`);
+    console.log('='.repeat(52));
 
     if (results.doubleAssigned === 0 && results.passed === CONCURRENT_RIDES) {
       console.log('\n🏆 TEST-04 PASSED: Zero race conditions under load!');
       console.log('   Atomic assignment is production-grade. ✅');
     } else {
-      console.log('\n💥 TEST-04 FAILED: Race conditions detected!');
+      console.log('\n💥 TEST-04 FAILED: Race conditions or lock failures detected.');
     }
 
   } catch (err) {
