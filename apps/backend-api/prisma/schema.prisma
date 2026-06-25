@@ -53,6 +53,8 @@ model Driver {
   
   rides           Ride[]
   ledgerEntries   RideLedger[]
+  transactions    DriverTransaction[]
+  withdrawals     WithdrawalRequest[]
   account         DriverAccount?
   locationHistory DriverLocationHistory[]
 }
@@ -279,6 +281,8 @@ model RideLedger {
   status          LedgerStatus @default(PENDING)
   createdAt       DateTime @default(now())
   settledAt       DateTime?
+  
+  transaction     DriverTransaction?
 }
 
 enum LedgerStatus {
@@ -295,6 +299,72 @@ model DriverAccount {
   balance         Decimal  @db.Decimal(10, 2) @default(0.0)
   totalEarned     Decimal  @db.Decimal(10, 2) @default(0.0)
   updatedAt       DateTime @updatedAt
+}
+
+model DriverTransaction {
+  id              String           @id @default(uuid())
+  driverId        String
+  driver          Driver           @relation(fields: [driverId], references: [id])
+  
+  type            TransactionType
+  amount          Decimal          @db.Decimal(10, 2)
+  status          TransactionStatus @default(COMPLETED)
+  
+  referenceId     String?          // e.g., RideLedger.id or WithdrawalRequest.id
+  referenceType   String?          // e.g., 'RIDE_EARNING', 'WITHDRAWAL', 'BONUS'
+  
+  description     String?
+  metadata        Json?
+  
+  rideLedger      RideLedger?      @relation(fields: [referenceId], references: [id], map: "Transaction_RideLedger_FK")
+  
+  createdAt       DateTime         @default(now())
+  
+  @@index([driverId, createdAt])
+  @@index([referenceId])
+}
+
+model WithdrawalRequest {
+  id              String           @id @default(uuid())
+  driverId        String
+  driver          Driver           @relation(fields: [driverId], references: [id])
+  
+  amount          Decimal          @db.Decimal(10, 2)
+  status          WithdrawalStatus @default(PENDING)
+  
+  bankDetails     Json?            // RIB, Bank Name, etc.
+  
+  requestedAt     DateTime         @default(now())
+  processedAt     DateTime?
+  paidAt          DateTime?
+  
+  adminId         String?          // Admin who approved/rejected
+  notes           String?
+  rejectionReason String?
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([status])
+}
+
+enum TransactionType {
+  CREDIT  // Money coming in (Earnings)
+  DEBIT   // Money going out (Withdrawals)
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
 }
 
 // --- Event Infrastructure (Outbox Pattern) ---

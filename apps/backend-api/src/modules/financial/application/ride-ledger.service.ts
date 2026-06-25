@@ -53,7 +53,7 @@ export class RideLedgerService {
       const driverEarnings = totalAmount - companyFee;
 
       // 2. Create Ledger Record (Immutable Proof)
-      await prismaClient.rideLedger.create({
+      const ledger = await prismaClient.rideLedger.create({
         data: {
           rideId: ride.id,
           driverId: ride.driverId,
@@ -66,7 +66,20 @@ export class RideLedgerService {
         },
       });
 
-      // 3. Update Driver Account Balance
+      // 3. Create Audit Transaction (The Ledger Flow Token)
+      await prismaClient.driverTransaction.create({
+        data: {
+          driverId: ride.driverId,
+          type: 'CREDIT',
+          amount: driverEarnings,
+          status: 'COMPLETED',
+          referenceId: ledger.id,
+          referenceType: 'RIDE_EARNING',
+          description: `Earnings for ride ${ride.id}`,
+        }
+      });
+
+      // 4. Update Driver Account Balance
       await prismaClient.driverAccount.upsert({
         where: { driverId: ride.driverId },
         update: {
