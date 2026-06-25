@@ -65,11 +65,11 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
 
     const payload = {
       id: ride.id,
-      passengerName: ride.passenger.fullName,
+      passengerName: ride?.passenger.fullName,
       passengerRating: 4.9, // Default for now
-      passengerTripsCount: ride.passenger._count.customerRides,
-      isVerified: ride.passenger.status === 'ACTIVE',
-      offeredPrice: ride.estimatedPrice,
+      passengerTripsCount: ride?.passenger._count.customerRides,
+      isVerified: true,
+      offeredPrice: ride?.estimatedPrice,
       pickupAddress: ride.pickupAddress,
       dropoffAddress: ride.dropoffAddress,
       pickupLat: ride.pickupLat,
