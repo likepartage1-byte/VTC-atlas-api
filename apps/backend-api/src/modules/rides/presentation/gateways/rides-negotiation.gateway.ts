@@ -4,26 +4,75 @@ import {
   MessageBody,
   ConnectedSocket,
   WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import { RideAssignmentService } from '../../application/services/ride-assignment.service';
+import { GoogleMapsService } from '../../../../core/google-maps/google-maps.service';
+import { DriverLocationRepository } from '../../../location/infrastructure/repositories/driver-location.repository';
 
 @WebSocketGateway({
   cors: { origin: '*' },
   namespace: 'rides',
 })
-export class RidesNegotiationGateway {
+export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   constructor(
-    private readonly rideAssignmentService: RideAssignmentService
+    private readonly rideAssignmentService: RideAssignmentService,
+    private readonly googleMapsService: GoogleMapsService,
+    private readonly driverLocationRepository: DriverLocationRepository,
   ) {}
 
+  async handleConnection(client: Socket) {
+    const userId = client.handshake.query.userId as string;
+    if (userId) {
+      client.join(`presence_${userId}`);
+    }
+  }
+
+  async handleDisconnect(client: Socket) {
+     const userId = client.handshake.query.userId as string;
+     if (userId) {
+       client.leave(`presence_${userId}`);
+     }
+  }
+
   /**
-   * تقديم مزايدة من السائق
+   * Broadcasts a new ride only to nearby drivers (P3) with real ETA/Distance (P2)
    */
+  async broadcastNewRide(ride: any) {
+    // 1. Get real physics from Google Maps (P2)
+    const estimates = await this.googleMapsService.getEstimates(
+      { lat: ride.pickupLat, lng: ride.pickupLng },
+      { lat: ride.dropoffLat, lng: ride.dropoffLng }
+    );
+
+    // 2. Find nearby drivers within 5km (P3)
+    const nearbyDriverIds = await this.driverLocationRepository.findNearby(
+      ride.pickupLng,
+      ride.pickupLat,
+      5 // 5 KM radius
+    );
+
+    const payload = {
+      ...ride,
+      tripDistance: estimates?.distanceText || 'N/A',
+      tripDuration: estimates?.durationText || 'N/A',
+      polyline: estimates?.polyline || '',
+    };
+
+    // 3. Surgical Broadcast
+    nearbyDriverIds.forEach(driverId => {
+      this.server.to(`presence_${driverId}`).emit('new_ride_request', payload);
+    });
+
+    console.log(`[Dispatch] Broadcasted ride ${ride.id} to ${nearbyDriverIds.length} nearby drivers.`);
+  }
+
   @SubscribeMessage('submit_bid')
   async handleBid(
     @ConnectedSocket() client: Socket,
@@ -31,23 +80,13 @@ export class RidesNegotiationGateway {
   ) {
     const { rideId, amount } = data;
     
-    // 1. Validation Logic (70% - 150%)
-    // وسيتم سحب السعر الأصلي من قاعدة البيانات (هنا محاكاة للمنطق)
-    // if (amount < original * 0.7 || amount > original * 1.5) throw Error;
-
-    console.log(`[Bid] Driver ${data.driverId} bid ${amount} MAD for ride ${rideId}`);
-
-    // إرسال العرض للراكب المستهدف فقط
-    this.server.to(`passenger_${rideId}`).emit('bid_received', {
+    this.server.to(`presence_passenger_${rideId}`).emit('bid_received', {
       driverId: data.driverId,
-      amount: Math.ceil(amount), // التقريب السوقي
+      amount: Math.ceil(amount),
       timestamp: new Date(),
     });
   }
 
-  /**
-   * قبول الراكب لعرض السائق (الجوهر الذري)
-   */
   @SubscribeMessage('accept_bid')
   async handleAcceptBid(
     @ConnectedSocket() client: Socket,
@@ -56,18 +95,12 @@ export class RidesNegotiationGateway {
     try {
       await this.rideAssignmentService.assignRide(data.rideId, data.driverId);
       
-      console.log(`[Success] Ride ${data.rideId} atomically assigned to driver ${data.driverId}`);
-
-      // 1. إبلاغ السائق الفائز
-      this.server.to(`driver_${data.driverId}`).emit('assignment_success', { rideId: data.rideId });
-
-      // 2. إبلاغ جميع السائقين الآخرين بأن الطلب قد تم تعيينه (لحذفه من القائمة)
+      this.server.to(`presence_${data.driverId}`).emit('assignment_success', { rideId: data.rideId });
       this.server.emit('ride_request_assigned', { rideId: data.rideId });
       
     } catch (error) {
-      // إبلاغ السائق بحدوث تعارض (خسارة السباق التاريخية)
       client.emit('assignment_failed', { 
-        message: 'Désolé, cette course a déjà été acceptée par un autre chauffeur.',
+        message: 'Désolé, cette course a déjà été acceptée par یک سائق آخر.',
         code: 'RACE_CONDITION_LOST'
       });
     }

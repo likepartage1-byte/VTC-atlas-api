@@ -13,6 +13,7 @@ import { validate } from './common/env.validation';
 import { OutboxService } from './outbox/services/outbox.service';
 import { OutboxProcessor } from './outbox/services/outbox.processor';
 import { DomainEventBus } from './events/domain-event-bus';
+import { GoogleMapsService } from './google-maps/google-maps.service';
 
 @Global()
 @Module({
@@ -41,6 +42,7 @@ import { DomainEventBus } from './events/domain-event-bus';
     DomainEventBus,
     CorrelationMiddleware,
     Reflector,
+    GoogleMapsService,
   ],
   exports: [
     PrismaService, 
@@ -51,6 +53,7 @@ import { DomainEventBus } from './events/domain-event-bus';
     DomainEventBus,
     CorrelationMiddleware,
     Reflector,
+    GoogleMapsService,
   ],
 })
 export class CoreModule implements NestModule {
