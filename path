@@ -1,0 +1,298 @@
+Script started on 2026-06-14 09:53:32+00:00 [TERM="xterm-256color" TTY="/dev/pts/1" COLUMNS="138" LINES="38"]
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mls -la dist/apps/backend-api/main.js[27m
+[7mstat dist/apps/backend-api/main.js[27m[Als -la dist/apps/backend-api/main.js
+stat dist/apps/backend-api/main.js
+[?2004l-rw-r--r-- 1 root root 1299 Jun 14 09:42 dist/apps/backend-api/main.js
+  File: dist/apps/backend-api/main.js
+  Size: 1299      	Blocks: 8          IO Block: 4096   regular file
+Device: 801h/2049d	Inode: 830355      Links: 1
+Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+Access: 2026-06-14 09:42:12.261244050 +0000
+Modify: 2026-06-14 09:42:12.185244372 +0000
+Change: 2026-06-14 09:42:12.185244372 +0000
+ Birth: 2026-06-14 09:42:12.185244372 +0000
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mnpm ls @nestjs/terminus[27mnpm ls @nestjs/terminus
+[?2004l[1G[0K⠙[1G[0K⠹[1G[0K[0matlas-monorepo@0.0.1 /root/VTC-atlas-api[0m
+[0m└── [33m@nestjs/terminus@11.1.1[39m[0m
+[0m[0m
+[1G[0K⠸[1G[0K[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mgrep -R "class PrismaHealthIndicator" node_modules/@nestjs/terminus -n[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cgrep -R "class PrismaHealthIndicator" node_modules/@nestjs/terminus -n
+[?2004l[35m[Knode_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js[m[K[36m[K:[m[K[32m[K32[m[K[36m[K:[m[Klet PrismaHealthIndicator = [01;31m[Kclass PrismaHealthIndicator[m[K {
+[35m[Knode_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.d.ts[m[K[36m[K:[m[K[32m[K26[m[K[36m[K:[m[Kexport declare [01;31m[Kclass PrismaHealthIndicator[m[K {
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -n '1,120p' \[27m
+[7m~/VTC-atlas-api/dist/apps/backend-api/core/health/health.module.js[27m[Ased -n '1,120p' \
+~/VTC-atlas-api/dist/apps/backend-api/core/health/health.module.js
+[?2004l"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HealthModule = void 0;
+const common_1 = require("@nestjs/common");
+const terminus_1 = require("@nestjs/terminus");
+const health_controller_1 = require("./health.controller");
+const prisma_service_1 = require("../prisma/prisma.service");
+const redis_service_1 = require("../redis/redis.service");
+let HealthModule = class HealthModule {
+};
+exports.HealthModule = HealthModule;
+exports.HealthModule = HealthModule = __decorate([
+    (0, common_1.Module)({
+        imports: [terminus_1.TerminusModule],
+        controllers: [health_controller_1.HealthController],
+        providers: [prisma_service_1.PrismaService, redis_service_1.RedisService],
+    })
+], HealthModule);
+//# sourceMappingURL=health.module.js.map[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mgrep -n "design:paramtypes" \[27m
+[7m~/VTC-atlas-api/dist/apps/backend-api/core/health/health.controller.js[27m[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cgrep -n "design:paramtypes" \
+~/VTC-atlas-api/dist/apps/backend-api/core/health/health.controller.js
+[?2004l[32m[K39[m[K[36m[K:[m[K    __metadata("[01;31m[Kdesign:paramtypes[m[K", []),
+[32m[K44[m[K[36m[K:[m[K    __metadata("[01;31m[Kdesign:paramtypes[m[K", [terminus_1.HealthCheckService,
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mgrep -R "constructor(.*PrismaService" \[27m
+[7m~/VTC-atlas-api/dist/apps/backend-api \[27m
+[7m-n[27m[A[A]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# grep -R "constructor(.*PrismaService" \
+~/VTC-atlas-api/dist/apps/backend-api \
+-n
+[?2004l[35m[K/root/VTC-atlas-api/dist/apps/backend-api/core/events/outbox.service.d.ts[m[K[36m[K:[m[K[32m[K7[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/core/events/outbox.processor.d.ts[m[K[36m[K:[m[K[32m[K10[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, redis: RedisService, eventQueue: Queue);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/core/health/health.controller.d.ts[m[K[36m[K:[m[K[32m[K8[m[K[36m[K:[m[K    [01;31m[Kconstructor(health: HealthCheckService, db: PrismaHealthIndicator, memory: MemoryHealthIndicator, prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/negotiation.service.d.ts[m[K[36m[K:[m[K[32m[K9[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, eventBus: DomainEventBus, redis: RedisService);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/ride-lifecycle.service.d.ts[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, driverLocationRepo: DriverLocationRepository, otp: RideOtpService, outbox: OutboxService);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/trip-finalizer.service.d.ts[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, pricing: PricingService, eventBus: DomainEventBus, ledgerService: RideLedgerService);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/ride.service.d.ts[m[K[36m[K:[m[K[32m[K10[m[K[36m[K:[m[K    [01;31m[Kconstructor(eventBus: DomainEventBus, prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/orchestration/state-reconciler.service.d.ts[m[K[36m[K:[m[K[32m[K7[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, eventBus: DomainEventBus);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/orchestration/ride.orchestrator.d.ts[m[K[36m[K:[m[K[32m[K24[m[K[36m[K:[m[K    [01;31m[Kconstructor(rideService: RideService, rideLifecycle: RideLifecycleService, driverAcceptance: DriverAcceptanceService, locationService: LocationService, pricingService: PricingService, rideLedger: RideLedgerService, tripFinalizer: TripFinalizerService, trace: WorkflowTraceService, prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/rides/application/orchestration/workflow-trace.service.d.ts[m[K[36m[K:[m[K[32m[K12[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/location/domain/eta/eta.service.d.ts[m[K[36m[K:[m[K[32m[K9[m[K[36m[K:[m[K    [01;31m[Kconstructor(eventEmitter: EventEmitter2, prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/identity/application/services/auth.service.d.ts[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K    [01;31m[Kconstructor(eventBus: DomainEventBus, prisma: PrismaService[m[K, otpService: OtpService, jwtService: JwtService);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/analytics/presentation/controllers/dashboard.controller.d.ts[m[K[36m[K:[m[K[32m[K4[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/analytics/application/consumers/analytics.consumer.d.ts[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/simulation/presentation/controllers/simulation.controller.d.ts[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K, rideService: RideService, rideLifecycle: RideLifecycleService, locationRepo: DriverLocationRepository, finalizer: TripFinalizerService);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/financial/application/ride-ledger.service.d.ts[m[K[36m[K:[m[K[32m[K6[m[K[36m[K:[m[K    [01;31m[Kconstructor(prisma: PrismaService[m[K);
+[35m[K/root/VTC-atlas-api/dist/apps/backend-api/modules/drivers/application/driver-acceptance.service.d.ts[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K    [01;31m[Kconstructor(eventBus: DomainEventBus, prisma: PrismaService[m[K, redis: RedisService, dispatchEngine: DispatchEngine);
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mgrep -R "PrismaHealthIndicator" \[27m
+[7mnode_modules/@nestjs/terminus/dist \[27m
+[7m-n | head -20[27m[A[A]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# grep -R "PrismaHealthIndicator" \
+node_modules/@nestjs/terminus/dist \
+-n | head -20
+[?2004lnode_modules/@nestjs/terminus/dist/health-indicator/health-indicators.provider.js:19:    _1.PrismaHealthIndicator,
+node_modules/@nestjs/terminus/dist/health-indicator/health-indicators.provider.d.ts:1:import { TypeOrmHealthIndicator, HttpHealthIndicator, MongooseHealthIndicator, SequelizeHealthIndicator, DiskHealthIndicator, MemoryHealthIndicator, MicroserviceHealthIndicator, GRPCHealthIndicator, PrismaHealthIndicator } from '.';
+node_modules/@nestjs/terminus/dist/health-indicator/health-indicators.provider.d.ts:6:export declare const HEALTH_INDICATORS: (typeof HttpHealthIndicator | typeof MongooseHealthIndicator | typeof TypeOrmHealthIndicator | typeof MikroOrmHealthIndicator | typeof SequelizeHealthIndicator | typeof PrismaHealthIndicator | typeof MicroserviceHealthIndicator | typeof GRPCHealthIndicator | typeof DiskHealthIndicator | typeof MemoryHealthIndicator)[];
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:21:exports.PrismaHealthIndicator = void 0;
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:26: * The PrismaHealthIndicator contains health indicators
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:32:let PrismaHealthIndicator = class PrismaHealthIndicator {
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:80:exports.PrismaHealthIndicator = PrismaHealthIndicator;
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:81:exports.PrismaHealthIndicator = PrismaHealthIndicator = __decorate([
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js:84:], PrismaHealthIndicator);
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.d.ts:20: * The PrismaHealthIndicator contains health indicators
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.d.ts:26:export declare class PrismaHealthIndicator {
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -n '1,200p' \[27m
+[7mnode_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js[27m[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Csed -n '1,200p' \
+node_modules/@nestjs/terminus/dist/health-indicator/database/prisma.health.js
+[?2004l"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PrismaHealthIndicator = void 0;
+const common_1 = require("@nestjs/common");
+const utils_1 = require("../../utils");
+const health_indicator_service_1 = require("../health-indicator.service");
+/**
+ * The PrismaHealthIndicator contains health indicators
+ * which are used for health checks related to Prisma
+ *
+ * @publicApi
+ * @module TerminusModule
+ */
+let PrismaHealthIndicator = class PrismaHealthIndicator {
+    constructor(healthIndicatorService) {
+        this.healthIndicatorService = healthIndicatorService;
+    }
+    pingDb(timeout, prismaClientSQLOrMongo) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // The prisma client generates two different typescript types for different databases
+            // but inside they've the same methods
+            // But they will fail when using a document method on sql database, that's why we do the try catch down below
+            const prismaClient = prismaClientSQLOrMongo;
+            try {
+                yield (0, utils_1.promiseTimeout)(timeout, prismaClient.$runCommandRaw({ ping: 1 }));
+            }
+            catch (error) {
+                if (error instanceof Error &&
+                    error.toString().includes('Use the mongodb provider')) {
+                    yield (0, utils_1.promiseTimeout)(timeout, prismaClient.$queryRawUnsafe('SELECT 1'));
+                    return;
+                }
+                throw error;
+            }
+        });
+    }
+    /**
+     * Checks if the Prisma responds in (default) 1000ms and
+     * returns a result object corresponding to the result
+     *
+     * @param key The key which will be used for the result object
+     * @param prismaClient PrismaClient
+     * @param options The options for the ping
+     */
+    pingCheck(key_1, prismaClient_1) {
+        return __awaiter(this, arguments, void 0, function* (key, prismaClient, options = {}) {
+            const check = this.healthIndicatorService.check(key);
+            const timeout = options.timeout || 1000;
+            try {
+                yield this.pingDb(timeout, prismaClient);
+            }
+            catch (error) {
+                if (error instanceof utils_1.TimeoutError) {
+                    return check.down(`timeout of ${timeout}ms exceeded`);
+                }
+                return check.down();
+            }
+            return check.up();
+        });
+    }
+};
+exports.PrismaHealthIndicator = PrismaHealthIndicator;
+exports.PrismaHealthIndicator = PrismaHealthIndicator = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [health_indicator_service_1.HealthIndicatorService])
+], PrismaHealthIndicator);
+//# sourceMappingURL=prisma.health.js.map[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -n '1,120p' \[27m
+[7mapps/backend-api/src/core/health/health.controller.ts[27m[Ased -n '1,120p' \
+apps/backend-api/src/core/health/health.controller.ts
+[?2004limport { Controller, Get } from '@nestjs/common';
+import { HealthCheckService, HealthCheck, PrismaHealthIndicator, MemoryHealthIndicator } from '@nestjs/terminus';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Controller('health')
+export class HealthController {
+  constructor(
+  private readonly health: HealthCheckService,
+  private readonly db: PrismaHealthIndicator,
+  private readonly memory: MemoryHealthIndicator,
+  private readonly prisma: PrismaService,
+) {}
+
+  @Get()
+  @HealthCheck()
+  check() {
+    return this.health.check([
+      () => this.db.pingCheck('database', this.prisma),
+      () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),
+    ]);
+  }
+}
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -n '1,120p' \[27m
+[7mapps/backend-api/src/core/health/health.module.ts[27m[Ased -n '1,120p' \
+apps/backend-api/src/core/health/health.module.ts
+[?2004limport { Module } from '@nestjs/common';
+import { TerminusModule } from '@nestjs/terminus';
+import { HealthController } from './health.controller';
+import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+
+@Module({
+  imports: [TerminusModule],
+  controllers: [HealthController],
+  providers: [PrismaService, RedisService],
+})
+export class HealthModule {}
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mgrep -n "HealthCheckService" \[27m
+[7mdist/apps/backend-api/core/health/health.controller.js[27m[Agrep -n "HealthCheckService" \
+dist/apps/backend-api/core/health/health.controller.js
+[?2004l[32m[K44[m[K[36m[K:[m[K    __metadata("design:paramtypes", [terminus_1.[01;31m[KHealthCheckService[m[K,
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mnano apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cnano apps/backend-api/src/core/health/health.module.ts
+[?2004l[?2004h[?1049h[22;0;0t[1;38r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[36;63H(B[0;7m[ Reading... ](B[m[36;61H(B[0;7m[ Read 12 lines ](B[m[H(B[0;7m  GNU nano 6.2                                 apps/backend-api/src/core/health/health.module.ts                                          [1;137H(B[m[37d(B[0;7m^G(B[m Help[37;18H(B[0;7m^O(B[m Write Out     (B[0;7m^W(B[m Where Is[52G(B[0;7m^K(B[m Cut[37;69H(B[0;7m^T(B[m Execute[86G(B[0;7m^C(B[m Location[103G(B[0;7mM-U(B[m Undo[37;120H(B[0;7mM-A(B[m Set Mark[38d(B[0;7m^X(B[m Exit[38;18H(B[0;7m^R(B[m Read File     (B[0;7m^\(B[m Replace[52G(B[0;7m^U(B[m Paste[38;69H(B[0;7m^J(B[m Justify[86G(B[0;7m^/(B[m Go To Line    (B[0;7mM-E(B[m Redo[38;120H(B[0;7mM-6(B[m Copy[2dimport { Module } from '@nestjs/common';[3dimport { TerminusModule } from '@nestjs/terminus';[4dimport { HealthController } from './health.controller';[5dimport { PrismaService } from '../prisma/prisma.service';[6dimport { RedisService } from '../redis/redis.service';[8d@Module({[9;3Himports: [TerminusModule],[10;3Hcontrollers: [HealthController],[11;3Hproviders: [PrismaService, RedisService],[12d})[13dexport class HealthModule {}[2d[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25hi[?25l[?12l[?25hm[?25l[?12l[?25hp[?25l[?12l[?25ho[?25l[?12l[?25hr[?25l[?12l[?25ht[?25l[?12l[?25h [?25l[?12l[?25h{[?25l[?12l[?25h [?25l[?12l[?25hM[?25l[?12l[?25ho[?25l[?12l[?25hd[?25l[?12l[?25hu[?25l[?12l[?25hl[?25l[?12l[?25he[?25l[?12l[?25h [?25l[?12l[?25h}[?25l[?12l[?25h [?25l[36d[K[?12l[?25h[2;20H[?25l[?12l[?25hr[?25l[?12l[?25ho[?25l[?12l[?25hm[?25l[?12l[?25h [?25l[?12l[?25h'[?25l[?12l[?25h@[?25l[?12l[?25hn[?25l[?12l[?25he[?25l[?12l[?25hs[?25l[?12l[?25ht[?25l[?12l[?25hj[?25l[?12l[?25hs[?25l[?12l[?25h/[?25l[?12l[?25hc[?25l[?12l[?25ho[?25l[?12l[?25hm[?25l[?12l[?25hm[?25l[?12l[?25ho[?25l[?12l[?25hn[?25l[?12l[?25h'[?25l[?12l[?25h;[?25l[?12l[?25h[3d[?25l[?12l[?25h[4d[?25l[?12l[?25h[5d[?25l[?12l[?25h[6d[?25l[?12l[?25h[7d[?25l[?12l[?25h[8d[?25l[?12l[?25h[9d[?25l[?12l[?25h[10d[?25l[?12l[?25h[11d[?25l[?12l[?25h[12d[?25l[?12l[?25h[13d[?25l[?12l[?25h[14d[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[13;29H[?25l[1;98H(B[0;7m*[137G(B[m[?12l[?25h[13;28H [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[A})[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[11;44H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K  [?25l[?12l[?25h[?25l[?12l[?25h[?25l[10;35H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K  [?25l[?12l[?25h[?25l[?12l[?25h[?25l[9;29H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K  [?25l[?12l[?25h[?25l[?12l[?25h[?25l[8;10H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[A[?12l[?25h[?25l[6;55H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[5;58H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[4;56H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[3;51H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[2;41H[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h[?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h [?25l[?12l[?25h[K[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25limport { Module } from '@nestjs/common';[3dimport {[4;3HTerminusModule,[5;3HPrismaHealthIndicator,[6;3HMemoryHealthIndicator,[7d} from '@nestjs/terminus';[9dimport { HealthController } from './health.controller';[10dimport { PrismaService } from '../prisma/prisma.service';[11dimport { RedisService } from '../redis/redis.service';[13d@Module({[14;3Himports: [TerminusModule],[15;3Hcontrollers: [HealthController],[16;3Hproviders: [[17;5HPrismaService,[18;5HRedisService,[19;5HPrismaHealthIndicator,[20;5HMemoryHealthIndicator,[21;3H],[22d})[23dexport class HealthModule {}[?12l[?25h[?25l[?12l[?25h[A})[?25l[?12l[?25h[A],[?25l[?12l[?25h[20;27H[?25l[?12l[?25h[A[?25l[?12l[?25h[18;18H[?25l[?12l[?25h[A,[?25l[?12l[?25h[A[?25l[?12l[?25h[15;29H[?25l[?12l[?25h[A[?25l[?12l[?25h[13;10H[?25l[?12l[?25h[A[?25l[?12l[?25h[11;29H[?25l[?12l[?25h[A[?25l[?12l[?25h[A[?25l[?12l[?25h[A[?25l[?12l[?25h[7;27H[?25l[?12l[?25h[A[?25l[?12l[?25h[A[?25l[?12l[?25h[4;18H[?25l[?12l[?25h[3;9H[?25l[?12l[?25h[2;29H[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25hoimport { Module } from '@nestjs/common';o[?25l[37;18H[17X[37;35H(B[0;7mM-D(B[m DOS Format         [37;69H(B[0;7mM-A(B[m Append[86G           [37;105H(B[0;7mB(B[m Backup File[K[38;2H(B[0;7mC(B[m Cancel[38;18H[17X[38;35H(B[0;7mM-M(B[m Mac Format           [38;69H(B[0;7mM-P(B[m Prepend[86G[17X[38;103H(B[0;7m^T(B[m Browse[K[36d(B[0;7mFile Name to Write: apps/backend-api/src/core/health/health.module.ts                                                                     [36;70H(B[m[?12l[?25h[?25l[36;62H[1K (B[0;7m[ Writing... ](B[m[K[1;98H(B[0;7m [137G(B[m[36;61H(B[0;7m[ Wrote 22 lines ](B[m[37;18H(B[0;7m^O(B[m Write Out     (B[0;7m^W(B[m Where Is      (B[0;7m^K(B[m Cut[37;69H(B[0;7m^T(B[m Execute[86G(B[0;7m^C(B[m Location[37;105H(B[0;7mU(B[m Undo         (B[0;7mM-A(B[m Set Mark[38;2H(B[0;7mX(B[m Exit  [38;18H(B[0;7m^R(B[m Read File     (B[0;7m^\(B[m Replace       (B[0;7m^U(B[m Paste[38;69H(B[0;7m^J(B[m Justify [86G(B[0;7m^/(B[m Go To Line    (B[0;7mM-E(B[m Redo [38;120H(B[0;7mM-6(B[m Copy[?12l[?25h[2do[?25l[36d[J[38d[?12l[?25h[38;1H[?1049l[23;0;0t[?1l>[?2004l[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mcd ~/VTC-atlas-api[27m
+
+[7mrm -rf dist[27m
+
+[7mnpm run build backend-api[27m[A[A[A[A]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# cd ~/VTC-atlas-api
+
+rm -rf dist
+
+npm run build backend-api
+[?2004l
+> atlas-monorepo@0.0.1 build
+> nest build backend-api backend-api
+
+[1G[0K[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m1[0m:[93m1[0m - [91merror[0m[90m TS1435: [0mUnknown keyword or identifier. Did you mean 'import'?
+
+[7m1[0m oimport { Module } from '@nestjs/common';
+[7m [0m [91m~~~~~~~[0m
+[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m1[0m:[93m1[0m - [91merror[0m[90m TS2304: [0mCannot find name 'oimport'.
+
+[7m1[0m oimport { Module } from '@nestjs/common';
+[7m [0m [91m~~~~~~~[0m
+[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m1[0m:[93m11[0m - [91merror[0m[90m TS2552: [0mCannot find name 'Module'. Did you mean 'module'?
+
+[7m1[0m oimport { Module } from '@nestjs/common';
+[7m [0m [91m          ~~~~~~[0m
+
+  [96mnode_modules/@types/node/module.d.ts[0m:[93m824[0m:[93m13[0m
+    [7m824[0m         var module: NodeJS.Module;
+    [7m   [0m [96m            ~~~~~~[0m
+    'module' is declared here.
+[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m1[0m:[93m20[0m - [91merror[0m[90m TS1434: [0mUnexpected keyword or identifier.
+
+[7m1[0m oimport { Module } from '@nestjs/common';
+[7m [0m [91m                   ~~~~[0m
+[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m1[0m:[93m20[0m - [91merror[0m[90m TS2304: [0mCannot find name 'from'.
+
+[7m1[0m oimport { Module } from '@nestjs/common';
+[7m [0m [91m                   ~~~~[0m
+[96mapps/backend-api/src/core/health/health.module.ts[0m:[93m12[0m:[93m2[0m - [91merror[0m[90m TS2552: [0mCannot find name 'Module'. Did you mean 'module'?
+
+[7m12[0m @Module({
+[7m  [0m [91m ~~~~~~[0m
+
+  [96mnode_modules/@types/node/module.d.ts[0m:[93m824[0m:[93m13[0m
+    [7m824[0m         var module: NodeJS.Module;
+    [7m   [0m [96m            ~~~~~~[0m
+    'module' is declared here.
+
+Found 6 error(s).
+
+[1G[0K⠙[1G[0K[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -n '1,20p' apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Csed -n '1,20p' apps/backend-api/src/core/health/health.module.ts
+[?2004loimport { Module } from '@nestjs/common';
+import {
+  TerminusModule,
+  PrismaHealthIndicator,
+  MemoryHealthIndicator,
+} from '@nestjs/terminus';
+
+import { HealthController } from './health.controller';
+import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
+
+@Module({
+  imports: [TerminusModule],
+  controllers: [HealthController],
+  providers: [
+    PrismaService,
+    RedisService,
+    PrismaHealthIndicator,
+    MemoryHealthIndicator,
+  ],
+[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mnano apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cnano apps/backend-api/src/core/health/health.module.ts
+[?2004l[?2004h[?1049h[22;0;0t[1;38r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[36;63H(B[0;7m[ Reading... ](B[m[36;61H(B[0;7m[ Read 22 lines ](B[m[H(B[0;7m  GNU nano 6.2                                 apps/backend-api/src/core/health/health.module.ts                                          [1;137H(B[m[37d(B[0;7m^G(B[m Help[37;18H(B[0;7m^O(B[m Write Out     (B[0;7m^W(B[m Where Is[52G(B[0;7m^K(B[m Cut[37;69H(B[0;7m^T(B[m Execute[86G(B[0;7m^C(B[m Location[103G(B[0;7mM-U(B[m Undo[37;120H(B[0;7mM-A(B[m Set Mark[38d(B[0;7m^X(B[m Exit[38;18H(B[0;7m^R(B[m Read File     (B[0;7m^\(B[m Replace[52G(B[0;7m^U(B[m Paste[38;69H(B[0;7m^J(B[m Justify[86G(B[0;7m^/(B[m Go To Line    (B[0;7mM-E(B[m Redo[38;120H(B[0;7mM-6(B[m Copy[2doimport { Module } from '@nestjs/common';[3dimport {[4;3HTerminusModule,[5;3HPrismaHealthIndicator,[6;3HMemoryHealthIndicator,[7d} from '@nestjs/terminus';[9dimport { HealthController } from './health.controller';[10dimport { PrismaService } from '../prisma/prisma.service';[11dimport { RedisService } from '../redis/redis.service';[13d@Module({[14;3Himports: [TerminusModule],[15;3Hcontrollers: [HealthController],[16;3Hproviders: [[17;5HPrismaService,[18;5HRedisService,[19;5HPrismaHealthIndicator,[20;5HMemoryHealthIndicator,[21;3H],[22d})[23dexport class HealthModule {}[2d[?12l[?25h[?25l[?12l[?25h[3d[?25l[?12l[?25h[A[?25l[?12l[?25ho[?25l[1;98H(B[0;7m*[137G(B[m[?12l[?25h[2d[1P[?25l[37;18H[17X[37;35H(B[0;7mM-D(B[m DOS Format         [37;69H(B[0;7mM-A(B[m Append[86G           [37;105H(B[0;7mB(B[m Backup File[K[38;2H(B[0;7mC(B[m Cancel[38;18H[17X[38;35H(B[0;7mM-M(B[m Mac Format           [38;69H(B[0;7mM-P(B[m Prepend[86G[17X[38;103H(B[0;7m^T(B[m Browse[K[36d(B[0;7mFile Name to Write: apps/backend-api/src/core/health/health.module.ts                                                                     [36;70H(B[m[?12l[?25h[?25l[?12l[?25h[?25l[?12l[?25h[?25l[36;62H[1K (B[0;7m[ Writing... ](B[m[K[1;98H(B[0;7m [137G(B[m[36;61H(B[0;7m[ Wrote 22 lines ](B[m[37;18H(B[0;7m^O(B[m Write Out     (B[0;7m^W(B[m Where Is      (B[0;7m^K(B[m Cut[37;69H(B[0;7m^T(B[m Execute[86G(B[0;7m^C(B[m Location[37;105H(B[0;7mU(B[m Undo         (B[0;7mM-A(B[m Set Mark[38;2H(B[0;7mX(B[m Exit  [38;18H(B[0;7m^R(B[m Read File     (B[0;7m^\(B[m Replace       (B[0;7m^U(B[m Paste[38;69H(B[0;7m^J(B[m Justify [86G(B[0;7m^/(B[m Go To Line    (B[0;7mM-E(B[m Redo [38;120H(B[0;7mM-6(B[m Copy[?12l[?25h[2d[?25l[36d[J[38d[?12l[?25h[38;1H[?1049l[23;0;0t[?1l>[?2004l[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -i '1s/^oimport/import/' apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Csed -i '1s/^oimport/import/' apps/backend-api/src/core/health/health.module.ts
+[?2004l[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7msed -i '1s/^oimport/import/' apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Csed -i '1s/^oimport/import/' apps/backend-api/src/core/health/health.module.ts
+[?2004l[?2004h]0;root@srv1749074: ~/VTC-atlas-apiroot@srv1749074:~/VTC-atlas-api# [7mnano apps/backend-api/src/core/health/health.module.ts[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[Cnano apps/backend-api/src/core/health/health.module.ts
+[?2004l[?2004h[?1049h[22;0;0t[1;38r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[36;63H(B[0;7m[ Reading... ](B[m[36;61H(B[0;7m[ Read 22 lines ](B[m[H(B[0;7m  GNU nano 6.2                                 apps/backend-api/src/core/health/health.module.ts                                          [1;137H(B[m[37d(B[0;7m^G(B[m Help[37;18H(B[0;7m^O(B[m Write Out     (B[0;7m^W(B[m Where Is[52G(B[0;7
