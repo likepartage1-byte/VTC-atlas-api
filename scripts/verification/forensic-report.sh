@@ -66,7 +66,7 @@ async function main() {
   console.log('✅ Redis PING:', ping);
   
   console.log('Testing BullMQ structure...');
-  const keys = await redis.keys('bull:notifications:*');
+  const keys = await redis.keys('*notifications*');
   console.log('✅ Notification queue keys found:', keys.length);
 }
 
