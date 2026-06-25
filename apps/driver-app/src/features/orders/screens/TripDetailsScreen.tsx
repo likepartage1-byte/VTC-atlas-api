@@ -15,6 +15,35 @@ const darkMapStyle = [
   { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#000000" }] }
 ];
 
+// Helper to decode Google Polyline string to Coordinates array
+const decodePolyline = (encoded: string) => {
+  if (!encoded) return [];
+  let points = [];
+  let index = 0, len = encoded.length;
+  let lat = 0, lng = 0;
+  while (index < len) {
+    let b, shift = 0, result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lat += dlat;
+    shift = 0;
+    result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+    lng += dlng;
+    points.push({ latitude: lat / 1e5, longitude: lng / 1e5 });
+  }
+  return points;
+};
+
 export const TripDetailsScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
@@ -26,7 +55,6 @@ export const TripDetailsScreen = () => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [mapReady, setMapReady] = useState(false);
 
-  // 4. Reset timer on orderId change
   useEffect(() => {
     setTimeLeft(30);
     const timer = setInterval(() => {
@@ -35,35 +63,36 @@ export const TripDetailsScreen = () => {
     return () => clearInterval(timer);
   }, [orderId]);
 
-  // 7. Timer expiry action
   useEffect(() => {
     if (timeLeft === 0) {
-      console.log(`[Order] Expiry reached for ${orderId}`);
       navigation.goBack();
     }
-  }, [timeLeft, navigation, orderId]);
+  }, [timeLeft, navigation]);
 
-  // 3. Fallback and Parsing for Coordinates (NaN Protection)
   const pickupLat = parseFloat(String(order?.pickupLat || '33.5731'));
   const pickupLng = parseFloat(String(order?.pickupLng || '-7.5898'));
   const dropoffLat = parseFloat(String(order?.dropoffLat || '34.0209'));
   const dropoffLng = parseFloat(String(order?.dropoffLng || '-6.8416'));
 
-  // 2. Map Ready & Fit Logic
+  // Decode the real route if provided by Google Directions
+  const routeCoordinates = useMemo(() => {
+    if (order?.polyline) {
+      return decodePolyline(order.polyline);
+    }
+    return [
+      { latitude: pickupLat, longitude: pickupLng },
+      { latitude: dropoffLat, longitude: dropoffLng }
+    ];
+  }, [order, pickupLat, pickupLng, dropoffLat, dropoffLng]);
+
   useEffect(() => {
     if (mapReady && order && mapRef.current) {
-      mapRef.current.fitToCoordinates(
-        [
-          { latitude: pickupLat, longitude: pickupLng },
-          { latitude: dropoffLat, longitude: dropoffLng }
-        ],
-        {
-          edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
-          animated: true,
-        }
-      );
+      mapRef.current.fitToCoordinates(routeCoordinates, {
+        edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
+        animated: true,
+      });
     }
-  }, [mapReady, order, pickupLat, pickupLng, dropoffLat, dropoffLng]);
+  }, [mapReady, order, routeCoordinates]);
 
   if (!order) {
     return (
@@ -73,10 +102,8 @@ export const TripDetailsScreen = () => {
     );
   }
 
-  // 5. Correct handler for Bid amount
   const handleBidSubmit = (amount: number) => {
     console.log(`[Socket] Sending real bid: ${amount} MAD for ride ${orderId}`);
-    // Socket emit would go here
     navigation.goBack();
   };
 
@@ -89,7 +116,6 @@ export const TripDetailsScreen = () => {
           style={styles.map}
           customMapStyle={darkMapStyle}
           onMapReady={() => setMapReady(true)}
-          // 1. Initial Region Protection
           initialRegion={{
             latitude: pickupLat,
             longitude: pickupLng,
@@ -110,12 +136,10 @@ export const TripDetailsScreen = () => {
           </Marker>
 
           <Polyline
-            coordinates={[
-              { latitude: pickupLat, longitude: pickupLng },
-              { latitude: dropoffLat, longitude: dropoffLng },
-            ]}
+            coordinates={routeCoordinates}
             strokeColor="#32FF7E"
             strokeWidth={4}
+            lineCap="round"
           />
         </MapView>
 
@@ -125,7 +149,6 @@ export const TripDetailsScreen = () => {
             <View style={[styles.progressBarFill, { width: `${(timeLeft / 30) * 100}%` }]} />
           </View>
           <View style={styles.personaRow}>
-            {/* 8. Avatar Fallback handling */}
             <Image 
               source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
               style={styles.avatar} 
@@ -155,7 +178,6 @@ export const TripDetailsScreen = () => {
       </View>
 
       <View style={styles.bottomSection}>
-        {/* Fare Hero Section */}
         <View style={styles.fareHero}>
             <View>
               <Text style={styles.fareAmount}>{order.offeredPrice}</Text>
@@ -169,7 +191,6 @@ export const TripDetailsScreen = () => {
             </View>
         </View>
 
-        {/* 6. Chips Row Logic fix */}
         <View style={styles.chipsRow}>
             {order.pickupEta && (
               <View style={styles.chip}>
@@ -212,7 +233,6 @@ export const TripDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  // 10. Reliable height instead of flex: 1.1
   mapZone: { height: SCREEN_HEIGHT * 0.55, position: 'relative' },
   map: { ...StyleSheet.absoluteFillObject },
   personaCard: {
