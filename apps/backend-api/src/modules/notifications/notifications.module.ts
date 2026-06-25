@@ -33,6 +33,6 @@ import { NotificationController } from './presentation/controllers/notification.
     WhatsAppService,
   ],
   controllers: [NotificationController],
-  exports: [NotificationService, NotificationOrchestrator],
+  exports: [NotificationService, NotificationOrchestrator, FCMService],
 })
 export class NotificationsModule {}

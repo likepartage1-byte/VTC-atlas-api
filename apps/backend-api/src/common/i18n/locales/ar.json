@@ -1,0 +1,17 @@
+{
+  "wallet": {
+    "title": "المحفظة",
+    "commission": "العمولة الحالية",
+    "balance": "الرصيد",
+    "topup": "إعادة التعبئة",
+    "custom_amount": "مبلغ مخصص",
+    "min_limit": "الحد الأقصى 150",
+    "rides_estimation_note": "عدد الرحلات المعروض تقديري وقد يختلف حسب قيمة الرحلات والعمولات المطبقة.",
+    "payment_method": {
+      "title": "اختر وسيلة الدفع",
+      "bank_card": "بطاقة بنكية",
+      "wafacash": "Wafacash",
+      "cashplus": "Cash Plus"
+    }
+  }
+}

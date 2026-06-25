@@ -20,6 +20,11 @@ export class DriverWalletController {
   async getHistory(@Request() req: any) {
     return this.withdrawalService.getDriverRequests(req.user.driverId);
   }
+
+  @Post('topup')
+  async initiateTopup(@Request() req: any, @Body() body: { amount: number; paymentMethod: string }) {
+    return this.withdrawalService.initiateTopup(req.user.driverId, body.amount, body.paymentMethod);
+  }
 }
 
 @Controller('admin/withdrawals')

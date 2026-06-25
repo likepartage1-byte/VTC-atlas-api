@@ -1,11 +1,15 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { FCMService } from '../../notifications/application/services/fcm.service';
 
 @Injectable()
 export class WithdrawalService {
   private readonly logger = new Logger(WithdrawalService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: FCMService
+  ) {}
 
   /**
    * 1. REQUEST WITHDRAWAL
@@ -70,7 +74,7 @@ export class WithdrawalService {
       });
 
       // Update request status
-      return await tx.withdrawalRequest.update({
+      const updated = await tx.withdrawalRequest.update({
         where: { id: requestId },
         data: {
           status: 'REJECTED',
@@ -78,7 +82,19 @@ export class WithdrawalService {
           adminId,
           processedAt: new Date(),
         },
+        include: { driver: { include: { user: true } } }
       });
+
+      // Send Push Notification
+      if (updated.driver.user.fcmToken) {
+        await this.notificationService.sendToToken(
+          updated.driver.user.fcmToken,
+          'Demande de retrait refusée',
+          `Votre demande de ${updated.amount} MAD a été refusée. Raison: ${reason}`
+        );
+      }
+
+      return updated;
     });
   }
 
@@ -123,7 +139,7 @@ export class WithdrawalService {
       });
 
       // Update Request
-      return await tx.withdrawalRequest.update({
+      const updated = await tx.withdrawalRequest.update({
         where: { id: requestId },
         data: {
           status: 'PAID',
@@ -132,7 +148,19 @@ export class WithdrawalService {
           adminId,
           notes,
         },
+        include: { driver: { include: { user: true } } }
       });
+
+      // Send Push Notification
+      if (updated.driver.user.fcmToken) {
+        await this.notificationService.sendToToken(
+          updated.driver.user.fcmToken,
+          'Paiement effectué',
+          `Votre virement de ${updated.amount} MAD a été effectué avec succès.`
+        );
+      }
+
+      return updated;
     });
   }
 
@@ -152,6 +180,28 @@ export class WithdrawalService {
         }
       },
       orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /**
+   * 4. INITIATE TOP-UP
+   * Logic: Create a pending CREDIT transaction for the recharge.
+   */
+  async initiateTopup(driverId: string, amount: number, paymentMethod: string) {
+    if (amount < 50 || amount > 150) {
+      throw new BadRequestException('Top-up amount must be between 50 and 150 MAD');
+    }
+
+    return await this.prisma.driverTransaction.create({
+      data: {
+        driverId,
+        type: 'CREDIT',
+        amount,
+        status: 'PENDING',
+        referenceType: 'TOPUP_REQUEST',
+        description: `Top-up request via ${paymentMethod}`,
+        metadata: { paymentMethod, initiatedAt: new Date() },
+      },
     });
   }
 }

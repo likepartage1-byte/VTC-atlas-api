@@ -1,0 +1,17 @@
+{
+  "wallet": {
+    "title": "Wallet",
+    "commission": "Current commission",
+    "balance": "Balance",
+    "topup": "Top Up",
+    "custom_amount": "Custom amount",
+    "min_limit": "Maximum 150",
+    "rides_estimation_note": "The number of rides shown is estimated and may vary based on ride values and applied commissions.",
+    "payment_method": {
+      "title": "Choose payment method",
+      "bank_card": "Bank Card",
+      "wafacash": "Wafacash",
+      "cashplus": "Cash Plus"
+    }
+  }
+}

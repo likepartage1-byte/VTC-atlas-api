@@ -1,0 +1,17 @@
+{
+  "wallet": {
+    "title": "Portefeuille",
+    "commission": "Commission actuelle",
+    "balance": "Solde",
+    "topup": "Recharger",
+    "custom_amount": "Montant personnalisé",
+    "min_limit": "Maximum 150",
+    "rides_estimation_note": "Le nombre de courses affiché est estimé et peut varier selon la valeur des courses et les commissions appliquées.",
+    "payment_method": {
+      "title": "Choisissez un moyen de paiement",
+      "bank_card": "Carte bancaire",
+      "wafacash": "Wafacash",
+      "cashplus": "Cash Plus"
+    }
+  }
+}
