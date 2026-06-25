@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Dimensions, Platform, Image } from 'react-native';
+import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Platform, Image } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useOrdersStore } from '../../../store/useOrdersStore';
 import { BidBottomSheet } from '../components/BidBottomSheet';
 import { useRoute, useNavigation } from '@react-navigation/native';
-
-const { width } = Dimensions.get('window');
 
 const darkMapStyle = [
   { "elementType": "geometry", "stylers": [{ "color": "#121212" }] },
@@ -18,6 +16,7 @@ const darkMapStyle = [
 export const TripDetailsScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
+  const mapRef = React.useRef<MapView>(null);
   const { orderId } = route.params;
   const { orders } = useOrdersStore();
   
@@ -30,6 +29,26 @@ export const TripDetailsScreen = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const pickupLat = Number(order?.pickupLat);
+  const pickupLng = Number(order?.pickupLng);
+  const dropoffLat = Number(order?.dropoffLat);
+  const dropoffLng = Number(order?.dropoffLng);
+
+  useEffect(() => {
+    if (order && mapRef.current) {
+      mapRef.current.fitToCoordinates(
+        [
+          { latitude: pickupLat, longitude: pickupLng },
+          { latitude: dropoffLat, longitude: dropoffLng }
+        ],
+        {
+          edgePadding: { top: 150, right: 50, bottom: 50, left: 50 },
+          animated: true,
+        }
+      );
+    }
+  }, [order]);
 
   if (!order) {
     return (
@@ -48,23 +67,18 @@ export const TripDetailsScreen = () => {
     <View style={styles.container}>
       <View style={styles.mapZone}>
         <MapView
+          ref={mapRef}
           provider={PROVIDER_GOOGLE}
           style={styles.map}
           customMapStyle={darkMapStyle}
-          initialRegion={{
-            latitude: (order.pickupLat + order.dropoffLat) / 2,
-            longitude: (order.pickupLng + order.dropoffLng) / 2,
-            latitudeDelta: Math.abs(order.pickupLat - order.dropoffLat) * 2,
-            longitudeDelta: Math.abs(order.pickupLng - order.dropoffLng) * 2,
-          }}
         >
-          <Marker coordinate={{ latitude: order.pickupLat, longitude: order.pickupLng }}>
+          <Marker coordinate={{ latitude: pickupLat, longitude: pickupLng }}>
             <View style={[styles.customMarker, { borderColor: '#32FF7E' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#32FF7E' }]} />
             </View>
           </Marker>
 
-          <Marker coordinate={{ latitude: order.dropoffLat, longitude: order.dropoffLng }}>
+          <Marker coordinate={{ latitude: dropoffLat, longitude: dropoffLng }}>
             <View style={[styles.customMarker, { borderColor: '#FF4D4D' }]}>
                <View style={[styles.markerDot, { backgroundColor: '#FF4D4D' }]} />
             </View>
@@ -72,8 +86,8 @@ export const TripDetailsScreen = () => {
 
           <Polyline
             coordinates={[
-              { latitude: order.pickupLat, longitude: order.pickupLng },
-              { latitude: order.dropoffLat, longitude: order.dropoffLng },
+              { latitude: pickupLat, longitude: pickupLng },
+              { latitude: dropoffLat, longitude: dropoffLng },
             ]}
             strokeColor="#32FF7E"
             strokeWidth={4}
@@ -92,17 +106,19 @@ export const TripDetailsScreen = () => {
             />
             <View style={styles.personaInfo}>
               <View style={styles.nameRow}>
-                <Text style={styles.passengerName}>{order.passengerName.split(' ')[0]}</Text>
+                <Text style={styles.passengerName}>
+                  {order.passengerName ? order.passengerName.split(' ')[0] : 'Passager'}
+                </Text>
                 <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>⭐ {order.passengerRating}</Text>
+                  <Text style={styles.ratingText}>⭐ {String(order.passengerRating)}</Text>
                 </View>
               </View>
               <Text style={styles.verificationText}>
-                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {order.passengerTripsCount || 12} trajets
+                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {String(order.passengerTripsCount || 12)} trajets
               </Text>
             </View>
             <View style={styles.timerCircle}>
-               <Text style={styles.timerText}>{timeLeft}s</Text>
+               <Text style={styles.timerText}>{String(timeLeft)}s</Text>
             </View>
           </View>
         </View>
@@ -116,7 +132,7 @@ export const TripDetailsScreen = () => {
         {/* 2. Fare Hero Section */}
         <View style={styles.fareHero}>
             <View>
-              <Text style={styles.fareAmount}>{order.offeredPrice}</Text>
+              <Text style={styles.fareAmount}>{String(order.offeredPrice)}</Text>
               <Text style={styles.fareCurrency}>MAD</Text>
             </View>
             <View style={styles.fareLabels}>
@@ -220,6 +236,20 @@ const styles = StyleSheet.create({
   addrLine: { flexDirection: 'row', alignItems: 'center', marginVertical: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 12 },
   addrText: { color: '#888', fontSize: 13, flex: 1 },
+  customMarker: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 3,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  markerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   errorView: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   errorText: { color: '#444' }
 });
