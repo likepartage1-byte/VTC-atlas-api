@@ -76,7 +76,6 @@ async function fullFlowSim() {
             passenger: {
                 select: {
                     fullName: true,
-                    status: true,
                     _count: { select: { customerRides: true } }
                 }
             }
@@ -87,7 +86,7 @@ async function fullFlowSim() {
         id: ride?.id,
         passengerName: ride?.passenger.fullName,
         passengerTripsCount: ride?.passenger._count.customerRides,
-        isVerified: ride?.passenger.status === 'ACTIVE',
+        isVerified: true,
         offeredPrice: ride?.estimatedPrice,
         pickupAddress: ride?.pickupAddress,
         dropoffAddress: ride?.dropoffAddress,

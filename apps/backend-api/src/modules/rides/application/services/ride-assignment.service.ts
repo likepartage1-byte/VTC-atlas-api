@@ -66,7 +66,6 @@ export class RideAssignmentService {
         passenger: {
           select: {
             fullName: true,
-            status: true,
             _count: {
               select: { customerRides: true }
             }
