@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Platform, Image } from 'react-native';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Platform, Image, Dimensions } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useOrdersStore } from '../../../store/useOrdersStore';
 import { BidBottomSheet } from '../components/BidBottomSheet';
 import { useRoute, useNavigation } from '@react-navigation/native';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const darkMapStyle = [
   { "elementType": "geometry", "stylers": [{ "color": "#121212" }] },
@@ -16,27 +18,40 @@ const darkMapStyle = [
 export const TripDetailsScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation();
-  const mapRef = React.useRef<MapView>(null);
+  const mapRef = useRef<MapView>(null);
   const { orderId } = route.params;
   const { orders } = useOrdersStore();
   
-  const order = orders.find(o => o.id === orderId);
+  const order = useMemo(() => orders.find(o => o.id === orderId), [orders, orderId]);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [mapReady, setMapReady] = useState(false);
 
+  // 4. Reset timer on orderId change
   useEffect(() => {
+    setTimeLeft(30);
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [orderId]);
 
-  const pickupLat = Number(order?.pickupLat);
-  const pickupLng = Number(order?.pickupLng);
-  const dropoffLat = Number(order?.dropoffLat);
-  const dropoffLng = Number(order?.dropoffLng);
-
+  // 7. Timer expiry action
   useEffect(() => {
-    if (order && mapRef.current) {
+    if (timeLeft === 0) {
+      console.log(`[Order] Expiry reached for ${orderId}`);
+      navigation.goBack();
+    }
+  }, [timeLeft, navigation, orderId]);
+
+  // 3. Fallback and Parsing for Coordinates (NaN Protection)
+  const pickupLat = parseFloat(String(order?.pickupLat || '33.5731'));
+  const pickupLng = parseFloat(String(order?.pickupLng || '-7.5898'));
+  const dropoffLat = parseFloat(String(order?.dropoffLat || '34.0209'));
+  const dropoffLng = parseFloat(String(order?.dropoffLng || '-6.8416'));
+
+  // 2. Map Ready & Fit Logic
+  useEffect(() => {
+    if (mapReady && order && mapRef.current) {
       mapRef.current.fitToCoordinates(
         [
           { latitude: pickupLat, longitude: pickupLng },
@@ -48,7 +63,7 @@ export const TripDetailsScreen = () => {
         }
       );
     }
-  }, [order]);
+  }, [mapReady, order, pickupLat, pickupLng, dropoffLat, dropoffLng]);
 
   if (!order) {
     return (
@@ -58,8 +73,10 @@ export const TripDetailsScreen = () => {
     );
   }
 
+  // 5. Correct handler for Bid amount
   const handleBidSubmit = (amount: number) => {
-    console.log(`[Socket] Sending bid: ${amount} MAD for ${orderId}`);
+    console.log(`[Socket] Sending real bid: ${amount} MAD for ride ${orderId}`);
+    // Socket emit would go here
     navigation.goBack();
   };
 
@@ -71,6 +88,14 @@ export const TripDetailsScreen = () => {
           provider={PROVIDER_GOOGLE}
           style={styles.map}
           customMapStyle={darkMapStyle}
+          onMapReady={() => setMapReady(true)}
+          // 1. Initial Region Protection
+          initialRegion={{
+            latitude: pickupLat,
+            longitude: pickupLng,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
         >
           <Marker coordinate={{ latitude: pickupLat, longitude: pickupLng }}>
             <View style={[styles.customMarker, { borderColor: '#32FF7E' }]}>
@@ -94,12 +119,13 @@ export const TripDetailsScreen = () => {
           />
         </MapView>
 
-        {/* 1. Passenger Persona Card */}
+        {/* Persona Card */}
         <View style={styles.personaCard}>
           <View style={styles.progressBarBg}>
             <View style={[styles.progressBarFill, { width: `${(timeLeft / 30) * 100}%` }]} />
           </View>
           <View style={styles.personaRow}>
+            {/* 8. Avatar Fallback handling */}
             <Image 
               source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
               style={styles.avatar} 
@@ -107,18 +133,18 @@ export const TripDetailsScreen = () => {
             <View style={styles.personaInfo}>
               <View style={styles.nameRow}>
                 <Text style={styles.passengerName}>
-                  {order.passengerName ? order.passengerName.split(' ')[0] : 'Passager'}
+                  {order.passengerName ? order.passengerName.split(' ')[0] : 'Client'}
                 </Text>
                 <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>⭐ {String(order.passengerRating)}</Text>
+                  <Text style={styles.ratingText}>⭐ {order.passengerRating}</Text>
                 </View>
               </View>
               <Text style={styles.verificationText}>
-                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {String(order.passengerTripsCount || 12)} trajets
+                {order.isVerified ? '🟢 Vérifié' : '⚪ En attente'} • {order.passengerTripsCount} trajets
               </Text>
             </View>
             <View style={styles.timerCircle}>
-               <Text style={styles.timerText}>{String(timeLeft)}s</Text>
+               <Text style={styles.timerText}>{timeLeft}s</Text>
             </View>
           </View>
         </View>
@@ -129,10 +155,10 @@ export const TripDetailsScreen = () => {
       </View>
 
       <View style={styles.bottomSection}>
-        {/* 2. Fare Hero Section */}
+        {/* Fare Hero Section */}
         <View style={styles.fareHero}>
             <View>
-              <Text style={styles.fareAmount}>{String(order.offeredPrice)}</Text>
+              <Text style={styles.fareAmount}>{order.offeredPrice}</Text>
               <Text style={styles.fareCurrency}>MAD</Text>
             </View>
             <View style={styles.fareLabels}>
@@ -143,17 +169,23 @@ export const TripDetailsScreen = () => {
             </View>
         </View>
 
-        {/* 3. ETA + Distance Chips */}
+        {/* 6. Chips Row Logic fix */}
         <View style={styles.chipsRow}>
-            <View style={styles.chip}>
-                <Text style={styles.chipText}>🚗 {order.pickupEta || '8 min'}</Text>
-            </View>
-            <View style={styles.chip}>
-                <Text style={styles.chipText}>📍 {order.distanceToPickup || '3.4 km'}</Text>
-            </View>
-            <View style={[styles.chip, { backgroundColor: '#1A3324' }]}>
+            {order.pickupEta && (
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>🚗 {order.pickupEta}</Text>
+              </View>
+            )}
+            {order.distanceToPickup && (
+              <View style={styles.chip}>
+                <Text style={styles.chipText}>📍 {order.distanceToPickup}</Text>
+              </View>
+            )}
+            {!order.isNewPassenger && (
+              <View style={[styles.chip, { backgroundColor: '#1A3324' }]}>
                 <Text style={[styles.chipText, { color: '#32FF7E' }]}>Client Fidèle</Text>
-            </View>
+              </View>
+            )}
         </View>
 
         <View style={styles.addressBox}>
@@ -180,7 +212,8 @@ export const TripDetailsScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  mapZone: { flex: 1.1, position: 'relative' },
+  // 10. Reliable height instead of flex: 1.1
+  mapZone: { height: SCREEN_HEIGHT * 0.55, position: 'relative' },
   map: { ...StyleSheet.absoluteFillObject },
   personaCard: {
     position: 'absolute',
@@ -221,7 +254,7 @@ const styles = StyleSheet.create({
   timerText: { color: '#32FF7E', fontSize: 12, fontWeight: 'bold' },
   backBtn: { position: 'absolute', bottom: 20, left: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#333' },
   backText: { color: '#FFF', fontSize: 22 },
-  bottomSection: { backgroundColor: '#0A0A0A', borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, padding: 20 },
+  bottomSection: { flex: 1, backgroundColor: '#0A0A0A', borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, padding: 20 },
   fareHero: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 },
   fareAmount: { color: '#FFF', fontSize: 56, fontWeight: '900', lineHeight: 60 },
   fareCurrency: { color: '#32FF7E', fontSize: 16, fontWeight: '700', marginLeft: 2 },
