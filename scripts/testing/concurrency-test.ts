@@ -1,14 +1,20 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from '../../apps/backend-api/src/app.module';
+import { Test } from '@nestjs/testing';
+import { RidesModule } from '../../apps/backend-api/src/modules/rides/rides.module';
 import { RideAssignmentService } from '../../apps/backend-api/src/modules/rides/application/services/ride-assignment.service';
 import { PrismaService } from '../../apps/backend-api/src/core/prisma/prisma.service';
 import { RideStatus } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 async function runTest() {
-  const app = await NestFactory.createApplicationContext(AppModule);
-  const service = app.get(RideAssignmentService);
-  const prisma = app.get(PrismaService);
+  console.log('🧪 Bootstrapping Isolated Test Context...');
+  
+  // تحميل مديول الرحلات فقط مع الـ Core التابع له
+  const moduleRef = await Test.createTestingModule({
+    imports: [RidesModule],
+  }).compile();
+
+  const service = moduleRef.get(RideAssignmentService);
+  const prisma = moduleRef.get(PrismaService);
 
   const rideId = randomUUID();
   const passengerId = randomUUID();
@@ -33,9 +39,8 @@ async function runTest() {
 
   console.log('✅ Ride Created. Launching 5 simultaneous drivers...');
 
-  // 2. إطلاق 5 سائقين متزامنين في نفس اللحظة برمجياً
+  // 2. إطلاق 5 سائقين متزامنين
   const drivers = ['driver-A', 'driver-B', 'driver-C', 'driver-D', 'driver-E'];
-  
   const results = await Promise.allSettled(
     drivers.map(id => service.assignRide(rideId, id))
   );
@@ -52,7 +57,7 @@ async function runTest() {
     }
   });
 
-  // 4. التحقق النهائي من قاعدة البيانات
+  // 4. التحقق النهائي
   const finalState = await prisma.ride.findUnique({ where: { id: rideId } });
   console.log('\n--- FINAL VERDICT ---');
   console.log(`Winners Count: ${winners}`);
@@ -65,8 +70,11 @@ async function runTest() {
     console.log('\n🚨 TEST FAILED: Race Condition Detected! 🚨');
   }
 
-  await app.close();
+  await moduleRef.close();
   process.exit(0);
 }
 
-runTest();
+runTest().catch(err => {
+  console.error('💥 Test Execution Error:', err);
+  process.exit(1);
+});
