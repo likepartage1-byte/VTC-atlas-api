@@ -1,70 +1,59 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { RideOrder } from '../../../store/useOrdersStore';
 
 interface Props {
   order: RideOrder;
-  onPress: () => void;
+  onPress: (order: RideOrder) => void;
 }
 
-// استخدام Named Export مع React.memo لضمان توافق الـ Build ومنع الـ Re-renders
-export const OrderCard = React.memo(({ order, onPress }: Props) => {
+export const OrderCard = memo(({ order, onPress }: Props) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity 
+      style={styles.card} 
+      onPress={() => onPress(order)}
+      activeOpacity={0.8}
+    >
       <View style={styles.header}>
-        <View style={styles.passengerSide}>
-          <View style={styles.avatarContainer}>
-             {order.passengerAvatar ? (
-               <Image source={{ uri: order.passengerAvatar }} style={styles.avatar} />
-             ) : (
-               <View style={styles.avatarPlaceholder} />
-             )}
-          </View>
+        <View style={styles.passengerInfo}>
+          <Image 
+            source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
+            style={styles.avatar} 
+          />
           <View>
             <View style={styles.nameRow}>
-              <Text style={styles.name}>{order.passengerName}</Text>
-              {order.isNewPassenger && (
-                <View style={styles.newBadge}>
-                  <Text style={styles.newBadgeText}>NOUVEAU</Text>
-                </View>
-              )}
+               <Text style={styles.name}>{order.passengerName.split(' ')[0]}</Text>
+               {order.isVerified && <Text style={styles.verifiedIcon}>✓</Text>}
             </View>
-            <Text style={styles.rating}>⭐ {order.isNewPassenger ? '4.8' : order.passengerRating}</Text>
+            <Text style={styles.rating}>⭐ {order.passengerRating} • {order.passengerTripsCount} trajets</Text>
           </View>
         </View>
-        <View style={styles.timingSide}>
-          <Text style={styles.distanceText}>{order.distanceToPickup}</Text>
-          <Text style={styles.etaText}>{order.pickupEta}</Text>
+        <View style={styles.timerContainer}>
+           <Text style={styles.timerText}>30s</Text>
         </View>
       </View>
 
       <View style={styles.priceRow}>
-        <Text style={styles.priceValue}>{Math.ceil(order.offeredPrice)} MAD</Text>
-        <View style={styles.justPriceBadge}>
-          <Text style={styles.justPriceText}>✓ PRIX JUSTE</Text>
+        <Text style={styles.price}>{order.offeredPrice} MAD</Text>
+        <View style={styles.distanceBadge}>
+           <Text style={styles.distanceText}>{order.distanceToPickup}</Text>
         </View>
       </View>
 
-      <View style={styles.locationContainer}>
-          <View style={styles.rail}>
-            <View style={[styles.dot, { backgroundColor: '#32FF7E' }]} />
-            <View style={styles.line} />
-            <View style={[styles.dot, { backgroundColor: '#FF4D4D' }]} />
-          </View>
-          <View style={styles.addresses}>
-            <Text style={styles.addressText} numberOfLines={1}>{order.pickupAddress}</Text>
-            <View style={styles.spacer} />
-            <Text style={styles.addressText} numberOfLines={1}>{order.dropoffAddress}</Text>
-          </View>
+      <View style={styles.addressContainer}>
+        <View style={styles.addressLine}>
+          <View style={[styles.dot, { backgroundColor: '#32FF7E' }]} />
+          <Text style={styles.addressText} numberOfLines={1}>{order.pickupAddress}</Text>
+        </View>
+        <View style={styles.addressLine}>
+          <View style={[styles.dot, { backgroundColor: '#FF4D4D' }]} />
+          <Text style={styles.addressText} numberOfLines={1}>{order.dropoffAddress}</Text>
+        </View>
       </View>
 
       <View style={styles.footer}>
-          <Text style={styles.tripMeta}>{order.tripDistance} • {order.tripDuration}</Text>
-          <View style={styles.menuDots}>
-            <View style={styles.smallDot} />
-            <View style={styles.smallDot} />
-            <View style={styles.smallDot} />
-          </View>
+         <Text style={styles.footerText}>Client {order.isNewPassenger ? 'Nouveau' : 'Fidèle'}</Text>
+         <Text style={styles.acceptAction}>VOIR DÉTAILS →</Text>
       </View>
     </TouchableOpacity>
   );
@@ -72,148 +61,116 @@ export const OrderCard = React.memo(({ order, onPress }: Props) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#121212',
+    backgroundColor: '#111',
     borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
+    padding: 18,
+    marginBottom: 15,
     borderWidth: 1,
     borderColor: '#222',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 15,
   },
-  passengerSide: {
+  passengerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  avatarContainer: {
-    marginRight: 12,
-  },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#333',
+    marginRight: 10,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
   },
   name: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '700',
-    marginRight: 8,
+    marginRight: 4,
   },
-  newBadge: {
-    backgroundColor: 'rgba(50, 255, 126, 0.15)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  newBadgeText: {
+  verifiedIcon: {
     color: '#32FF7E',
-    fontSize: 9,
-    fontWeight: '900',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   rating: {
-    color: '#AAA',
-    fontSize: 13,
-  },
-  timingSide: {
-    alignItems: 'flex-end',
-  },
-  distanceText: {
-    color: '#32FF7E',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  etaText: {
     color: '#666',
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 11,
+  },
+  timerContainer: {
+    backgroundColor: 'rgba(50, 255, 126, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    height: 24,
+  },
+  timerText: {
+    color: '#32FF7E',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    marginVertical: 18,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  priceValue: {
+  price: {
     color: '#FFF',
-    fontSize: 34,
+    fontSize: 26,
     fontWeight: '900',
-    marginRight: 10,
   },
-  justPriceBadge: {
-    backgroundColor: '#222',
+  distanceBadge: {
+    backgroundColor: '#1A1A1A',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  justPriceText: {
-    color: '#32FF7E',
-    fontSize: 11,
-    fontWeight: '700',
+  distanceText: {
+    color: '#AAA',
+    fontSize: 12,
+    fontWeight: '600',
   },
-  locationContainer: {
+  addressContainer: {
+    marginBottom: 15,
+  },
+  addressLine: {
     flexDirection: 'row',
-    marginBottom: 16,
-  },
-  rail: {
-    width: 12,
     alignItems: 'center',
-    marginRight: 12,
-    paddingVertical: 4,
+    marginVertical: 2,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  line: {
-    width: 2,
-    flex: 1,
-    backgroundColor: '#222',
-    marginVertical: 4,
-  },
-  addresses: {
-    flex: 1,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 10,
   },
   addressText: {
-    color: '#EEE',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  spacer: {
-    height: 14,
+    color: '#888',
+    fontSize: 13,
+    flex: 1,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#222',
+    paddingTop: 12,
   },
-  tripMeta: {
-    color: '#666',
-    fontSize: 13,
+  footerText: {
+    color: '#555',
+    fontSize: 11,
+    fontWeight: '600',
   },
-  menuDots: {
-    flexDirection: 'row',
-  },
-  smallDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: '#444',
-    marginLeft: 3,
-  },
+  acceptAction: {
+    color: '#32FF7E',
+    fontSize: 12,
+    fontWeight: '800',
+  }
 });

@@ -6,6 +6,9 @@ export interface RideOrder {
   passengerRating: number;
   passengerAvatar?: string;
   isNewPassenger: boolean;
+  passengerTripsCount: number;
+  isVerified: boolean;
+  expiresAt: number; // Timestamp
   distanceToPickup: string;
   pickupEta: string;
   tripDistance: string;
