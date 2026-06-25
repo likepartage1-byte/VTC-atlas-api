@@ -282,7 +282,7 @@ model RideLedger {
   createdAt       DateTime @default(now())
   settledAt       DateTime?
   
-  transaction     DriverTransaction?
+  transactions    DriverTransaction[]
 }
 
 enum LedgerStatus {
