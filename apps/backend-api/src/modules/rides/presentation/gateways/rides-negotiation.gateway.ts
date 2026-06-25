@@ -43,34 +43,51 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
 
   /**
    * Broadcasts a new ride only to nearby drivers (P3) with real ETA/Distance (P2)
+   * Enhanced with Passenger Persona data (TASK-UX-001 Backend Support)
    */
-  async broadcastNewRide(ride: any) {
-    // 1. Get real physics from Google Maps (P2)
+  async broadcastNewRide(rideId: string) {
+    // 1. Fetch complete ride with passenger details
+    const ride = await this.rideAssignmentService.getRideWithPatientDetails(rideId);
+    if (!ride) return;
+
+    // 2. Get real physics from Google Maps (P2)
     const estimates = await this.googleMapsService.getEstimates(
       { lat: ride.pickupLat, lng: ride.pickupLng },
       { lat: ride.dropoffLat, lng: ride.dropoffLng }
     );
 
-    // 2. Find nearby drivers within 5km (P3)
+    // 3. Find nearby drivers within 5km (P3)
     const nearbyDriverIds = await this.driverLocationRepository.findNearby(
       ride.pickupLng,
       ride.pickupLat,
-      5 // 5 KM radius
+      5 
     );
 
     const payload = {
-      ...ride,
+      id: ride.id,
+      passengerName: ride.passenger.fullName,
+      passengerRating: 4.9, // Default for now
+      passengerTripsCount: ride.passenger._count.customerRides,
+      isVerified: ride.passenger.status === 'ACTIVE',
+      offeredPrice: ride.estimatedPrice,
+      pickupAddress: ride.pickupAddress,
+      dropoffAddress: ride.dropoffAddress,
+      pickupLat: ride.pickupLat,
+      pickupLng: ride.pickupLng,
+      dropoffLat: ride.dropoffLat,
+      dropoffLng: ride.dropoffLng,
       tripDistance: estimates?.distanceText || 'N/A',
       tripDuration: estimates?.durationText || 'N/A',
       polyline: estimates?.polyline || '',
+      expiresAt: Date.now() + 30000, // 30s countdown
     };
 
-    // 3. Surgical Broadcast
+    // 4. Surgical Broadcast
     nearbyDriverIds.forEach(driverId => {
       this.server.to(`presence_${driverId}`).emit('new_ride_request', payload);
     });
 
-    console.log(`[Dispatch] Broadcasted ride ${ride.id} to ${nearbyDriverIds.length} nearby drivers.`);
+    console.log(`[Dispatch] Broadcasted ride ${ride.id} to ${nearbyDriverIds.length} drivers with full Persona data.`);
   }
 
   @SubscribeMessage('submit_bid')

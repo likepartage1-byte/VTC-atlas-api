@@ -55,4 +55,24 @@ export class RideAssignmentService {
       await client.del(lockKey);
     }
   }
+
+  /**
+   * جلب بيانات الرحلة مع تفاصيل الراكب وإحصائياته (TASK-UX-001)
+   */
+  async getRideWithPassengerDetails(rideId: string) {
+    return await this.prisma.ride.findUnique({
+      where: { id: rideId },
+      include: {
+        passenger: {
+          select: {
+            fullName: true,
+            status: true,
+            _count: {
+              select: { customerRides: true }
+            }
+          }
+        }
+      }
+    });
+  }
 }
