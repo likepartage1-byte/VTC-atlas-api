@@ -297,7 +297,9 @@ model DriverAccount {
   driverId        String   @unique
   driver          Driver   @relation(fields: [driverId], references: [id])
   balance         Decimal  @db.Decimal(10, 2) @default(0.0)
-  totalEarned     Decimal  @db.Decimal(10, 2) @default(0.0)
+  lockedBalance   Decimal  @db.Decimal(10, 2) @default(0.0) // Amount requested but not yet paid
+  totalEarned     Decimal  @db.Decimal(10, 2) @default(0.0) // Cumulative lifetime earnings
+  totalWithdrawn  Decimal  @db.Decimal(10, 2) @default(0.0) // Cumulative lifetime payouts
   updatedAt       DateTime @updatedAt
 }
 
