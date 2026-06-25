@@ -98,7 +98,7 @@ async function main() {
         type: 'DEBIT',
         amount: amountToPay,
         status: 'COMPLETED',
-        referenceId: newRequest.id,
+        withdrawalId: newRequest.id,
         referenceType: 'WITHDRAWAL_PAID',
         description: `Payout for ${newRequest.id}`
       }
@@ -115,7 +115,7 @@ async function main() {
   // 5. Final Verification
   account = await prisma.driverAccount.findUnique({ where: { driverId: driver.id } });
   const transaction = await prisma.driverTransaction.findFirst({
-    where: { referenceId: newRequest.id }
+    where: { withdrawalId: newRequest.id }
   });
 
   console.log('--- FINAL VALIDATION ---');

@@ -312,18 +312,23 @@ model DriverTransaction {
   amount          Decimal          @db.Decimal(10, 2)
   status          TransactionStatus @default(COMPLETED)
   
-  referenceId     String?          // e.g., RideLedger.id or WithdrawalRequest.id
-  referenceType   String?          // e.g., 'RIDE_EARNING', 'WITHDRAWAL', 'BONUS'
+  // Explicit relations for data integrity
+  rideLedgerId    String?          
+  rideLedger      RideLedger?      @relation(fields: [rideLedgerId], references: [id])
+  
+  withdrawalId    String?
+  withdrawal      WithdrawalRequest? @relation(fields: [withdrawalId], references: [id])
+  
+  referenceType   String?          // e.g., 'RIDE_EARNING', 'WITHDRAWAL', 'MANUAL_ADJUSTMENT'
   
   description     String?
   metadata        Json?
   
-  rideLedger      RideLedger?      @relation(fields: [referenceId], references: [id], map: "Transaction_RideLedger_FK")
-  
   createdAt       DateTime         @default(now())
   
   @@index([driverId, createdAt])
-  @@index([referenceId])
+  @@index([rideLedgerId])
+  @@index([withdrawalId])
 }
 
 model WithdrawalRequest {

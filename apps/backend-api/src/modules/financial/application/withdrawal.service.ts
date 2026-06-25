@@ -115,7 +115,7 @@ export class WithdrawalService {
           type: 'DEBIT',
           amount: amount,
           status: 'COMPLETED',
-          referenceId: request.id,
+          withdrawalId: request.id,
           referenceType: 'WITHDRAWAL_PAID',
           description: `Withdrawal payout for request ${request.id}`,
           metadata: { adminId, notes },

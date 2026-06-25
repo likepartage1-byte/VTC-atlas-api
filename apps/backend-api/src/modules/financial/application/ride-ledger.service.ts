@@ -73,7 +73,7 @@ export class RideLedgerService {
           type: 'CREDIT',
           amount: driverEarnings,
           status: 'COMPLETED',
-          referenceId: ledger.id,
+          rideLedgerId: ledger.id,
           referenceType: 'RIDE_EARNING',
           description: `Earnings for ride ${ride.id}`,
         }
