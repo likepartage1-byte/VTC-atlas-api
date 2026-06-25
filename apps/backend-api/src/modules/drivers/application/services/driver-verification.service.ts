@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { DriverVerificationStatus, VerificationEventType, DocumentStatus, DocumentType } from '@prisma/client';
+import { AuditService } from '../../../audit/audit.service';
 import { LocalStorageProvider } from '../../infrastructure/storage/storage.provider';
 import * as path from 'path';
 
@@ -11,6 +12,7 @@ export class DriverVerificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: LocalStorageProvider,
+    private readonly audit: AuditService,
   ) {}
 
   /**
@@ -125,11 +127,20 @@ export class DriverVerificationService {
   async uploadDocument(driverId: string, type: DocumentType, file: Express.Multer.File) {
     const verification = await this.prisma.driverVerification.findUnique({
       where: { driverId },
-      include: { documents: { where: { type, isCurrent: true } } }
+      include: { 
+        driver: { include: { user: { select: { fullName: true } } } },
+        documents: { where: { type, isCurrent: true } } 
+      }
     });
 
     if (!verification) {
       throw new NotFoundException('Verification record not initialized');
+    }
+
+    // Requirement: Cannot upload KYC if name is default or empty
+    const fullName = verification.driver?.user?.fullName;
+    if (!fullName || fullName === 'New User' || fullName.trim() === '') {
+      throw new BadRequestException('KYC submission requires a real name. Please update your profile from "New User" before uploading documents.');
     }
 
     const currentVersion = verification.documents[0];
@@ -206,19 +217,36 @@ export class DriverVerificationService {
         status,
         rejectionReason: status === DriverVerificationStatus.REJECTED ? reason : null,
         reviewedBy: adminId,
-        reviewedAt: new Date(),
+        reviewedAt: status === DriverVerificationStatus.APPROVED || status === DriverVerificationStatus.REJECTED ? new Date() : undefined,
       },
     });
 
-    const eventType = status === DriverVerificationStatus.APPROVED ? VerificationEventType.APPROVED : VerificationEventType.REJECTED;
+    // Robust mapping of status to event type
+    const eventTypeMap: Record<DriverVerificationStatus, VerificationEventType> = {
+      [DriverVerificationStatus.PENDING]: VerificationEventType.SUBMITTED,
+      [DriverVerificationStatus.UNDER_REVIEW]: VerificationEventType.UNDER_REVIEW,
+      [DriverVerificationStatus.APPROVED]: VerificationEventType.APPROVED,
+      [DriverVerificationStatus.REJECTED]: VerificationEventType.REJECTED,
+      [DriverVerificationStatus.SUSPENDED]: VerificationEventType.SUSPENDED,
+    };
 
     await this.logEvent(verificationId, {
-      type: eventType,
+      type: eventTypeMap[status] || VerificationEventType.UNDER_REVIEW,
       statusFrom: verification.status,
       statusTo: status,
       reason,
       actorId: adminId,
       actorType: 'ADMIN',
+    });
+
+    // Record in Audit Log
+    await this.audit.log({
+      actorId: adminId,
+      action: `VERIFICATION_${status}`,
+      entityType: 'DriverVerification',
+      entityId: verificationId,
+      oldValue: { status: verification.status },
+      newValue: { status, reason },
     });
 
     return updated;
@@ -248,7 +276,7 @@ export class DriverVerificationService {
         },
       });
 
-      // Log specific event
+      // Log verification event
       await this.logEvent(doc.verificationId, {
         type: status === DocumentStatus.APPROVED ? VerificationEventType.APPROVED : VerificationEventType.REJECTED,
         reason: `Document ${doc.type} reviewed: ${status}. ${reason || ''}`,
@@ -256,6 +284,16 @@ export class DriverVerificationService {
         actorType: 'ADMIN',
         metadata: { docId: documentId, type: doc.type },
       }, tx);
+
+      // Record in Audit Log
+      await this.audit.log({
+        actorId: adminId,
+        action: `DOCUMENT_${status}`,
+        entityType: 'DriverDocument',
+        entityId: documentId,
+        oldValue: { status: doc.status },
+        newValue: { status, reason },
+      });
 
       return updatedDoc;
     });

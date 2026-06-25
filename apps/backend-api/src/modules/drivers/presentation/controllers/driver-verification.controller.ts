@@ -3,7 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { DriverVerificationService } from '../../application/services/driver-verification.service';
 import { DocumentType } from '@prisma/client';
 
-@Controller('v1/driver/verification')
+@Controller('driver/verification')
 export class DriverVerificationController {
   constructor(private readonly verificationService: DriverVerificationService) {}
 
