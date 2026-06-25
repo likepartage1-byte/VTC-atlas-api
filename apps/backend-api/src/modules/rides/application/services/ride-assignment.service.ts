@@ -46,7 +46,7 @@ export class RideAssignmentService {
           data: {
             driverId,
             status: RideStatus.DRIVER_ACCEPTED,
-            assignedAt: new Date()
+            acceptedAt: new Date()
           }
         });
       });
