@@ -8,9 +8,13 @@ dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 /**
  * TEST-04: Load & Concurrency Stress Test
- * 
- * Simulates 50 concurrent rides with 3 drivers competing per ride.
- * Validates zero double-assignments under pressure.
+ *
+ * Simulates 50 concurrent rides with 3 drivers racing to accept each ride.
+ * Validates that the Redis atomic lock + Prisma conditional update
+ * produces ZERO double-assignments under full concurrency.
+ *
+ * Schema note: Ride.driverId → Driver.id (not User.id)
+ * So we must create User → Driver profile chain for each test driver.
  */
 
 const CONCURRENT_RIDES = 50;
@@ -30,8 +34,7 @@ async function loadTest() {
   const startTime = Date.now();
 
   try {
-    // 1. Create real DB users for passenger and drivers
-    console.log('👤 Step 1: Creating test users in DB...');
+    // 1. Create passenger User
     const passengerId = randomUUID();
     await prisma.user.create({
       data: {
@@ -42,29 +45,40 @@ async function loadTest() {
       }
     });
 
-    // Create a pool of real driver users (DRIVERS_PER_RIDE unique drivers)
-    const driverPool: string[] = [];
+    // 2. Create Driver users + Driver profiles (User → Driver chain)
+    const driverProfileIds: string[] = []; // These are Driver.id (not User.id)
     for (let i = 0; i < DRIVERS_PER_RIDE; i++) {
-      const driverId = randomUUID();
+      const driverUserId = randomUUID();
+      const driverProfileId = randomUUID();
+
       await prisma.user.create({
         data: {
-          id: driverId,
+          id: driverUserId,
           fullName: `LoadTest Driver ${i + 1}`,
           phoneNumber: `+212${Math.floor(Math.random() * 800000000) + 100000000}`,
           role: 'DRIVER'
         }
       });
-      driverPool.push(driverId);
-    }
-    console.log(`   ✅ 1 passenger + ${DRIVERS_PER_RIDE} drivers created.\n`);
 
-    // 2. Create all rides and simulate concurrent acceptance
+      await prisma.driver.create({
+        data: {
+          id: driverProfileId,
+          userId: driverUserId,
+          status: 'AVAILABLE'
+        }
+      });
+
+      driverProfileIds.push(driverProfileId);
+    }
+
+    console.log(`👤 Step 1: Created 1 passenger + ${DRIVERS_PER_RIDE} driver profiles.\n`);
+
+    // 3. Launch all rides concurrently
     console.log('🔥 Step 2: Launching concurrent ride requests...');
     const rideTests = Array.from({ length: CONCURRENT_RIDES }, async (_, i) => {
       const rideId = randomUUID();
       const lockKey = `ride:lock:${rideId}`;
 
-      // Create ride
       await prisma.ride.create({
         data: {
           id: rideId,
@@ -80,58 +94,53 @@ async function loadTest() {
         }
       });
 
-      // Simulate drivers racing to accept (using real driver IDs from pool)
-      const driverRace = driverPool.map(async (driverId) => {
-        // Atomic Redis lock (mirrors production RideAssignmentService)
-        const lockAcquired = await redis.set(lockKey, driverId, 'NX', 'EX', 10);
-        if (!lockAcquired) return { won: false, driverId };
+      // All 3 drivers race to accept (using real Driver.id from pool)
+      const driverRace = driverProfileIds.map(async (driverProfileId) => {
+        // Attempt atomic Redis lock
+        const lockAcquired = await redis.set(lockKey, driverProfileId, 'NX', 'EX', 10);
+        if (!lockAcquired) return { won: false };
 
-        // Conditional Prisma update
+        // Conditional Prisma update — mirrors production RideAssignmentService
         const updated = await prisma.ride.updateMany({
           where: { id: rideId, status: 'REQUESTED' },
-          data: { status: 'DRIVER_ACCEPTED', driverId }
+          data: { status: 'DRIVER_ACCEPTED', driverId: driverProfileId }
         });
 
         await redis.del(lockKey);
-        return { won: updated.count === 1, driverId };
+        return { won: updated.count === 1 };
       });
 
       const raceResults = await Promise.all(driverRace);
-      const winners = raceResults.filter(r => r.won);
-      return { rideId, winners: winners.length };
+      const winners = raceResults.filter(r => r.won).length;
+      return { rideId, winners };
     });
 
     const allResults = await Promise.all(rideTests);
 
-    // 3. Analyze results
-    console.log('\n📊 Step 3: Analyzing results...\n');
+    // 4. Analyze
     for (const result of allResults) {
-      if (result.winners === 1) {
-        results.passed++;
-      } else if (result.winners === 0) {
-        results.noWinner++;
-        console.log(`   ⚠️  Ride ${result.rideId.substring(0, 8)}... had NO winner.`);
-      } else {
-        results.doubleAssigned++;
-        console.log(`   ❌ CRITICAL: Ride ${result.rideId.substring(0, 8)}... had ${result.winners} winners!`);
-      }
+      if (result.winners === 1)      results.passed++;
+      else if (result.winners === 0) results.noWinner++;
+      else                           results.doubleAssigned++;
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+    const throughput = (CONCURRENT_RIDES / parseFloat(elapsed)).toFixed(1);
 
-    console.log('\n' + '='.repeat(52));
+    console.log('\n📊 Step 3: Results\n');
+    console.log('='.repeat(52));
     console.log(`✅  Rides with exactly 1 winner:   ${results.passed}/${CONCURRENT_RIDES}`);
     console.log(`⚠️   Rides with no winner:           ${results.noWinner}`);
-    console.log(`💥  Rides DOUBLE assigned:           ${results.doubleAssigned}`);
+    console.log(`💥  DOUBLE assigned rides:           ${results.doubleAssigned}`);
     console.log(`⏱️   Total time:                      ${elapsed}s`);
-    console.log(`📈  Throughput:                       ${(CONCURRENT_RIDES / parseFloat(elapsed)).toFixed(1)} rides/s`);
+    console.log(`📈  Throughput:                       ${throughput} rides/s`);
     console.log('='.repeat(52));
 
     if (results.doubleAssigned === 0 && results.passed === CONCURRENT_RIDES) {
       console.log('\n🏆 TEST-04 PASSED: Zero race conditions under load!');
       console.log('   Atomic assignment is production-grade. ✅');
     } else {
-      console.log('\n💥 TEST-04 FAILED: Race conditions or lock failures detected.');
+      console.log('\n💥 TEST-04 FAILED: Race conditions detected.');
     }
 
   } catch (err) {
