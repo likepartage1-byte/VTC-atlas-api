@@ -74,19 +74,22 @@ async function phase1_setup() {
     throw new Error('❌ FCM Token or Status mismatch in DB');
   }
 
-  // Driver Profile — use vehicleInfo (JSON) as per actual schema
+  // Driver Profile — only valid fields per schema
   const driver = await prisma.driver.create({
     data: {
       userId: driverUser.id,
-      kycStatus: 'APPROVED',
+      status: 'ONLINE',
       vehicleInfo: {
         model: 'Dacia Logan',
         plate: `X-E2E-${Date.now().toString().slice(-4)}`,
         licenseNumber: `LIC-E2E-${Date.now()}`,
       },
+      verification: {
+        create: { status: 'APPROVED' },
+      },
     },
   });
-  context.driver = driver; // Save early for cleanup
+  context.driver = driver;
   console.log(`✅ Driver profile created: ${driver.id}`);
 
   // Driver Account (Wallet)
