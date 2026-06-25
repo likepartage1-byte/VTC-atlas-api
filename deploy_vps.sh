@@ -139,15 +139,12 @@ seed().catch(e => { console.error('Seed failed (non-fatal):', e.message); proces
 echo ""
 echo -e "${YELLOW}Waiting 5s for process to stabilize...${NC}"
 sleep 5
-
-HEALTH=$(curl -sf "http://localhost:3000/health" 2>/dev/null || curl -sf "http://localhost:3000/api/v1/health" 2>/dev/null || echo '{}')
-
-if echo "$HEALTH" | grep -q '"status":"ok"'; then
-  ok "Health check PASSED"
-  echo "$HEALTH" | python3 -m json.tool 2>/dev/null || echo "$HEALTH"
+HEALTH_CHECK=$(curl -s http://localhost:3000/v1/health)
+if [[ $HEALTH_CHECK == *"ok"* ]]; then
+    echo "✅ Health check passed: $HEALTH_CHECK"
 else
-  warn "Health check did not return OK. Is the app running on port 3000?"
-  echo "Response: $HEALTH"
+    echo "⚠️  Health check did not return OK. Check: curl http://localhost:3000/v1/health"
+    echo "Response: $HEALTH_CHECK"
 fi
 
 echo ""
