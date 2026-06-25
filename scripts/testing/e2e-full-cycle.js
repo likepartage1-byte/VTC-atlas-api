@@ -119,11 +119,14 @@ async function phase2_ride() {
       passengerId: context.passengerUser.id,
       driverId: context.driver.id,
       status: 'COMPLETED',
-      fare: MAD(RIDE_AMOUNT),
+      pickupLat: 33.5731,
+      pickupLng: -7.5898,
       pickupAddress: 'Casablanca, Maarif',
+      dropoffLat: 33.5892,
+      dropoffLng: -7.6315,
       dropoffAddress: 'Casablanca, Ain Diab',
-      distance: 8.5,
-      duration: 22,
+      estimatedPrice: MAD(RIDE_AMOUNT),
+      actualPrice: MAD(RIDE_AMOUNT),
       startedAt: new Date(Date.now() - 22 * 60 * 1000),
       completedAt: new Date(),
     },
@@ -329,6 +332,8 @@ async function cleanup() {
       await prisma.ride.delete({ where: { id: context.ride.id } });
     }
     await prisma.driverAccount.deleteMany({ where: { driverId: context.driver.id } });
+    // Delete DriverVerification before Driver (FK constraint)
+    await prisma.driverVerification.deleteMany({ where: { driverId: context.driver.id } });
     await prisma.driver.delete({ where: { id: context.driver.id } });
   }
   const userIds = [context.driverUser?.id, context.passengerUser?.id].filter(Boolean);
