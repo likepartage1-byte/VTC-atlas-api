@@ -4,29 +4,38 @@ import { randomUUID } from 'crypto';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-// تحميل متغيرات البيئة يدوياً
+// تحميل متغيرات البيئة
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 async function runTest() {
   const prisma = new PrismaClient();
-  
   const redis = new Redis(process.env.REDIS_URL || {
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
   });
 
   const rideId = randomUUID();
-  const passengerId = randomUUID();
+  const testUserId = randomUUID();
 
   console.log(`🚀 RAW CONCURRENCY TEST`);
-  console.log(`DB URL: ${process.env.DATABASE_URL ? 'FOUND' : 'NOT FOUND'}`);
 
   try {
-    // 1. إعداد البيانات
+    // 1. إنشاء مستخدم تجريبي (مطابقة لـ Prisma Schema)
+    await prisma.user.create({
+        data: {
+            id: testUserId,
+            fullName: 'Test Passenger',
+            phoneNumber: `+212${Math.floor(100000000 + Math.random() * 900000000)}`,
+            email: `test-${testUserId}@atlas.ma`,
+            role: 'PASSENGER'
+        }
+    });
+
+    // 2. إنشاء رحلة متاحة
     await prisma.ride.create({
       data: {
         id: rideId,
-        passengerId: passengerId,
+        passengerId: testUserId,
         status: 'REQUESTED',
         pickupLat: 33.5731,
         pickupLng: -7.5898,
@@ -38,12 +47,12 @@ async function runTest() {
       }
     });
 
-    console.log('✅ Ride Created. Testing 5 drivers race...');
+    console.log('✅ User & Ride Created. Testing race between 5 drivers...');
 
     const assignRideLogic = async (driverId: string) => {
       const lockKey = `lock:ride_assignment:${rideId}`;
       const acquired = await redis.set(lockKey, driverId, 'EX', 5, 'NX');
-      if (acquired !== 'OK') throw new Error('Désolé, cette course est en cours de traitement.');
+      if (acquired !== 'OK') throw new Error('Lock denied.');
 
       try {
         const result = await prisma.ride.updateMany({
@@ -55,7 +64,7 @@ async function runTest() {
           }
         });
 
-        if (result.count === 0) throw new Error('La course n’est plus disponible.');
+        if (result.count === 0) throw new Error('Already accepted.');
         return true;
       } finally {
         await redis.del(lockKey);
@@ -71,7 +80,7 @@ async function runTest() {
         console.log(`🏆 ${drivers[i]}: SUCCESS!`);
         successCount++;
       } else {
-        console.log(`❌ ${drivers[i]}: FAILED - ${res.reason.message}`);
+        console.log(`❌ ${drivers[i]}: DENIED - ${res.reason.message}`);
       }
     });
 
@@ -80,7 +89,7 @@ async function runTest() {
     console.log(`Success Count: ${successCount}`);
     console.log(`Winner in DB: ${finalRide?.driverId}`);
     
-    if (successCount === 1) console.log('\n✨ TEST PASSED ✨');
+    if (successCount === 1) console.log('\n✨ TEST PASSED: Atomic Integrity ✨');
     else console.log('\n🚨 TEST FAILED 🚨');
 
   } catch (err) {
