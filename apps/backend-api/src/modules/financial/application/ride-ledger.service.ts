@@ -1,12 +1,15 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { SystemSettingsService } from '../../admin/application/services/system-settings.service';
 
 @Injectable()
 export class RideLedgerService {
   private readonly logger = new Logger(RideLedgerService.name);
-  private readonly COMPANY_FEE_RATE = 0.20; // 20% Fee
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SystemSettingsService,
+  ) {}
 
   /**
    * Finalizes the financial aspect of a ride.
@@ -16,12 +19,12 @@ export class RideLedgerService {
    * - Ride must be COMPLETED (prevents settlement on active/cancelled rides)
    * - Idempotent: if ledger record exists, returns gracefully
    */
-  async settleRide(rideId: string): Promise<void> {
+  async settleRide(rideId: string, tx?: any): Promise<void> {
     this.logger.log(`Settling financials for ride: ${rideId}`);
 
-    await this.prisma.$transaction(async (tx) => {
+    const executeSettlement = async (prismaClient: any) => {
       // 1. Get ride details
-      const ride = await tx.ride.findUniqueOrThrow({
+      const ride = await prismaClient.ride.findUniqueOrThrow({
         where: { id: rideId },
       });
 
@@ -34,8 +37,8 @@ export class RideLedgerService {
 
       if (!ride.driverId) throw new Error('Cannot settle ride without a driver.');
 
-      // IDEMPOTENCY: Check if already settled (graceful, no exception)
-      const existingLedger = await tx.rideLedger.findUnique({
+      // IDEMPOTENCY: Check if already settled
+      const existingLedger = await prismaClient.rideLedger.findUnique({
         where: { rideId },
       });
 
@@ -44,26 +47,27 @@ export class RideLedgerService {
         return;
       }
       
+      const commissionRate = await this.settings.getCommissionRate();
       const totalAmount = Number(ride.actualPrice || ride.estimatedPrice);
-      const companyFee = totalAmount * this.COMPANY_FEE_RATE;
+      const companyFee = totalAmount * commissionRate;
       const driverEarnings = totalAmount - companyFee;
 
       // 2. Create Ledger Record (Immutable Proof)
-      await tx.rideLedger.create({
+      await prismaClient.rideLedger.create({
         data: {
           rideId: ride.id,
           driverId: ride.driverId,
           totalAmount,
           companyFee,
           driverEarnings,
-          taxes: 0, // Simplified for now
+          taxes: 0,
           status: 'PROCESSED',
           settledAt: new Date(),
         },
       });
 
       // 3. Update Driver Account Balance
-      await tx.driverAccount.upsert({
+      await prismaClient.driverAccount.upsert({
         where: { driverId: ride.driverId },
         update: {
           balance: { increment: driverEarnings },
@@ -76,7 +80,15 @@ export class RideLedgerService {
         },
       });
 
-      this.logger.log(`Financial settlement complete for ride [${rideId}]. Driver [${ride.driverId}] earned ${driverEarnings} MAD`);
-    });
+      this.logger.log(`Financial settlement complete for ride [${rideId}]. Rate: ${commissionRate * 100}%, Driver earned ${driverEarnings} MAD`);
+    };
+
+    if (tx) {
+      await executeSettlement(tx);
+    } else {
+      await this.prisma.$transaction(async (newTx) => {
+        await executeSettlement(newTx);
+      });
+    }
   }
 }

@@ -54,10 +54,10 @@ export class TripFinalizerService {
         where: { id: rideId },
         data: { actualPrice: pricing.total },
       });
-    });
 
-    // 4. Financial Settlement (Single Authority)
-    await this.ledgerService.settleRide(rideId);
+      // 4. Financial Settlement (Inside Atomic Transaction)
+      await this.ledgerService.settleRide(rideId, tx);
+    });
 
     // 5. Post-Commit Event Publishing
     await this.eventBus.publish(
