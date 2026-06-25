@@ -1,12 +1,16 @@
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
 import { randomUUID } from 'crypto';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
-// هذا السكريبت يحاكي منطق الـ RideAssignmentService تماماً ولكن بشكل مباشر
+// تحميل متغيرات البيئة يدوياً
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
 async function runTest() {
   const prisma = new PrismaClient();
-  // نفترض أن Redis يعمل على localhost:6379 (كما هو في معظم الـ VPS)
-  const redis = new Redis({
+  
+  const redis = new Redis(process.env.REDIS_URL || {
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
   });
@@ -14,8 +18,8 @@ async function runTest() {
   const rideId = randomUUID();
   const passengerId = randomUUID();
 
-  console.log(`🚀 RAW CONCURRENCY TEST (No NestJS overhead)`);
-  console.log(`Ride ID: ${rideId}`);
+  console.log(`🚀 RAW CONCURRENCY TEST`);
+  console.log(`DB URL: ${process.env.DATABASE_URL ? 'FOUND' : 'NOT FOUND'}`);
 
   try {
     // 1. إعداد البيانات
@@ -34,20 +38,14 @@ async function runTest() {
       }
     });
 
-    console.log('✅ Ride Created in DB. Testing 5 drivers race...');
+    console.log('✅ Ride Created. Testing 5 drivers race...');
 
-    // محاكاة منطق الخدمة
     const assignRideLogic = async (driverId: string) => {
       const lockKey = `lock:ride_assignment:${rideId}`;
-      
-      // الخطوة 1: Redis Lock
       const acquired = await redis.set(lockKey, driverId, 'EX', 5, 'NX');
-      if (acquired !== 'OK') {
-        throw new Error('Désolé, cette course est en cours de traitement.');
-      }
+      if (acquired !== 'OK') throw new Error('Désolé, cette course est en cours de traitement.');
 
       try {
-        // الخطوة 2: Conditional Update
         const result = await prisma.ride.updateMany({
           where: { id: rideId, status: 'REQUESTED' },
           data: {
@@ -57,20 +55,16 @@ async function runTest() {
           }
         });
 
-        if (result.count === 0) {
-          throw new Error('La course n’est plus disponible.');
-        }
+        if (result.count === 0) throw new Error('La course n’est plus disponible.');
         return true;
       } finally {
         await redis.del(lockKey);
       }
     };
 
-    // 2. إطلاق السباق
     const drivers = ['driver-A', 'driver-B', 'driver-C', 'driver-D', 'driver-E'];
     const results = await Promise.allSettled(drivers.map(id => assignRideLogic(id)));
 
-    // 3. تحليل النتائج
     let successCount = 0;
     results.forEach((res, i) => {
       if (res.status === 'fulfilled') {
@@ -81,17 +75,13 @@ async function runTest() {
       }
     });
 
-    // 4. التحقق النهائي من قاعدة البيانات
     const finalRide = await prisma.ride.findUnique({ where: { id: rideId } });
     console.log('\n--- FINAL VERDICT ---');
     console.log(`Success Count: ${successCount}`);
     console.log(`Winner in DB: ${finalRide?.driverId}`);
     
-    if (successCount === 1) {
-      console.log('\n✨ TEST PASSED: Atomic Logic Verified! ✨');
-    } else {
-      console.log('\n🚨 TEST FAILED: Race Condition Detected! 🚨');
-    }
+    if (successCount === 1) console.log('\n✨ TEST PASSED ✨');
+    else console.log('\n🚨 TEST FAILED 🚨');
 
   } catch (err) {
     console.error('Test Error:', err);
