@@ -19,8 +19,7 @@ export class RideAssignmentService {
     const lockKey = `lock:ride_assignment:${rideId}`;
     const client = this.redis.getClient();
 
-    // تصحيح نداء ioredis ليتوافق مع الـ Types (EX تأتي قبل NX في هذا التوقيع)
-    // نستخدم 'EX' (ثواني) و 'NX' (فقط إذا لم يكن موجوداً)
+    // 1. صمام الأمان الأول: Redis Atomic Lock (NX EX)
     const acquired = await client.set(lockKey, driverId, 'EX', 5, 'NX');
 
     if (acquired !== 'OK') {
@@ -29,31 +28,30 @@ export class RideAssignmentService {
     }
 
     try {
-      // تحديث ذرّي في قاعدة البيانات
-      return await this.prisma.$transaction(async (tx) => {
-        const ride = await tx.ride.findUnique({
-          where: { id: rideId },
-          select: { status: true }
-        });
-
-        // التحقق من أن الحالة هي REQUESTED (أي متاحة للمزايدة)
-        if (!ride || ride.status !== RideStatus.REQUESTED) {
-          throw new ConflictException('La course n’est plus disponible.');
+      // 2. التحديث المشروط الذرّي (Conditional Update)
+      // نضمن على مستوى الـ Query أن القاعدة لن تُحدّث إلا إذا كانت الحالة REQUESTED
+      const result = await this.prisma.ride.updateMany({
+        where: { 
+          id: rideId, 
+          status: RideStatus.REQUESTED 
+        },
+        data: {
+          driverId,
+          status: RideStatus.DRIVER_ACCEPTED,
+          acceptedAt: new Date()
         }
-
-        return await tx.ride.update({
-          where: { id: rideId },
-          data: {
-            driverId,
-            status: RideStatus.DRIVER_ACCEPTED,
-            acceptedAt: new Date()
-          }
-        });
       });
+
+      if (result.count === 0) {
+        throw new ConflictException('Désolé, la course a déjà été acceptée.');
+      }
+
+      return { success: true };
     } catch (error) {
       this.logger.error(`Assignment failed for Driver ${driverId} on Ride ${rideId}: ${error.message}`);
       throw error;
     } finally {
+      // 3. تحرير القفل
       await client.del(lockKey);
     }
   }
