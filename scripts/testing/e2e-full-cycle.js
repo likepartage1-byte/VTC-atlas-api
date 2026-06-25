@@ -46,6 +46,8 @@ async function phase1_setup() {
       fcmToken: null,
     },
   });
+  context.passengerUser = passengerUser; // Save early for cleanup
+  console.log(`✅ Passenger created: ${passengerUser.id}`);
 
   // Driver User
   const driverUser = await prisma.user.create({
@@ -54,11 +56,10 @@ async function phase1_setup() {
       phoneNumber: `+2127000${Date.now().toString().slice(-5)}`,
       role: 'DRIVER',
       status: 'ACTIVE',
-      fcmToken: MOCK_FCM_TOKEN, // ← FCM registered at login
+      fcmToken: MOCK_FCM_TOKEN,
     },
   });
-
-  console.log(`✅ Passenger created: ${passengerUser.id}`);
+  context.driverUser = driverUser; // Save early for cleanup
   console.log(`✅ Driver user created: ${driverUser.id}`);
   console.log(`✅ FCM Token stored: ${driverUser.fcmToken}`);
 
@@ -73,17 +74,20 @@ async function phase1_setup() {
     throw new Error('❌ FCM Token or Status mismatch in DB');
   }
 
-  // Driver Profile
+  // Driver Profile — use vehicleInfo (JSON) as per actual schema
   const driver = await prisma.driver.create({
     data: {
       userId: driverUser.id,
-      licenseNumber: `LIC-E2E-${Date.now()}`,
-      vehicleModel: 'Dacia Logan',
-      vehiclePlate: `X-E2E-${Date.now().toString().slice(-4)}`,
-      isVerified: true,
       kycStatus: 'APPROVED',
+      vehicleInfo: {
+        model: 'Dacia Logan',
+        plate: `X-E2E-${Date.now().toString().slice(-4)}`,
+        licenseNumber: `LIC-E2E-${Date.now()}`,
+      },
     },
   });
+  context.driver = driver; // Save early for cleanup
+  console.log(`✅ Driver profile created: ${driver.id}`);
 
   // Driver Account (Wallet)
   const account = await prisma.driverAccount.create({
@@ -95,11 +99,8 @@ async function phase1_setup() {
       totalWithdrawn: MAD(0),
     },
   });
-
-  console.log(`✅ Driver profile created: ${driver.id}`);
+  context.account = account;
   console.log(`✅ Wallet created. Initial balance: 0 MAD`);
-
-  context = { ...context, passengerUser, driverUser, driver, account };
 }
 
 // ────────────────────────────────────────────────
@@ -320,12 +321,17 @@ async function cleanup() {
   if (context.driver) {
     await prisma.driverTransaction.deleteMany({ where: { driverId: context.driver.id } });
     await prisma.withdrawalRequest.deleteMany({ where: { driverId: context.driver.id } });
-    await prisma.rideLedger.deleteMany({ where: { rideId: context.ride?.id } });
-    await prisma.ride.deleteMany({ where: { id: context.ride?.id } });
+    if (context.ride) {
+      await prisma.rideLedger.deleteMany({ where: { rideId: context.ride.id } });
+      await prisma.ride.delete({ where: { id: context.ride.id } });
+    }
     await prisma.driverAccount.deleteMany({ where: { driverId: context.driver.id } });
     await prisma.driver.delete({ where: { id: context.driver.id } });
   }
-  await prisma.user.deleteMany({ where: { id: { in: [context.driverUser?.id, context.passengerUser?.id] } } });
+  const userIds = [context.driverUser?.id, context.passengerUser?.id].filter(Boolean);
+  if (userIds.length > 0) {
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
   console.log('✅ Cleanup complete.\n');
 }
 
