@@ -1,18 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../../apps/backend-api/src/app.module';
-import { NotificationOrchestrator } from '../../apps/backend-api/src/modules/notifications/application/orchestrators/notification.orchestrator';
+import { NotificationService } from '../../apps/backend-api/src/modules/notifications/application/services/notification.service';
 
 async function bootstrap() {
   console.log('🚀 Starting Notification Integration Test...');
   
   const app = await NestFactory.createApplicationContext(AppModule);
-  const orchestrator = app.get(NotificationOrchestrator);
+  const service = app.get(NotificationService);
 
   const testUser = '9b30db61-2297-44fe-bb40-0edb0a7e8e8d'; // From dump
   
   console.log(`Sending test job for user [${testUser}]...`);
   
-  await orchestrator.queueNotification(testUser, {
+  await service.dispatch(testUser, {
     title: 'Test Notification',
     body: 'This is a background job test from BullMQ.',
     type: 'SYSTEM_TEST',

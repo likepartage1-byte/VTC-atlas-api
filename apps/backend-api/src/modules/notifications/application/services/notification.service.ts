@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { FCMService } from './fcm.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class NotificationService {
@@ -9,7 +11,19 @@ export class NotificationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fcm: FCMService,
+    @InjectQueue('notifications') private readonly notificationQueue: Queue,
   ) {}
+
+  /**
+   * Pushes a notification to the background queue for asynchronous delivery.
+   */
+  async dispatch(userId: string, payload: { title: string; body: string; type: string; data?: any }) {
+    this.logger.log(`Queueing notification for user ${userId} | Type: ${payload.type}`);
+    return this.notificationQueue.add('send', {
+      userId,
+      ...payload
+    });
+  }
 
   /**
    * Register or update a device token for a user
