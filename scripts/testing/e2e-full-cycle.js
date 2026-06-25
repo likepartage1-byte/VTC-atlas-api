@@ -78,7 +78,7 @@ async function phase1_setup() {
   const driver = await prisma.driver.create({
     data: {
       userId: driverUser.id,
-      status: 'ONLINE',
+      status: 'AVAILABLE',
       vehicleInfo: {
         model: 'Dacia Logan',
         plate: `X-E2E-${Date.now().toString().slice(-4)}`,
