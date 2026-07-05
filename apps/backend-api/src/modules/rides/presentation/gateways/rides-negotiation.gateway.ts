@@ -47,7 +47,7 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
    */
   async broadcastNewRide(rideId: string) {
     // 1. Fetch complete ride with passenger details
-    const ride = await this.rideAssignmentService.getRideWithPatientDetails(rideId);
+    const ride = await this.rideAssignmentService.getRideWithPassengerDetails(rideId);
     if (!ride) return;
 
     // 2. Get real physics from Google Maps (P2)
