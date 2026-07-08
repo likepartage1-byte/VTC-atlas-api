@@ -15,6 +15,7 @@ import { WSAuthMiddleware } from '../../infrastructure/guards/ws-auth.middleware
 import { SessionService } from '../../../identity/application/services/session.service';
 import { PresenceService } from '../../infrastructure/services/presence.service';
 import { LocationIngestionService } from '../../../location/application/location-ingestion.service';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
@@ -30,7 +31,8 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
     private readonly presence: PresenceService,
-    private readonly ingestion: LocationIngestionService, // Injected the guard rail
+    private readonly ingestion: LocationIngestionService,
+    private readonly prisma: PrismaService,
   ) {}
 
   afterInit(server: Server) {
@@ -43,11 +45,47 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (!user) return;
     await this.presence.setOnline(user.userId, client.id, user.role);
     client.join(`${user.role.toLowerCase()}:${user.userId}`);
+    this.logger.log(`[Gateway] ${user.role} ${user.userId} connected (${client.id})`);
   }
 
   async handleDisconnect(client: Socket) {
     const user = client.data.user;
-    if (user) await this.presence.setOffline(user.userId);
+    if (!user) return;
+    await this.presence.setOffline(user.userId);
+    // Reset driver status to OFFLINE in DB on disconnect
+    if (user.role === 'DRIVER') {
+      await this.prisma.driver.updateMany({
+        where: { userId: user.userId },
+        data: { status: 'OFFLINE' },
+      });
+    }
+    this.logger.log(`[Gateway] ${user.role} ${user.userId} disconnected`);
+  }
+
+  /**
+   * INBOUND: Driver sets their availability for dispatch.
+   * status AVAILABLE → driver enters the dispatch pool.
+   * status ONLINE    → driver is connected but not available for rides.
+   */
+  @SubscribeMessage('driver.presence')
+  async handleDriverPresence(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { status: 'AVAILABLE' | 'ONLINE' | 'BUSY' }
+  ) {
+    const user = client.data.user;
+    if (user?.role !== 'DRIVER') return { error: 'Not a driver' };
+
+    const dbStatus = data.status === 'AVAILABLE' ? 'AVAILABLE'
+      : data.status === 'BUSY' ? 'BUSY'
+      : 'ONLINE';
+
+    await this.prisma.driver.updateMany({
+      where: { userId: user.userId },
+      data: { status: dbStatus as any },
+    });
+
+    this.logger.log(`[Gateway] Driver ${user.userId} → status: ${dbStatus}`);
+    return { status: 'ok', updated: dbStatus };
   }
 
   /**
@@ -64,9 +102,8 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     // Delegate to ingestion service for throttling and validation
     const accepted = await this.ingestion.ingest(user.userId, data.lat, data.lng);
-    
+
     if (accepted) {
-      // Broadcast to specific ride room if driver is on a trip (Future step)
       return { status: 'buffered' };
     }
   }
@@ -76,3 +113,4 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(roomName).emit(event, payload);
   }
 }
+
