@@ -39,7 +39,34 @@ export const DashboardScreen = () => {
       { distanceFilter: 5 }
     );
 
+    // [TEST] Heartbeat for Token Refresh Testing (Phase 3)
+    // Every 10s we hit a protected endpoint to force 401 when token expires (at 60s)
+    const interval = setInterval(async () => {
+      try {
+        console.log('💓 [Heartbeat] Triggering HTTP activity to check token...');
+        const { api } = require('../../api/axios.instance');
+        const response = await api.get('/auth/me');
+        console.log('✅ [Heartbeat] Success:', response.status);
+      } catch (e: any) {
+        console.log('💓 [Heartbeat] FAILED:', e.message);
+        if (e.response) {
+          console.log('   - Status:', e.response.status);
+          console.log('   - Data:', JSON.stringify(e.response.data));
+          
+          // Stop heartbeat on terminal errors (404 Not Found, 403 Forbidden)
+          if (e.response.status === 404 || e.response.status === 403) {
+            console.warn(`🛑 [Heartbeat] Stopping heartbeat due to terminal status code ${e.response.status}`);
+            clearInterval(interval);
+          }
+        } else if (e.request) {
+          console.log('   - Reason: No response received (Network or BaseURL error)');
+          console.log('   - Config URL:', e.config?.url);
+        }
+      }
+    }, 10000);
+
     return () => {
+      clearInterval(interval);
       socketService.disconnect();
       Geolocation.clearWatch(watchId);
     };
