@@ -11,26 +11,51 @@ export const WSAuthMiddleware = (
   logger: Logger,
 ): SocketMiddleware => {
   return async (socket: Socket, next) => {
+    const ip = socket.handshake.address;
     try {
-      const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
-      
+      const token =
+        socket.handshake.auth?.token ||
+        socket.handshake.headers?.authorization?.split(' ')[1];
+
+      // ① No token at all
       if (!token) {
-        throw new Error('Unauthorized: No token provided');
+        logger.warn(`[WS] Handshake rejected — no token (ip: ${ip})`);
+        return next(new Error('Unauthorized'));
       }
 
-      const payload = await jwtService.verifyAsync(token);
-      
-      // CRITICAL: Session Validation vs Redis
-      const isSessionValid = await sessionService.isSessionValid(payload.userId, payload.deviceId);
+      // ② Verify JWT signature & expiry
+      let payload: any;
+      try {
+        payload = await jwtService.verifyAsync(token);
+      } catch (jwtErr: any) {
+        // JsonWebTokenError = bad sig | TokenExpiredError = expired
+        logger.warn(
+          `[WS] Handshake rejected — JWT ${jwtErr.name}: ${jwtErr.message} (ip: ${ip})`
+        );
+        return next(new Error('Unauthorized'));
+      }
+
+      // ③ Validate session in Redis
+      const isSessionValid = await sessionService.isSessionValid(
+        payload.userId,
+        payload.deviceId,
+      );
       if (!isSessionValid) {
-        throw new Error('Unauthorized: Session revoked or expired');
+        logger.warn(
+          `[WS] Handshake rejected — session revoked or not found ` +
+          `(userId: ${payload.userId}, deviceId: ${payload.deviceId})`
+        );
+        return next(new Error('Unauthorized'));
       }
 
-      // Attach data for future use
+      // ✅ Handshake accepted
       socket.data.user = payload;
+      logger.log(
+        `[WS] Handshake accepted — userId: ${payload.userId}, role: ${payload.role}`
+      );
       next();
-    } catch (error) {
-      logger.error(`WS Handshake failed: ${error.message}`);
+    } catch (error: any) {
+      logger.error(`[WS] Handshake unexpected error: ${error.message}`);
       next(new Error('Unauthorized'));
     }
   };

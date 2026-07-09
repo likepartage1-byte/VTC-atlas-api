@@ -1,9 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { tokenManager } from './token.manager';
 
 const SOCKET_URL = 'http://187.124.34.118';
-const BASE_URL   = 'http://187.124.34.118/api/v1';
 
 // ─── Event Contract (Backend SocketGateway) ───────────────────────────────
 // Emits to backend:   driver.location_update  driver.presence
@@ -97,34 +96,21 @@ class SocketService {
     }, delayMs);
   }
 
-  /** On Unauthorized connect_error: refresh the access token then reconnect */
+  /** On Unauthorized connect_error: refresh via TokenManager then reconnect */
   private async refreshAndReconnect() {
-    try {
-      const refreshToken = await AsyncStorage.getItem('driver_refresh_token');
-      if (!refreshToken) {
-        console.error('[Socket] No refresh token — cannot recover');
-        return;
-      }
+    console.log('[Socket] Access token expired — delegating refresh to TokenManager…');
+    const newToken = await tokenManager.refresh();
 
-      console.log('[Socket] Access token expired — refreshing…');
-      const res = await axios.post(
-        `${BASE_URL}/auth/refresh`,
-        { refreshToken },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
-
-      const { accessToken, refreshToken: newRefreshToken } = res.data;
-      await AsyncStorage.setItem('driver_access_token', accessToken);
-      await AsyncStorage.setItem('driver_refresh_token', newRefreshToken);
-      console.log('[Socket] Token refreshed — reconnecting…');
-
-      this.socket?.removeAllListeners();
-      this.socket?.disconnect();
-      this.status = 'connecting';
-      this.socket = this.buildSocket(accessToken);
-    } catch (e: any) {
-      console.error('[Socket] Token refresh failed:', e.message);
+    if (!newToken) {
+      console.error('[Socket] Token refresh failed — socket will remain disconnected');
+      return;
     }
+
+    console.log('[Socket] Token refreshed — reconnecting socket…');
+    this.socket?.removeAllListeners();
+    this.socket?.disconnect();
+    this.status = 'connecting';
+    this.socket = this.buildSocket(newToken);
   }
 
   /** Send driver availability to backend */
