@@ -22,6 +22,8 @@ export const DashboardScreen = () => {
   const [lastOffer, setLastOffer] = useState<any>(null);
   const [acceptResult, setAcceptResult] = useState<string | null>(null);
   const [location, setLocation] = useState({ lat: 0, lng: 0 });
+  // Tracks a queued presence update when socket wasn't ready yet
+  const pendingPresence = React.useRef<'AVAILABLE' | 'ONLINE' | null>(null);
 
   // تفعيل تتبع الموقع عند دخول وضع "AVAILABLE"
   useLocationTracking(isAvailable);
@@ -29,7 +31,15 @@ export const DashboardScreen = () => {
   useEffect(() => {
     // الاتصال بالسوكت فور تحميل الشاشة
     socketService.connect((event, data) => {
-      if (event === 'status') setSocketStatus(data);
+      if (event === 'status') {
+        setSocketStatus(data);
+        // If user already toggled presence while we were connecting, send it now
+        if (data === 'connected' && pendingPresence.current) {
+          console.log('[Dashboard] Flushing queued presence:', pendingPresence.current);
+          socketService.setPresence(pendingPresence.current);
+          pendingPresence.current = null;
+        }
+      }
       if (event === 'ride_offer') setLastOffer(data);
     });
 
@@ -39,29 +49,21 @@ export const DashboardScreen = () => {
       { distanceFilter: 5 }
     );
 
-    // [TEST] Heartbeat for Token Refresh Testing (Phase 3)
-    // Every 10s we hit a protected endpoint to force 401 when token expires (at 60s)
+    // Heartbeat: silently validates session every 10s.
+    // Stops immediately on terminal errors (404/403).
+    // On 401: the axios interceptor handles token refresh transparently.
     const interval = setInterval(async () => {
       try {
-        console.log('💓 [Heartbeat] Triggering HTTP activity to check token...');
         const { api } = require('../../api/axios.instance');
-        const response = await api.get('/auth/me');
-        console.log('✅ [Heartbeat] Success:', response.status);
+        await api.get('/auth/me');
       } catch (e: any) {
-        console.log('💓 [Heartbeat] FAILED:', e.message);
-        if (e.response) {
-          console.log('   - Status:', e.response.status);
-          console.log('   - Data:', JSON.stringify(e.response.data));
-          
-          // Stop heartbeat on terminal errors (404 Not Found, 403 Forbidden)
-          if (e.response.status === 404 || e.response.status === 403) {
-            console.warn(`🛑 [Heartbeat] Stopping heartbeat due to terminal status code ${e.response.status}`);
-            clearInterval(interval);
-          }
-        } else if (e.request) {
-          console.log('   - Reason: No response received (Network or BaseURL error)');
-          console.log('   - Config URL:', e.config?.url);
+        const status = e.response?.status;
+        if (status === 404 || status === 403) {
+          // Route missing or forbidden — stop silently
+          clearInterval(interval);
         }
+        // 401 is handled transparently by the axios interceptor (token refresh)
+        // Network errors are ignored — next tick will retry
       }
     }, 10000);
 
@@ -75,7 +77,14 @@ export const DashboardScreen = () => {
   const togglePresence = () => {
     const nextState = !isAvailable;
     setIsAvailable(nextState);
-    socketService.setPresence(nextState ? 'AVAILABLE' : 'ONLINE');
+    const desiredStatus = nextState ? 'AVAILABLE' : 'ONLINE';
+    if (socketService.isConnected()) {
+      socketService.setPresence(desiredStatus);
+    } else {
+      // Socket still connecting — queue it, will be flushed on 'connect' event
+      console.log('[Dashboard] Socket not ready, queuing presence:', desiredStatus);
+      pendingPresence.current = desiredStatus;
+    }
   };
 
   const handleAccept = async () => {

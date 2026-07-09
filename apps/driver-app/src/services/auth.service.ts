@@ -19,6 +19,8 @@ export const authService = {
       phoneNumber,
       code,
       deviceId,
+      role: 'DRIVER',
     });
   },
 };
+
