@@ -43,11 +43,24 @@ export const DashboardScreen = () => {
       if (event === 'ride_offer') setLastOffer(data);
     });
 
-    const watchId = Geolocation.watchPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => console.log(err),
-      { distanceFilter: 5 }
-    );
+    let watchId: number | null = null;
+    if (isAvailable) {
+      watchId = Geolocation.watchPosition(
+        (pos) => {
+          console.log('[Dashboard] GPS UI Update:', pos.coords.latitude, pos.coords.longitude);
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => console.warn('[Dashboard] GPS UI Watch Error:', err.message),
+        { distanceFilter: 5, enableHighAccuracy: true }
+      );
+    }
+
+    return () => {
+      if (watchId !== null) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
+  }, [isAvailable]);
 
     // Heartbeat: silently validates session every 10s.
     // Stops immediately on terminal errors (404/403).
