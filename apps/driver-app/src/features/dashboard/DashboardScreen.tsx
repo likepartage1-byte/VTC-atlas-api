@@ -28,6 +28,7 @@ export const DashboardScreen = () => {
   // تفعيل تتبع الموقع عند دخول وضع "AVAILABLE"
   useLocationTracking(isAvailable);
 
+  // 1. Socket and Heartbeat setup (Runs once on mount)
   useEffect(() => {
     // الاتصال بالسوكت فور تحميل الشاشة
     socketService.connect((event, data) => {
@@ -42,25 +43,6 @@ export const DashboardScreen = () => {
       }
       if (event === 'ride_offer') setLastOffer(data);
     });
-
-    let watchId: number | null = null;
-    if (isAvailable) {
-      watchId = Geolocation.watchPosition(
-        (pos) => {
-          console.log('[Dashboard] GPS UI Update:', pos.coords.latitude, pos.coords.longitude);
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => console.warn('[Dashboard] GPS UI Watch Error:', err.message),
-        { distanceFilter: 5, enableHighAccuracy: true }
-      );
-    }
-
-    return () => {
-      if (watchId !== null) {
-        Geolocation.clearWatch(watchId);
-      }
-    };
-  }, [isAvailable]);
 
     // Heartbeat: silently validates session every 10s.
     // Stops immediately on terminal errors (404/403).
@@ -83,9 +65,29 @@ export const DashboardScreen = () => {
     return () => {
       clearInterval(interval);
       socketService.disconnect();
-      Geolocation.clearWatch(watchId);
     };
   }, []);
+
+  // 2. Geolocation Watch for Dashboard UI Coordinates (Depends on isAvailable)
+  useEffect(() => {
+    let watchId: number | null = null;
+    if (isAvailable) {
+      watchId = Geolocation.watchPosition(
+        (pos) => {
+          console.log('[Dashboard] GPS UI Update:', pos.coords.latitude, pos.coords.longitude);
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        },
+        (err) => console.warn('[Dashboard] GPS UI Watch Error:', err.message),
+        { distanceFilter: 5, enableHighAccuracy: true }
+      );
+    }
+
+    return () => {
+      if (watchId !== null) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
+  }, [isAvailable]);
 
   const togglePresence = () => {
     const nextState = !isAvailable;
