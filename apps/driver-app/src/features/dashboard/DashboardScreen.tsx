@@ -1,105 +1,114 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+  useRef, useCallback, useEffect, useState, useMemo
+} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
+  Platform,
+  StatusBar as RNStatusBar,
 } from 'react-native';
-import { Colors } from '../../theme/colors';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { socketService } from '../../services/socket.service';
 import { useLocationTracking } from '../../hooks/useLocationTracking';
+import { AtlasColors } from '../../theme/atlas';
 
-// ── Status helpers ────────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  network: {
-    connected:    { color: '#22c55e', label: 'ONLINE' },
-    disconnected: { color: '#ef4444', label: 'OFFLINE' },
-  },
-  gps: {
-    ON:        { color: '#22c55e', label: 'GPS ON' },
-    OFF:       { color: '#ef4444', label: 'GPS OFF' },
-    SEARCHING: { color: '#f59e0b', label: 'SEARCHING' },
-  },
-  permission: {
-    GRANTED: { color: '#22c55e', label: 'GRANTED' },
-    DENIED:  { color: '#ef4444', label: 'DENIED' },
-    UNKNOWN: { color: '#64748b', label: 'UNKNOWN' },
-  },
-  presence: {
-    available: { color: '#22c55e', label: 'AVAILABLE' },
-    offDuty:   { color: '#64748b', label: 'OFF DUTY' },
-  },
+// Sub-components (UI only — no logic changes)
+import { DriverMarker }       from './components/DriverMarker';
+import { StatusBar }          from './components/StatusBar';
+import { AvailabilityButton } from './components/AvailabilityButton';
+import { FloatingButtons }    from './components/FloatingButtons';
+import { RideBottomSheet, RideOffer }    from './components/RideBottomSheet';
+import { LocationInfo }       from './components/LocationInfo';
+
+// Dark-mode map style
+const MAP_STYLE = [
+  { elementType: 'geometry',                     stylers: [{ color: '#0f172a' }] },
+  { elementType: 'labels.text.fill',             stylers: [{ color: '#94a3b8' }] },
+  { elementType: 'labels.text.stroke',           stylers: [{ color: '#0f172a' }] },
+  { featureType: 'road',         elementType: 'geometry',      stylers: [{ color: '#1e293b' }] },
+  { featureType: 'road',         elementType: 'geometry.stroke', stylers: [{ color: '#0f172a' }] },
+  { featureType: 'road.highway', elementType: 'geometry',      stylers: [{ color: '#334155' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1e293b' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#64748b' }] },
+  { featureType: 'water',        elementType: 'geometry',      stylers: [{ color: '#0c1628' }] },
+  { featureType: 'water',        elementType: 'labels.text.fill', stylers: [{ color: '#475569' }] },
+  { featureType: 'poi',          elementType: 'labels',        stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit',      elementType: 'labels',        stylers: [{ visibility: 'off' }] },
+  { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#6366f1' }] },
+];
+
+const DEFAULT_REGION = {
+  latitude:       31.6295,
+  longitude:      -7.9811,
+  latitudeDelta:  0.015,
+  longitudeDelta: 0.015,
 };
 
-const Indicator = ({ label, value, config }: {
-  label: string;
-  value: string;
-  config: { color: string; label: string };
-}) => (
-  <View style={styles.indicatorRow}>
-    <Text style={styles.indicatorLabel}>{label}</Text>
-    <View style={[styles.indicatorBadge, { borderColor: config.color }]}>
-      <View style={[styles.indicatorDot, { backgroundColor: config.color }]} />
-      <Text style={[styles.indicatorValue, { color: config.color }]}>{config.label}</Text>
-    </View>
-  </View>
-);
-
-// ── Component ─────────────────────────────────────────────────────────────────
 export const DashboardScreen = () => {
+  const insets = useSafeAreaInsets();
+  const mapRef = useRef<MapView>(null);
+
+  // ── Presence state (controlled by driver, never by GPS) ─────────────────
   const [isAvailable, setIsAvailable] = useState(false);
   const [socketStatus, setSocketStatus] = useState<'connected' | 'disconnected'>('disconnected');
-  const [lastOffer, setLastOffer] = useState<any>(null);
-  const [acceptResult, setAcceptResult] = useState<string | null>(null);
+  const [lastOffer,   setLastOffer]    = useState<RideOffer | null>(null);
 
-  // Queues presence update if socket is not yet ready
   const pendingPresence = useRef<'AVAILABLE' | 'ONLINE' | null>(null);
   const isAvailableRef  = useRef(isAvailable);
   useEffect(() => { isAvailableRef.current = isAvailable; }, [isAvailable]);
 
-  // ── GPS & Permission (always active — independent of dispatch) ──────────
-  const { location, lastUpdate, gpsStatus, permissionStatus } = useLocationTracking(isAvailable);
+  // ── GPS & Permission (always active, independent of presence) ───────────
+  const { location, lastUpdate, gpsStatus, permissionStatus }
+    = useLocationTracking(isAvailable);
 
-  // ── Socket lifecycle ────────────────────────────────────────────────────
+  // ── Follow driver on map ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!location || !mapRef.current) return;
+    mapRef.current.animateToRegion({
+      latitude:        location.latitude,
+      longitude:       location.longitude,
+      latitudeDelta:   0.008,
+      longitudeDelta:  0.008,
+    }, 600);
+  }, [location]);
+
+  // ── Socket lifecycle ─────────────────────────────────────────────────────
   useEffect(() => {
     socketService.connect((event, data) => {
       if (event === 'status') {
-        setSocketStatus(data as 'connected' | 'disconnected');
+        setSocketStatus(data as any);
         if (data === 'connected') {
           if (pendingPresence.current) {
             socketService.setPresence(pendingPresence.current);
             pendingPresence.current = null;
           } else if (isAvailableRef.current) {
-            // Auto-restore presence after reconnect
             socketService.setPresence('AVAILABLE');
           }
         }
       }
-      if (event === 'ride_offer') setLastOffer(data);
+      if (event === 'ride_offer') setLastOffer(data as RideOffer);
     });
 
-    // Heartbeat: silently keeps session alive every 10s
-    const interval = setInterval(async () => {
+    const heartbeat = setInterval(async () => {
       try {
         const { api } = require('../../api/axios.instance');
         await api.get('/auth/me');
       } catch (e: any) {
-        const status = e.response?.status;
-        if (status === 404 || status === 403) clearInterval(interval);
+        const s = e.response?.status;
+        if (s === 404 || s === 403) clearInterval(heartbeat);
       }
     }, 10_000);
 
-    return () => {
-      clearInterval(interval);
-      socketService.disconnect();
-    };
+    return () => { clearInterval(heartbeat); socketService.disconnect(); };
   }, []);
 
-  // ── Driver presence toggle ──────────────────────────────────────────────
-  const togglePresence = () => {
-    const next = !isAvailable;
+  // ── Presence toggle ──────────────────────────────────────────────────────
+  const handleTogglePresence = useCallback(() => {
+    const next = !isAvailableRef.current;
     setIsAvailable(next);
     const desired = next ? 'AVAILABLE' : 'ONLINE';
     if (socketService.isConnected()) {
@@ -107,141 +116,193 @@ export const DashboardScreen = () => {
     } else {
       pendingPresence.current = desired;
     }
-  };
+  }, []);
 
-  const handleAccept = async () => {
+  // ── Map controls ─────────────────────────────────────────────────────────
+  const handleLocate = useCallback(() => {
+    if (!location || !mapRef.current) return;
+    mapRef.current.animateToRegion({
+      latitude:       location.latitude,
+      longitude:      location.longitude,
+      latitudeDelta:  0.008,
+      longitudeDelta: 0.008,
+    }, 500);
+  }, [location]);
+
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.getCamera().then((cam: any) => {
+      mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 15) + 1 }, { duration: 300 });
+    });
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.getCamera().then((cam: any) => {
+      mapRef.current?.animateCamera({ zoom: (cam.zoom ?? 15) - 1 }, { duration: 300 });
+    });
+  }, []);
+
+  // ── Accept / Reject ride ─────────────────────────────────────────────────
+  const handleAccept = useCallback(async () => {
     if (!lastOffer) return;
-    setAcceptResult('PROCESSING...');
-    const res: any = await socketService.acceptRide(lastOffer.rideId);
-    setAcceptResult(res.status?.toUpperCase() || 'FAILED');
-    if (res.status === 'success') setTimeout(() => setLastOffer(null), 2000);
-  };
+    await socketService.acceptRide(lastOffer.rideId);
+    setLastOffer(null);
+  }, [lastOffer]);
 
-  // ── Render ─────────────────────────────────────────────────────────────
-  const networkConfig   = STATUS_CONFIG.network[socketStatus] ?? STATUS_CONFIG.network.disconnected;
-  const gpsConfig       = STATUS_CONFIG.gps[gpsStatus]       ?? STATUS_CONFIG.gps.SEARCHING;
-  const permConfig      = STATUS_CONFIG.permission[permissionStatus] ?? STATUS_CONFIG.permission.UNKNOWN;
-  const presenceConfig  = isAvailable ? STATUS_CONFIG.presence.available : STATUS_CONFIG.presence.offDuty;
+  const handleReject = useCallback(() => setLastOffer(null), []);
+
+  // ── Derived values ────────────────────────────────────────────────────────
+  const markerCoord = useMemo(() => location
+    ? { latitude: location.latitude, longitude: location.longitude }
+    : null, [location]);
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Driver Console</Text>
-      </View>
+    <GestureHandlerRootView style={styles.flex}>
+      <RNStatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-      <ScrollView style={styles.content}>
+      {/* ── Full-Screen Map ───────────────────────────────────────────── */}
+      <MapView
+        ref={mapRef}
+        provider={PROVIDER_GOOGLE}
+        style={StyleSheet.absoluteFillObject}
+        customMapStyle={MAP_STYLE}
+        initialRegion={DEFAULT_REGION}
+        showsUserLocation={false}
+        showsMyLocationButton={false}
+        showsCompass={false}
+        showsTraffic={false}
+        showsScale={false}
+        rotateEnabled={true}
+        pitchEnabled={false}
+        moveOnMarkerPress={false}
+      >
+        {markerCoord && (
+          <Marker
+            coordinate={markerCoord}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <DriverMarker isOnline={isAvailable} />
+          </Marker>
+        )}
+      </MapView>
 
-        {/* ── System Status Card ───────────────────────────────────────── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>System Status</Text>
-          <Indicator label="Network"    value={socketStatus}     config={networkConfig}  />
-          <Indicator label="GPS"        value={gpsStatus}        config={gpsConfig}      />
-          <Indicator label="Permission" value={permissionStatus} config={permConfig}     />
-          <Indicator label="Presence"   value={presenceConfig.label} config={presenceConfig} />
-        </View>
-
-        {/* ── Dispatch Switch ──────────────────────────────────────────── */}
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View>
-              <Text style={styles.switchLabel}>Go Available</Text>
-              <Text style={styles.switchSub}>Start receiving ride requests</Text>
-            </View>
-            <Switch
-              value={isAvailable}
-              onValueChange={togglePresence}
-              trackColor={{ false: '#334155', true: Colors.primary }}
-              thumbColor={isAvailable ? '#fff' : '#94a3b8'}
-            />
+      {/* ── Top overlay ──────────────────────────────────────────────── */}
+      <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
+        <View style={styles.topBar} pointerEvents="box-none">
+          {/* App title */}
+          <View style={styles.brandBadge}>
+            <Text style={styles.brandText}>ATLAS</Text>
           </View>
-        </View>
 
-        {/* ── GPS Coordinates ──────────────────────────────────────────── */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Live Location</Text>
-          {location ? (
-            <>
-              <Text style={styles.coordValue}>
-                {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-              </Text>
-              {lastUpdate && (
-                <Text style={styles.coordSub}>
-                  Last fix: {lastUpdate.toLocaleTimeString()}
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text style={styles.coordSub}>Waiting for GPS signal...</Text>
-          )}
-          {gpsStatus === 'OFF' && (
-            <Text style={styles.warningText}>⚠️  Enable Location Services on your phone</Text>
-          )}
-          {permissionStatus === 'DENIED' && (
-            <Text style={styles.warningText}>⚠️  Location permission denied — check app settings</Text>
-          )}
+          {/* Status pills */}
+          <StatusBar
+            networkStatus={socketStatus}
+            gpsStatus={gpsStatus}
+            permissionStatus={permissionStatus}
+            isAvailable={isAvailable}
+          />
         </View>
+      </SafeAreaView>
 
-        {/* ── Ride Offer ───────────────────────────────────────────────── */}
-        <View style={[styles.card, lastOffer && styles.activeCard]}>
-          <Text style={styles.sectionTitle}>Last Ride Offer</Text>
-          {lastOffer ? (
-            <View>
-              <Text style={styles.offerText}>ID: {lastOffer.rideId}</Text>
-              <Text style={styles.offerText}>Trace: {lastOffer.traceId}</Text>
-              <TouchableOpacity style={styles.acceptButton} onPress={handleAccept}>
-                <Text style={styles.buttonText}>ACCEPT RIDE</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Text style={styles.emptyText}>Waiting for offers...</Text>
-          )}
-        </View>
+      {/* ── Floating action buttons ───────────────────────────────────── */}
+      <FloatingButtons
+        onLocate={handleLocate}
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+      />
 
-        {/* ── Accept Result ────────────────────────────────────────────── */}
-        {acceptResult && (
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Acceptance Status</Text>
-            <Text style={[styles.resultValue, {
-              color: acceptResult === 'SUCCESS' ? Colors.success : Colors.error
-            }]}>
-              {acceptResult}
-            </Text>
-          </View>
+      {/* ── Bottom panel ─────────────────────────────────────────────── */}
+      <View style={[styles.bottomPanel, { paddingBottom: insets.bottom + 12 }]}>
+        {/* GPS info strip */}
+        {location && (
+          <LocationInfo
+            latitude={location.latitude}
+            longitude={location.longitude}
+            lastUpdate={lastUpdate}
+            gpsStatus={gpsStatus}
+          />
         )}
 
-      </ScrollView>
-    </View>
+        {/* GPS warning if needed */}
+        {gpsStatus === 'OFF' && (
+          <Text style={styles.gpsBanner}>⚠️  GPS disabled — enable Location Services</Text>
+        )}
+        {permissionStatus === 'DENIED' && (
+          <Text style={styles.gpsBanner}>⚠️  Location permission denied</Text>
+        )}
+
+        {/* Main action button */}
+        <AvailabilityButton
+          isAvailable={isAvailable}
+          onToggle={handleTogglePresence}
+        />
+      </View>
+
+      {/* ── Ride offer bottom sheet (slides up from bottom) ──────────── */}
+      {lastOffer && (
+        <RideBottomSheet
+          offer={lastOffer}
+          onAccept={handleAccept}
+          onReject={handleReject}
+        />
+      )}
+    </GestureHandlerRootView>
   );
 };
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container:        { flex: 1, backgroundColor: '#0f172a' },
-  header:           { paddingTop: 60, paddingHorizontal: 20, paddingBottom: 16 },
-  title:            { fontSize: 22, fontWeight: '800', color: Colors.white },
-  content:          { padding: 20 },
-  card:             { backgroundColor: '#1e293b', borderRadius: 16, padding: 20, marginBottom: 16 },
-  activeCard:       { borderColor: Colors.primary, borderWidth: 2 },
-  sectionTitle:     { color: '#64748b', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 },
-  row:              { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  // Indicator
-  indicatorRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#334155' },
-  indicatorLabel:   { color: '#94a3b8', fontSize: 13, fontWeight: '500' },
-  indicatorBadge:   { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, gap: 5 },
-  indicatorDot:     { width: 6, height: 6, borderRadius: 3 },
-  indicatorValue:   { fontSize: 11, fontWeight: '700' },
-  // Switch
-  switchLabel:      { color: Colors.white, fontSize: 15, fontWeight: '700' },
-  switchSub:        { color: '#64748b', fontSize: 12, marginTop: 2 },
-  // Coords
-  coordValue:       { color: Colors.white, fontSize: 15, fontWeight: '600', fontFamily: 'monospace', marginBottom: 4 },
-  coordSub:         { color: '#64748b', fontSize: 12 },
-  warningText:      { color: '#f87171', fontSize: 12, marginTop: 10, fontWeight: '600' },
-  // Offer
-  emptyText:        { color: '#64748b', fontStyle: 'italic' },
-  offerText:        { color: Colors.white, marginBottom: 5, fontSize: 14 },
-  acceptButton:     { backgroundColor: Colors.primary, padding: 15, borderRadius: 12, marginTop: 15, alignItems: 'center' },
-  buttonText:       { color: Colors.white, fontWeight: '800' },
-  resultValue:      { fontSize: 24, fontWeight: '900', marginTop: 5 },
+  flex: { flex: 1 },
+
+  // Top
+  topOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: AtlasColors.overlay,
+    marginHorizontal: 12,
+    marginTop: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  brandBadge: {
+    backgroundColor: AtlasColors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  brandText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+
+  // Bottom
+  bottomPanel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 10,
+    backgroundColor: AtlasColors.overlay,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  gpsBanner: {
+    color: AtlasColors.warning,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
