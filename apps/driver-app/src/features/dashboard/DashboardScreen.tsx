@@ -8,7 +8,7 @@ import {
   Platform,
   StatusBar as RNStatusBar,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -162,9 +162,8 @@ export const DashboardScreen = () => {
       {/* ── Full-Screen Map ───────────────────────────────────────────── */}
       <MapView
         ref={mapRef}
-        provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
-        customMapStyle={MAP_STYLE}
+        mapType="none"
         initialRegion={DEFAULT_REGION}
         showsUserLocation={false}
         showsMyLocationButton={false}
@@ -175,6 +174,12 @@ export const DashboardScreen = () => {
         pitchEnabled={false}
         moveOnMarkerPress={false}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          tileSize={256}
+        />
         {markerCoord && (
           <Marker
             coordinate={markerCoord}
