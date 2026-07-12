@@ -27,12 +27,11 @@ const ph = StyleSheet.create({
 // ─── Stack ────────────────────────────────────────────────────────────────────
 const Stack = createStackNavigator<WalletStackParamList>();
 
-// WalletScreen will be imported here when Phase 1 UI is ready
-// import { WalletScreen } from '../presentation/screens/WalletScreen';
+import { WalletScreen } from '../presentation/screens/WalletScreen';
 
 export const WalletNavigator = () => (
   <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: AtlasColors.bg } }}>
-    <Stack.Screen name={WALLET_ROUTES.HOME}            component={PlaceholderScreen} />
+    <Stack.Screen name={WALLET_ROUTES.HOME}            component={WalletScreen} />
     <Stack.Screen name={WALLET_ROUTES.RECHARGE}        component={PlaceholderScreen} />
     <Stack.Screen name={WALLET_ROUTES.PENDING}         component={PlaceholderScreen} />
     <Stack.Screen name={WALLET_ROUTES.TRANSACTIONS}    component={PlaceholderScreen} />
