@@ -1,59 +1,101 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { RideOrder } from '../../../store/useOrdersStore';
+import { MapPin, Navigation, MoreVertical, ShieldCheck, CheckCircle2 } from 'lucide-react-native';
+import { AtlasColors } from '../../../theme/atlas';
+import { MockOrder } from '../ordersRepository';
 
-interface Props {
-  order: RideOrder;
-  onPress: (order: RideOrder) => void;
+interface OrderCardProps {
+  order:   MockOrder;
+  onPress: (order: MockOrder) => void;
 }
 
-export const OrderCard = memo(({ order, onPress }: Props) => {
+export const OrderCard = memo(({ order, onPress }: OrderCardProps) => {
+  const { passengerDetail } = order;
+  const rating   = passengerDetail.rating.toFixed(1);
+  const trips    = passengerDetail.tripsCount;
+  const price    = `${order.offeredPrice} MAD`;
+  const distance = order.distanceToPickup;
+  
   return (
-    <TouchableOpacity 
-      style={styles.card} 
+    <TouchableOpacity
+      style={styles.card}
       onPress={() => onPress(order)}
-      activeOpacity={0.8}
+      activeOpacity={0.85}
     >
+      {/* Top Passenger Section */}
       <View style={styles.header}>
         <View style={styles.passengerInfo}>
-          <Image 
-            source={{ uri: order.passengerAvatar || 'https://i.pravatar.cc/100' }} 
-            style={styles.avatar} 
+          <Image
+            source={{ uri: passengerDetail.avatar }}
+            style={styles.avatar}
           />
           <View>
             <View style={styles.nameRow}>
-               <Text style={styles.name}>{order.passengerName.split(' ')[0]}</Text>
-               {order.isVerified && <Text style={styles.verifiedIcon}>✓</Text>}
+              <Text style={styles.name}>{passengerDetail.name}</Text>
+              {passengerDetail.isVerified && (
+                <CheckCircle2 size={13} color={AtlasColors.online} strokeWidth={2.5} style={styles.checkIcon} />
+              )}
             </View>
-            <Text style={styles.rating}>⭐ {order.passengerRating} • {order.passengerTripsCount} trajets</Text>
+            <Text style={styles.ratingText}>
+              ⭐ {rating}  •  {trips} rides
+            </Text>
           </View>
         </View>
-        <View style={styles.timerContainer}>
-           <Text style={styles.timerText}>30s</Text>
+
+        {/* Options vertical dots button */}
+        <TouchableOpacity style={styles.optionsBtn} activeOpacity={0.6}>
+          <MoreVertical size={16} color={AtlasColors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Spacing Divider */}
+      <View style={styles.divider} />
+
+      {/* Middle Financial & Metrics Section */}
+      <View style={styles.metricsContainer}>
+        <View>
+          <Text style={styles.priceText}>{price}</Text>
+          {order.isFairPrice && (
+            <View style={styles.fairPriceBadge}>
+              <Text style={styles.fairPriceText}>Prix juste</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.etaContainer}>
+          <Text style={styles.etaHeading}>Pickup Distance</Text>
+          <Text style={styles.etaValue}>{distance} ({order.pickupEta})</Text>
         </View>
       </View>
 
-      <View style={styles.priceRow}>
-        <Text style={styles.price}>{order.offeredPrice} MAD</Text>
-        <View style={styles.distanceBadge}>
-           <Text style={styles.distanceText}>{order.distanceToPickup}</Text>
+      {/* Location Addresses Route */}
+      <View style={styles.routeContainer}>
+        {/* Pickup Item */}
+        <View style={styles.routeRow}>
+          <View style={[styles.routeDot, { backgroundColor: AtlasColors.online }]} />
+          <Text style={styles.routeText} numberOfLines={1}>
+            {order.pickupAddress}
+          </Text>
+        </View>
+
+        {/* Connector vertical line */}
+        <View style={styles.routeConnector} />
+
+        {/* Dropoff Item */}
+        <View style={styles.routeRow}>
+          <View style={[styles.routeDot, { backgroundColor: AtlasColors.offline }]} />
+          <Text style={styles.routeText} numberOfLines={1}>
+            {order.dropoffAddress}
+          </Text>
         </View>
       </View>
 
-      <View style={styles.addressContainer}>
-        <View style={styles.addressLine}>
-          <View style={[styles.dot, { backgroundColor: '#32FF7E' }]} />
-          <Text style={styles.addressText} numberOfLines={1}>{order.pickupAddress}</Text>
-        </View>
-        <View style={styles.addressLine}>
-          <View style={[styles.dot, { backgroundColor: '#FF4D4D' }]} />
-          <Text style={styles.addressText} numberOfLines={1}>{order.dropoffAddress}</Text>
-        </View>
-      </View>
-
-      <View style={styles.footer}>
-         <Text style={styles.footerText}>Client {order.isNewPassenger ? 'Nouveau' : 'Fidèle'}</Text>
-         <Text style={styles.acceptAction}>VOIR DÉTAILS →</Text>
+      {/* Footer Interactive Hint */}
+      <View style={styles.cardFooter}>
+        <Text style={styles.footerLabel}>
+          Passenger since {passengerDetail.memberSince} • {passengerDetail.paymentMethod}
+        </Text>
+        <Text style={styles.footerAction}>OFFER BID →</Text>
       </View>
     </TouchableOpacity>
   );
@@ -61,116 +103,144 @@ export const OrderCard = memo(({ order, onPress }: Props) => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#111',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 15,
+    backgroundColor: AtlasColors.surfaceAlt,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#222',
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 3,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    alignItems: 'center',
   },
   passengerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#333',
-    marginRight: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#334155',
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
   },
   name: {
-    color: '#FFF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
-    marginRight: 4,
+    color: AtlasColors.textPrimary,
   },
-  verifiedIcon: {
-    color: '#32FF7E',
-    fontSize: 12,
-    fontWeight: 'bold',
+  checkIcon: {
+    marginLeft: 2,
   },
-  rating: {
-    color: '#666',
+  ratingText: {
     fontSize: 11,
+    color: AtlasColors.textSecondary,
+    marginTop: 2,
   },
-  timerContainer: {
-    backgroundColor: 'rgba(50, 255, 126, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    height: 24,
+  optionsBtn: {
+    padding: 6,
   },
-  timerText: {
-    color: '#32FF7E',
-    fontSize: 11,
-    fontWeight: 'bold',
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginVertical: 12,
   },
-  priceRow: {
+  metricsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  priceText: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: AtlasColors.accent,
+  },
+  fairPriceBadge: {
+    backgroundColor: AtlasColors.online + '20',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  fairPriceText: {
+    fontSize: 9,
+    color: AtlasColors.online,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  etaContainer: {
+    alignItems: 'flex-end',
+  },
+  etaHeading: {
+    fontSize: 9,
+    color: AtlasColors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  etaValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: AtlasColors.textPrimary,
+    marginTop: 2,
+  },
+  routeContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 10,
+    padding: 10,
     marginBottom: 12,
   },
-  price: {
-    color: '#FFF',
-    fontSize: 26,
-    fontWeight: '900',
-  },
-  distanceBadge: {
-    backgroundColor: '#1A1A1A',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  distanceText: {
-    color: '#AAA',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  addressContainer: {
-    marginBottom: 15,
-  },
-  addressLine: {
+  routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 2,
+    gap: 8,
   },
-  dot: {
+  routeDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    marginRight: 10,
   },
-  addressText: {
-    color: '#888',
-    fontSize: 13,
-    flex: 1,
+  routeText: {
+    fontSize: 11,
+    color: AtlasColors.textPrimary,
+    fontWeight: '500',
   },
-  footer: {
+  routeConnector: {
+    width: 1,
+    height: 10,
+    backgroundColor: AtlasColors.neutral,
+    marginLeft: 2.5,
+    marginVertical: 3,
+    opacity: 0.25,
+  },
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#222',
-    paddingTop: 12,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+    paddingTop: 10,
   },
-  footerText: {
-    color: '#555',
+  footerLabel: {
+    fontSize: 10,
+    color: AtlasColors.textMuted,
+  },
+  footerAction: {
     fontSize: 11,
-    fontWeight: '600',
-  },
-  acceptAction: {
-    color: '#32FF7E',
-    fontSize: 12,
     fontWeight: '800',
-  }
+    color: AtlasColors.primary,
+  },
 });
