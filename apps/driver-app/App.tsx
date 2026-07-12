@@ -16,6 +16,7 @@ import { LoginScreen } from './src/features/auth/LoginScreen';
 import { OTPVerifyScreen } from './src/features/auth/OTPVerifyScreen';
 import { DashboardScreen } from './src/features/dashboard/DashboardScreen';
 import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen';
+import { WalletNavigator } from './src/features/wallet/navigation/WalletNavigator';
 
 // Navigation Types
 export type RootStackParamList = {
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   Login: undefined;
   OTPVerify: { phoneNumber: string };
   Dashboard: undefined;
+  Wallet: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -49,6 +51,7 @@ const App = () => {
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
               <Stack.Screen name="Dashboard" component={OrdersListScreen} />
+              <Stack.Screen name="Wallet"    component={WalletNavigator} />
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaProvider>

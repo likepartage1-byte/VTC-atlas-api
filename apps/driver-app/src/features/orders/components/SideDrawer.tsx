@@ -8,6 +8,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -46,6 +47,7 @@ const MENU_ITEMS = [
 ];
 
 export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
+  const navigation = useNavigation<any>();
   const translateX = useSharedValue(-DRAWER_WIDTH);
 
   useEffect(() => {
@@ -96,7 +98,12 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
                   key={item.key}
                   style={styles.menuRow}
                   activeOpacity={0.7}
-                  onPress={onClose}
+                  onPress={() => {
+                    onClose();
+                    if (item.key === 'wallet') {
+                      navigation.navigate('Wallet');
+                    }
+                  }}
                 >
                   <View style={styles.menuLeft}>
                     <Icon size={18} color={AtlasColors.textSecondary} />

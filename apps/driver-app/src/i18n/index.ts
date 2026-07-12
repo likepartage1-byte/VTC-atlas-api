@@ -3,10 +3,16 @@ import { initReactI18next } from 'react-i18next';
 import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Translation files supporting full driver app localization from Day 1
+// ─── Core translations (inline, stable keys) ──────────────────────────────────
+import walletFr from './translations/fr/wallet.json';
+import walletAr from './translations/ar/wallet.json';
+import walletEn from './translations/en/wallet.json';
+import walletEs from './translations/es/wallet.json';
+
 const resources = {
   ar: {
     translation: {
+      // Auth & core
       welcome: 'مرحباً بك في أطلس',
       login: 'تسجيل الدخول',
       phone_number: 'رقم الهاتف',
@@ -14,6 +20,7 @@ const resources = {
       go_offline: 'توقف',
       earning_today: 'أرباح اليوم',
       active_rides: 'الرحلات النشطة',
+      // Orders
       wallet: 'المحفظة',
       city: 'المدينة',
       notifications: 'الإشعارات',
@@ -26,7 +33,6 @@ const resources = {
       available: 'نشط',
       offline: 'غير متصل',
       busy: 'مشغول',
-      vehicle: 'المركبة',
       no_orders: 'لا توجد طلبات قريبة',
       check_again: 'تحقق مجدداً',
       orders: 'الطلبات',
@@ -34,6 +40,7 @@ const resources = {
       performance: 'الأداء',
       profile: 'الملف الشخصي',
     },
+    wallet: walletAr,
   },
   fr: {
     translation: {
@@ -56,7 +63,6 @@ const resources = {
       available: 'Disponible',
       offline: 'Hors ligne',
       busy: 'Occupé',
-      vehicle: 'Véhicule',
       no_orders: 'Aucune commande trouvée',
       check_again: 'Vérifier à nouveau',
       orders: 'Commandes',
@@ -64,6 +70,7 @@ const resources = {
       performance: 'Performance',
       profile: 'Profil',
     },
+    wallet: walletFr,
   },
   en: {
     translation: {
@@ -86,7 +93,6 @@ const resources = {
       available: 'Available',
       offline: 'Offline',
       busy: 'Busy',
-      vehicle: 'Vehicle',
       no_orders: 'No Orders Found',
       check_again: 'Check Again',
       orders: 'Orders',
@@ -94,23 +100,53 @@ const resources = {
       performance: 'Performance',
       profile: 'Profile',
     },
+    wallet: walletEn,
+  },
+  es: {
+    translation: {
+      welcome: 'Bienvenido a Atlas',
+      login: 'Iniciar sesión',
+      phone_number: 'Número de teléfono',
+      go_online: 'Conectarse',
+      go_offline: 'Desconectarse',
+      earning_today: 'Ganancias de hoy',
+      active_rides: 'Viajes activos',
+      wallet: 'Billetera',
+      city: 'Ciudad',
+      notifications: 'Notificaciones',
+      security: 'Seguridad',
+      settings: 'Configuración',
+      help: 'Ayuda',
+      support: 'Soporte',
+      passenger_mode: 'Modo Pasajero',
+      nearby_requests: 'Solicitudes cercanas',
+      available: 'Disponible',
+      offline: 'Sin conexión',
+      busy: 'Ocupado',
+      no_orders: 'No se encontraron pedidos',
+      check_again: 'Verificar de nuevo',
+      orders: 'Pedidos',
+      demand: 'Demanda',
+      performance: 'Rendimiento',
+      profile: 'Perfil',
+    },
+    wallet: walletEs,
   },
 };
 
 export const initI18n = async () => {
   const savedLanguage = await AsyncStorage.getItem('user_language');
-  const language = savedLanguage || 'ar'; // Default to Arabic
+  const language = savedLanguage || 'ar';
 
   await i18n.use(initReactI18next).init({
     resources,
     lng: language,
     fallbackLng: 'en',
-    interpolation: {
-      escapeValue: false,
-    },
+    ns: ['translation', 'wallet'],
+    defaultNS: 'translation',
+    interpolation: { escapeValue: false },
   });
 
-  // Handle RTL for Arabic
   const isRTL = language === 'ar';
   if (I18nManager.isRTL !== isRTL) {
     I18nManager.allowRTL(isRTL);
