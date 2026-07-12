@@ -77,7 +77,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     const dbStatus = data.status === 'AVAILABLE' ? 'AVAILABLE'
       : data.status === 'BUSY' ? 'BUSY'
-      : 'ONLINE';
+      : 'OFFLINE';
 
     await this.prisma.driver.updateMany({
       where: { userId: user.userId },
