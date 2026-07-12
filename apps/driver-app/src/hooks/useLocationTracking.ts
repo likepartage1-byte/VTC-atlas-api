@@ -7,9 +7,9 @@ import { api } from '../api/axios.instance';
 export type GpsStatus = 'OFF' | 'ACTIVE' | 'STALE' | 'PERMISSION_DENIED';
 
 // How often (ms) we actively ping getCurrentPosition to detect GPS toggle
-const GPS_POLL_INTERVAL_MS = 5_000;
+const GPS_POLL_INTERVAL_MS = 2_000;
 // Quick timeout for the poll — if GPS is off, it fails fast
-const GPS_POLL_TIMEOUT_MS  = 3_000;
+const GPS_POLL_TIMEOUT_MS  = 1_500;
 
 export const useLocationTracking = (isOnline: boolean) => {
   const watchId       = useRef<number | null>(null);
