@@ -43,7 +43,7 @@ class SocketService {
 
     s.on('connect_error', async (err) => {
       this.status = 'disconnected';
-      console.error('[Socket] Connection error:', err.message);
+      console.warn('[Socket] Connection error:', err.message);
 
       if (err.message === 'Unauthorized') {
         // Access token expired — try to refresh it, then reconnect
