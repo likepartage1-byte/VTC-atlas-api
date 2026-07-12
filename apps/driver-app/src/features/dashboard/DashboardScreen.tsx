@@ -16,6 +16,34 @@ import Geolocation from '@react-native-community/geolocation';
 
 const { width } = Dimensions.get('window');
 
+const getGpsStatusColor = (status: string) => {
+  switch (status) {
+    case 'ACTIVE':
+      return '#22c55e'; // Green
+    case 'DISABLED':
+      return '#ef4444'; // Red
+    case 'PERMISSION_DENIED':
+      return '#f97316'; // Orange
+    case 'OFF':
+    default:
+      return '#64748b'; // Gray
+  }
+};
+
+const getGpsStatusLabel = (status: string) => {
+  switch (status) {
+    case 'ACTIVE':
+      return 'Connected';
+    case 'DISABLED':
+      return 'GPS Disabled';
+    case 'PERMISSION_DENIED':
+      return 'No Permission';
+    case 'OFF':
+    default:
+      return 'Radar Off';
+  }
+};
+
 export const DashboardScreen = () => {
   const [isAvailable, setIsAvailable] = useState(false);
   const [socketStatus, setSocketStatus] = useState('disconnected');
@@ -30,8 +58,8 @@ export const DashboardScreen = () => {
     isAvailableRef.current = isAvailable;
   }, [isAvailable]);
 
-  // تفعيل تتبع الموقع عند دخول وضع "AVAILABLE"
-  const liveLocation = useLocationTracking(isAvailable);
+  // تفعيل تتبع الموقع وجلب حالته الجغرافية الحية
+  const { location: liveLocation, gpsStatus } = useLocationTracking(isAvailable);
 
   useEffect(() => {
     // الاتصال بالسوكت فور تحميل الشاشة
@@ -122,9 +150,20 @@ export const DashboardScreen = () => {
 
         {/* GPS Info */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Real-time GPS</Text>
+          <View style={[styles.row, { marginBottom: 10 }]}>
+            <Text style={styles.sectionTitle}>Real-time GPS</Text>
+            <View style={[styles.gpsBadge, { backgroundColor: getGpsStatusColor(gpsStatus) }]}>
+              <Text style={styles.gpsBadgeText}>{getGpsStatusLabel(gpsStatus).toUpperCase()}</Text>
+            </View>
+          </View>
           <Text style={styles.value}>Lat: {liveLocation.latitude.toFixed(6)}</Text>
           <Text style={styles.value}>Lng: {liveLocation.longitude.toFixed(6)}</Text>
+          {gpsStatus === 'DISABLED' && (
+            <Text style={styles.warningText}>⚠️ Please turn on GPS services on your phone</Text>
+          )}
+          {gpsStatus === 'PERMISSION_DENIED' && (
+            <Text style={styles.warningText}>⚠️ Location permission is denied</Text>
+          )}
         </View>
 
         {/* Offer Console */}
@@ -174,5 +213,8 @@ const styles = StyleSheet.create({
   offerText: { color: Colors.white, marginBottom: 5, fontSize: 14 },
   acceptButton: { backgroundColor: Colors.primary, padding: 15, borderRadius: 12, marginTop: 15, alignItems: 'center' },
   buttonText: { color: Colors.white, fontWeight: '800' },
-  resultValue: { fontSize: 24, fontWeight: '900', marginTop: 5 }
+  resultValue: { fontSize: 24, fontWeight: '900', marginTop: 5 },
+  gpsBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  gpsBadgeText: { color: Colors.white, fontSize: 10, fontWeight: '900' },
+  warningText: { color: '#f87171', fontSize: 12, marginTop: 8, fontWeight: '600' }
 });
