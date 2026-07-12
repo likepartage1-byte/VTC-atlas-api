@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import { I18nManager } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Translation files (Simplified for setup)
+// Translation files supporting full driver app localization from Day 1
 const resources = {
   ar: {
     translation: {
@@ -14,6 +14,25 @@ const resources = {
       go_offline: 'توقف',
       earning_today: 'أرباح اليوم',
       active_rides: 'الرحلات النشطة',
+      wallet: 'المحفظة',
+      city: 'المدينة',
+      notifications: 'الإشعارات',
+      security: 'الأمان',
+      settings: 'الإعدادات',
+      help: 'المساعدة',
+      support: 'الدعم الفني',
+      passenger_mode: 'وضع الركاب',
+      nearby_requests: 'الطلبات القريبة',
+      available: 'نشط',
+      offline: 'غير متصل',
+      busy: 'مشغول',
+      vehicle: 'المركبة',
+      no_orders: 'لا توجد طلبات قريبة',
+      check_again: 'تحقق مجدداً',
+      orders: 'الطلبات',
+      demand: 'الطلب',
+      performance: 'الأداء',
+      profile: 'الملف الشخصي',
     },
   },
   fr: {
@@ -25,6 +44,25 @@ const resources = {
       go_offline: 'Se déconnecter',
       earning_today: "Gains d'aujourd'hui",
       active_rides: 'Courses actives',
+      wallet: 'Portefeuille',
+      city: 'Ville',
+      notifications: 'Notifications',
+      security: 'Sécurité',
+      settings: 'Paramètres',
+      help: 'Aide',
+      support: 'Support technique',
+      passenger_mode: 'Mode Passager',
+      nearby_requests: 'Commandes à proximité',
+      available: 'Disponible',
+      offline: 'Hors ligne',
+      busy: 'Occupé',
+      vehicle: 'Véhicule',
+      no_orders: 'Aucune commande trouvée',
+      check_again: 'Vérifier à nouveau',
+      orders: 'Commandes',
+      demand: 'Demande',
+      performance: 'Performance',
+      profile: 'Profil',
     },
   },
   en: {
@@ -36,6 +74,25 @@ const resources = {
       go_offline: 'Go Offline',
       earning_today: "Today's Earnings",
       active_rides: 'Active Rides',
+      wallet: 'Wallet',
+      city: 'City',
+      notifications: 'Notifications',
+      security: 'Security',
+      settings: 'Settings',
+      help: 'Help',
+      support: 'Support',
+      passenger_mode: 'Passenger Mode',
+      nearby_requests: 'Nearby Requests',
+      available: 'Available',
+      offline: 'Offline',
+      busy: 'Busy',
+      vehicle: 'Vehicle',
+      no_orders: 'No Orders Found',
+      check_again: 'Check Again',
+      orders: 'Orders',
+      demand: 'Demand',
+      performance: 'Performance',
+      profile: 'Profile',
     },
   },
 };
@@ -58,7 +115,6 @@ export const initI18n = async () => {
   if (I18nManager.isRTL !== isRTL) {
     I18nManager.allowRTL(isRTL);
     I18nManager.forceRTL(isRTL);
-    // Note: App restart might be handled in the UI layer for full layout refresh
   }
 };
 

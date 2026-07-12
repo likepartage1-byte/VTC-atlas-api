@@ -11,20 +11,26 @@ import {
 } from 'react-native';
 import { Menu, Settings, Bell, RefreshCw, AlertCircle, Compass } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { AtlasColors } from '../../../theme/atlas';
 import { OrderCard } from '../components/OrderCard';
 import { BottomNavigation } from '../components/BottomNavigation';
+import { SideDrawer } from '../components/SideDrawer';
 import { ordersRepository, MockOrder } from '../ordersRepository';
 
 type DriverPresenceStatus = 'OFFLINE' | 'AVAILABLE' | 'BUSY';
 
 export const OrdersListScreen = () => {
+  const { t } = useTranslation();
   const [presence, setPresence] = useState<DriverPresenceStatus>('AVAILABLE');
   const [orders, setOrders] = useState<MockOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('orders');
+  
+  // SideDrawer Open State (Step 2)
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
 
   // ── Data Ingestion ─────────────────────────────────────────────────────────
   const fetchOrders = useCallback(async (isSilent = false) => {
@@ -61,25 +67,28 @@ export const OrdersListScreen = () => {
 
   const handleOrderPress = useCallback((order: MockOrder) => {
     console.log('[OrdersFeed] Selected order:', order.id);
-    // Future integration hook (Map detail transition)
   }, []);
 
   // ── Render Helpers ─────────────────────────────────────────────────────────
   const presenceStyle = useMemo(() => {
     switch (presence) {
       case 'AVAILABLE':
-        return { color: AtlasColors.online, label: 'AVAILABLE' };
+        return { color: AtlasColors.online, label: t('available') };
       case 'BUSY':
-        return { color: AtlasColors.offline, label: 'BUSY' };
+        return { color: AtlasColors.offline, label: t('busy') };
       default:
-        return { color: AtlasColors.neutral, label: 'OFFLINE' };
+        return { color: AtlasColors.neutral, label: t('offline') };
     }
-  }, [presence]);
+  }, [presence, t]);
 
   const renderHeader = () => (
     <View style={styles.header}>
-      {/* Drawer hamburger */}
-      <TouchableOpacity style={styles.headerIconBtn} activeOpacity={0.7}>
+      {/* Drawer hamburger button */}
+      <TouchableOpacity
+        style={styles.headerIconBtn}
+        activeOpacity={0.7}
+        onPress={() => setIsDrawerOpen(true)}
+      >
         <Menu size={22} color={AtlasColors.textPrimary} />
       </TouchableOpacity>
 
@@ -112,10 +121,10 @@ export const OrdersListScreen = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Compass size={48} color={AtlasColors.textMuted} strokeWidth={1.5} />
-      <Text style={styles.emptyTitle}>No Orders Found</Text>
+      <Text style={styles.emptyTitle}>{t('no_orders')}</Text>
       <Text style={styles.emptySub}>We will notify you immediately as soon as a customer proposes a ride</Text>
       <TouchableOpacity style={styles.retryBtn} onPress={() => fetchOrders()}>
-        <Text style={styles.retryText}>Check Again</Text>
+        <Text style={styles.retryText}>{t('check_again')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -158,7 +167,6 @@ export const OrdersListScreen = () => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
-        // Peak Performance flatlist tuning
         removeClippedSubviews={true}
         maxToRenderPerBatch={8}
         windowSize={5}
@@ -185,7 +193,7 @@ export const OrdersListScreen = () => {
       {/* Main orders feed block */}
       <View style={styles.feedWrapper}>
         <View style={styles.feedHeadingRow}>
-          <Text style={styles.feedTitle}>Nearby Requests</Text>
+          <Text style={styles.feedTitle}>{t('nearby_requests')}</Text>
           <TouchableOpacity style={styles.syncBtn} onPress={() => fetchOrders()} disabled={loading}>
             <RefreshCw size={13} color={AtlasColors.textSecondary} />
           </TouchableOpacity>
@@ -193,6 +201,9 @@ export const OrdersListScreen = () => {
 
         {renderContent()}
       </View>
+
+      {/* Drawer menu overlay (Step 2) */}
+      <SideDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
 
       {/* Bottom tabs menu navigation overlay */}
       <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
@@ -231,8 +242,10 @@ const styles = StyleSheet.create({
   },
   badgeDot: {
     position: 'absolute',
-    top: 10, right: 10,
-    width: 7, height: 7,
+    top: 10,
+    right: 10,
+    width: 7,
+    height: 7,
     borderRadius: 4,
     backgroundColor: AtlasColors.offline,
     borderWidth: 1,
@@ -282,7 +295,6 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingBottom: 110, // clear navigation footer
   },
-  // States style
   loadingContainer: {
     flex: 0.8,
     justifyContent: 'center',
