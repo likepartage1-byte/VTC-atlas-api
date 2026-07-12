@@ -58,7 +58,7 @@ export const DashboardScreen = () => {
     isAvailableRef.current = isAvailable;
   }, [isAvailable]);
 
-  // تفعيل تتبع الموقع وجلب حالته الجغرافية الحية
+  // GPS monitoring always active — independent of the dispatch switch
   const { location: liveLocation, gpsStatus } = useLocationTracking(isAvailable);
 
   useEffect(() => {

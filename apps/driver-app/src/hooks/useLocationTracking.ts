@@ -4,20 +4,37 @@ import Geolocation from '@react-native-community/geolocation';
 import { socketService } from '../services/socket.service';
 import { api } from '../api/axios.instance';
 
-export type GpsStatus = 'OFF' | 'ACTIVE' | 'STALE' | 'PERMISSION_DENIED';
+export type GpsStatus = 'CHECKING' | 'ACTIVE' | 'STALE' | 'PERMISSION_DENIED';
 
-// How often (ms) we actively ping getCurrentPosition to detect GPS toggle
+// Poll every 2s to actively detect GPS toggle changes
 const GPS_POLL_INTERVAL_MS = 2_000;
-// Quick timeout for the poll — if GPS is off, it fails fast
 const GPS_POLL_TIMEOUT_MS  = 1_500;
 
+/**
+ * useLocationTracking
+ *
+ * GPS monitoring is ALWAYS active regardless of isOnline.
+ * Location data (socket + API) is only sent to the backend when isOnline = true.
+ *
+ * This separates two independent concerns:
+ *   1. GPS availability (always monitored → badge color/text)
+ *   2. Dispatch presence (only when driver goes AVAILABLE)
+ */
 export const useLocationTracking = (isOnline: boolean) => {
-  const watchId       = useRef<number | null>(null);
-  const pollTimer     = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
-  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('OFF');
-  const prevStatusRef = useRef<GpsStatus>('OFF');
+  const watchId    = useRef<number | null>(null);
+  const pollTimer  = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
+  const [gpsStatus, setGpsStatus] = useState<GpsStatus>('CHECKING');
+
+  const prevStatusRef = useRef<GpsStatus>('CHECKING');
+  // Keep live ref of isOnline to avoid stale closure inside watchPosition callback
+  const isOnlineRef = useRef(isOnline);
+  useEffect(() => {
+    isOnlineRef.current = isOnline;
+  }, [isOnline]);
+
+  /* ─── Status helper ──────────────────────────────────────────────────── */
   const updateStatus = (next: GpsStatus) => {
     if (prevStatusRef.current !== next) {
       console.log(`[GPS] ${prevStatusRef.current} → ${next}`);
@@ -26,14 +43,12 @@ export const useLocationTracking = (isOnline: boolean) => {
     }
   };
 
-  /* ── Polling: called every GPS_POLL_INTERVAL_MS ─────────────────────── */
-  const pollGpsAvailability = () => {
+  /* ─── Active poll: instantly detects GPS icon toggle ─────────────────── */
+  const pollGps = () => {
     Geolocation.getCurrentPosition(
       () => {
-        // GPS responded → it is ON. watchPosition callback drives ACTIVE status.
-        // Only un-stale here if we were stale (GPS was re-enabled).
+        // GPS is on → watchPosition drives ACTIVE; here we only un-stale
         if (prevStatusRef.current === 'STALE') {
-          console.log('[GPS] GPS restored — resuming watch');
           updateStatus('ACTIVE');
         }
       },
@@ -41,7 +56,7 @@ export const useLocationTracking = (isOnline: boolean) => {
         if (err.code === 1) {
           updateStatus('PERMISSION_DENIED');
         } else {
-          // code 2 = POSITION_UNAVAILABLE (GPS off), code 3 = TIMEOUT
+          // code 2 (GPS off) or 3 (timeout) → signal lost
           updateStatus('STALE');
         }
       },
@@ -51,7 +66,7 @@ export const useLocationTracking = (isOnline: boolean) => {
 
   const startPoll = () => {
     if (pollTimer.current) return;
-    pollTimer.current = setInterval(pollGpsAvailability, GPS_POLL_INTERVAL_MS);
+    pollTimer.current = setInterval(pollGps, GPS_POLL_INTERVAL_MS);
   };
 
   const stopPoll = () => {
@@ -61,24 +76,26 @@ export const useLocationTracking = (isOnline: boolean) => {
     }
   };
 
-  /* ── Effect: start/stop on availability toggle ───────────────────────── */
+  /* ─── Mount: start GPS monitoring immediately, always ────────────────── */
   useEffect(() => {
-    if (isOnline) {
-      requestAndStartTracking();
-    } else {
-      stopTracking();
-    }
-    return () => stopTracking();
-  }, [isOnline]);
+    requestPermissionAndStart();
+    return () => {
+      stopPoll();
+      if (watchId.current !== null) {
+        Geolocation.clearWatch(watchId.current);
+        watchId.current = null;
+      }
+    };
+  }, []);
 
-  /* ── Permission request ───────────────────────────────────────────────── */
-  const requestAndStartTracking = async () => {
+  /* ─── Permission & startup ───────────────────────────────────────────── */
+  const requestPermissionAndStart = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: 'Location Permission Required',
-          message: 'Atlas Driver needs your location to dispatch rides.',
+          message: 'Atlas Driver needs your location to receive ride requests.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'Allow',
@@ -88,32 +105,32 @@ export const useLocationTracking = (isOnline: boolean) => {
         updateStatus('PERMISSION_DENIED');
         Alert.alert(
           'Location Permission Denied',
-          'Please enable location permission in your phone settings to receive ride requests.'
+          'Please enable location access in your phone settings to use Atlas Driver.'
         );
         return;
       }
     }
-    startTracking();
-  };
 
-  /* ── watchPosition: continuous high-accuracy stream ─────────────────── */
-  const startTracking = () => {
     Geolocation.setRNConfiguration({
       skipPermissionRequests: false,
       authorizationLevel: 'always',
     });
 
-    // Start the GPS-availability poll immediately
-    pollGpsAvailability();
+    // Start availability polling immediately
+    pollGps();
     startPoll();
 
+    // watchPosition: runs always, but only forwards data when driver is AVAILABLE
     watchId.current = Geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setLocation({ latitude, longitude });
         updateStatus('ACTIVE');
 
-        // 1. Real-time socket dispatch
+        // ── Only send to backend when the driver has gone AVAILABLE ──────
+        if (!isOnlineRef.current) return;
+
+        // 1. Real-time dispatch (socket)
         socketService.sendLocation(latitude, longitude);
 
         // 2. REST persistence
@@ -125,11 +142,7 @@ export const useLocationTracking = (isOnline: boolean) => {
       },
       (error) => {
         console.warn('[GPS] watchPosition error:', error.code, error.message);
-        if (error.code === 1) {
-          updateStatus('PERMISSION_DENIED');
-        } else {
-          updateStatus('STALE');
-        }
+        updateStatus(error.code === 1 ? 'PERMISSION_DENIED' : 'STALE');
       },
       {
         enableHighAccuracy: true,
@@ -138,16 +151,6 @@ export const useLocationTracking = (isOnline: boolean) => {
         fastestInterval: 2000,
       }
     );
-  };
-
-  /* ── Cleanup ─────────────────────────────────────────────────────────── */
-  const stopTracking = () => {
-    stopPoll();
-    if (watchId.current !== null) {
-      Geolocation.clearWatch(watchId.current);
-      watchId.current = null;
-    }
-    updateStatus('OFF');
   };
 
   return { location, gpsStatus };
