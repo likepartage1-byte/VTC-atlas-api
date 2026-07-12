@@ -23,6 +23,7 @@ import { FloatingButtons }     from './components/FloatingButtons';
 import { RideBottomSheet, RideOffer } from './components/RideBottomSheet';
 import { LocationInfo }        from './components/LocationInfo';
 import { OffersListOverlay }   from './components/OffersListOverlay';
+import { PassengerMarker }    from './components/PassengerMarker';
 
 const DEFAULT_REGION = {
   latitude:       31.6295,
@@ -241,7 +242,7 @@ export const DashboardScreen = () => {
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFillObject}
-        mapType="none"
+        mapType="standard"
         initialRegion={DEFAULT_REGION}
         showsUserLocation={false}
         showsMyLocationButton={false}
@@ -253,7 +254,8 @@ export const DashboardScreen = () => {
         moveOnMarkerPress={false}
       >
         <UrlTile
-          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          urlTemplate="https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+          shouldReplaceMapContent={true}
           maximumZ={19}
           flipY={false}
           tileSize={256}
@@ -264,11 +266,9 @@ export const DashboardScreen = () => {
           <Marker
             coordinate={selectedOffer.pickupCoords}
             title="Pickup (A)"
-            anchor={{ x: 0.5, y: 0.5 }}
+            anchor={{ x: 0.5, y: 0.7 }}
           >
-            <View style={[styles.routeMarkerCircle, { backgroundColor: AtlasColors.online }]}>
-              <Text style={styles.routeMarkerLetter}>A</Text>
-            </View>
+            <PassengerMarker name={selectedOffer.customerName ?? 'Mohamed'} />
           </Marker>
         )}
 
