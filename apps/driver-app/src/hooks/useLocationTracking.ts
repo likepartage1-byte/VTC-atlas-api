@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import { socketService } from '../services/socket.service';
@@ -6,6 +6,7 @@ import { api } from '../api/axios.instance';
 
 export const useLocationTracking = (isOnline: boolean) => {
   const watchId = useRef<number | null>(null);
+  const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
 
   useEffect(() => {
     if (isOnline) {
@@ -29,6 +30,7 @@ export const useLocationTracking = (isOnline: boolean) => {
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'Allow',
+          buttonPositive: 'Allow',
         }
       );
 
@@ -50,7 +52,9 @@ export const useLocationTracking = (isOnline: boolean) => {
     watchId.current = Geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        console.log(`[LocationTracking] 📍 Coordinates updated: [${latitude}, ${longitude}] — sending over socket & API`);
+        
+        // Update local state so hook consumers can render current coords
+        setLocation({ latitude, longitude });
 
         // 1. Send to Socket for real-time dispatching
         socketService.sendLocation(latitude, longitude);
@@ -58,11 +62,11 @@ export const useLocationTracking = (isOnline: boolean) => {
         // 2. Persist to API periodically
         try {
           await api.post('/driver/location', { latitude, longitude });
-        } catch (error: any) {
-          console.log('Location API update failed', error.message);
+        } catch (error) {
+          console.log('Location API update failed', error);
         }
       },
-      (error) => console.warn('[LocationTracking] ⚠️ GPS tracking error:', error.message),
+      (error) => console.log('Location Error:', error),
       {
         enableHighAccuracy: true,
         distanceFilter: 10,
@@ -78,4 +82,6 @@ export const useLocationTracking = (isOnline: boolean) => {
       watchId.current = null;
     }
   };
+
+  return location;
 };

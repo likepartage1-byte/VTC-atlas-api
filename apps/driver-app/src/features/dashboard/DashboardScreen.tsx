@@ -21,7 +21,6 @@ export const DashboardScreen = () => {
   const [socketStatus, setSocketStatus] = useState('disconnected');
   const [lastOffer, setLastOffer] = useState<any>(null);
   const [acceptResult, setAcceptResult] = useState<string | null>(null);
-  const [location, setLocation] = useState({ lat: 0, lng: 0 });
   // Tracks a queued presence update when socket wasn't ready yet
   const pendingPresence = React.useRef<'AVAILABLE' | 'ONLINE' | null>(null);
 
@@ -32,7 +31,7 @@ export const DashboardScreen = () => {
   }, [isAvailable]);
 
   // تفعيل تتبع الموقع عند دخول وضع "AVAILABLE"
-  useLocationTracking(isAvailable);
+  const liveLocation = useLocationTracking(isAvailable);
 
   useEffect(() => {
     // الاتصال بالسوكت فور تحميل الشاشة
@@ -54,11 +53,7 @@ export const DashboardScreen = () => {
       if (event === 'ride_offer') setLastOffer(data);
     });
 
-    const watchId = Geolocation.watchPosition(
-      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      (err) => console.log(err),
-      { distanceFilter: 5 }
-    );
+
 
     // Heartbeat: silently validates session every 10s.
     // Stops immediately on terminal errors (404/403).
@@ -81,7 +76,6 @@ export const DashboardScreen = () => {
     return () => {
       clearInterval(interval);
       socketService.disconnect();
-      Geolocation.clearWatch(watchId);
     };
   }, []);
 
@@ -129,8 +123,8 @@ export const DashboardScreen = () => {
         {/* GPS Info */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Real-time GPS</Text>
-          <Text style={styles.value}>Lat: {location.lat.toFixed(6)}</Text>
-          <Text style={styles.value}>Lng: {location.lng.toFixed(6)}</Text>
+          <Text style={styles.value}>Lat: {liveLocation.latitude.toFixed(6)}</Text>
+          <Text style={styles.value}>Lng: {liveLocation.longitude.toFixed(6)}</Text>
         </View>
 
         {/* Offer Console */}
