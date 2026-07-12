@@ -9,174 +9,154 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { Menu, Settings, Bell, RefreshCw, AlertCircle, Compass } from 'lucide-react-native';
+import { Menu, Settings, Bell, Compass, AlertCircle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
 import { AtlasColors } from '../../../theme/atlas';
 import { OrderCard } from '../components/OrderCard';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { SideDrawer } from '../components/SideDrawer';
+import { TripDetailsBottomSheet } from '../components/TripDetailsBottomSheet';
 import { ordersRepository, MockOrder } from '../ordersRepository';
 
-type DriverPresenceStatus = 'OFFLINE' | 'AVAILABLE' | 'BUSY';
+type DriverStatus = 'OFFLINE' | 'AVAILABLE' | 'BUSY';
 
 export const OrdersListScreen = () => {
-  const { t } = useTranslation();
-  const [presence, setPresence] = useState<DriverPresenceStatus>('AVAILABLE');
-  const [orders, setOrders] = useState<MockOrder[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [status, setStatus]         = useState<DriverStatus>('OFFLINE');
+  const [orders, setOrders]         = useState<MockOrder[]>([]);
+  const [loading, setLoading]       = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('orders');
-  
-  // SideDrawer Open State (Step 2)
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
+  const [activeTab, setActiveTab]   = useState<string>('orders');
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
 
-  // ── Data Ingestion ─────────────────────────────────────────────────────────
-  const fetchOrders = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
+  // ── Data ───────────────────────────────────────────────────────────────────
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setErrorMsg(null);
     try {
       const data = await ordersRepository.getNearbyOrders();
       setOrders(data);
-    } catch (e) {
-      setErrorMsg('Failed to synchronize nearby requests');
+    } catch {
+      setErrorMsg('Impossible de récupérer les commandes.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const handleRefresh = useCallback(() => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchOrders(true);
   }, [fetchOrders]);
 
-  // Toggle status capsule cyclic: OFFLINE -> AVAILABLE -> BUSY -> OFFLINE
-  const cyclePresenceStatus = useCallback(() => {
-    setPresence((prev) => {
-      if (prev === 'OFFLINE') return 'AVAILABLE';
-      if (prev === 'AVAILABLE') return 'BUSY';
-      return 'OFFLINE';
-    });
+  // ── Status capsule ─────────────────────────────────────────────────────────
+  const cycleStatus = useCallback(() => {
+    setStatus((s) => s === 'OFFLINE' ? 'AVAILABLE' : s === 'AVAILABLE' ? 'BUSY' : 'OFFLINE');
   }, []);
 
-  const handleOrderPress = useCallback((order: MockOrder) => {
-    console.log('[OrdersFeed] Selected order:', order.id);
-  }, []);
-
-  // ── Render Helpers ─────────────────────────────────────────────────────────
-  const presenceStyle = useMemo(() => {
-    switch (presence) {
-      case 'AVAILABLE':
-        return { color: AtlasColors.online, label: t('available') };
-      case 'BUSY':
-        return { color: AtlasColors.offline, label: t('busy') };
-      default:
-        return { color: AtlasColors.neutral, label: t('offline') };
+  const statusConfig = useMemo(() => {
+    switch (status) {
+      case 'AVAILABLE': return { label: 'EN LIGNE',  color: AtlasColors.online };
+      case 'BUSY':      return { label: 'OCCUPÉ',    color: '#F59E0B' };
+      default:          return { label: 'Hors ligne', color: '#6B7280' };
     }
-  }, [presence, t]);
+  }, [status]);
 
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  const handleCardPress = useCallback((order: MockOrder) => {
+    setSelectedOrder(order);
+  }, []);
+
+  const handleAccept = useCallback((orderId: string, finalPrice: number) => {
+    console.log(`[Orders] Accepted order ${orderId} at ${finalPrice} MAD`);
+    setSelectedOrder(null);
+  }, []);
+
+  const handleCloseSheet = useCallback(() => {
+    setSelectedOrder(null);
+  }, []);
+
+  // ── Render helpers ─────────────────────────────────────────────────────────
   const renderHeader = () => (
     <View style={styles.header}>
-      {/* Drawer hamburger button */}
-      <TouchableOpacity
-        style={styles.headerIconBtn}
-        activeOpacity={0.7}
-        onPress={() => setIsDrawerOpen(true)}
-      >
+      <TouchableOpacity style={styles.iconBtn} onPress={() => setDrawerOpen(true)} activeOpacity={0.7}>
         <Menu size={22} color={AtlasColors.textPrimary} />
       </TouchableOpacity>
 
-      {/* Interactive presence capsule */}
       <TouchableOpacity
-        style={[styles.statusCapsule, { borderColor: presenceStyle.color + '45' }]}
-        onPress={cyclePresenceStatus}
-        activeOpacity={0.8}
+        style={[styles.statusCapsule, { backgroundColor: status === 'OFFLINE' ? '#1F2937' : statusConfig.color + '22', borderColor: statusConfig.color + '55' }]}
+        onPress={cycleStatus}
+        activeOpacity={0.85}
       >
-        <View style={[styles.statusDot, { backgroundColor: presenceStyle.color }]} />
-        <Text style={[styles.statusText, { color: presenceStyle.color }]}>
-          {presenceStyle.label}
+        <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
+        <Text style={[styles.statusLabel, { color: statusConfig.color }]}>
+          {statusConfig.label}
         </Text>
       </TouchableOpacity>
 
-      {/* Right controls */}
-      <View style={styles.rightHeaderControls}>
-        <TouchableOpacity style={styles.headerIconBtn} activeOpacity={0.7}>
-          <Bell size={20} color={AtlasColors.textPrimary} />
-          {orders.length > 0 && <View style={styles.badgeDot} />}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.headerIconBtn} activeOpacity={0.7}>
-          <Settings size={20} color={AtlasColors.textPrimary} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Compass size={48} color={AtlasColors.textMuted} strokeWidth={1.5} />
-      <Text style={styles.emptyTitle}>{t('no_orders')}</Text>
-      <Text style={styles.emptySub}>We will notify you immediately as soon as a customer proposes a ride</Text>
-      <TouchableOpacity style={styles.retryBtn} onPress={() => fetchOrders()}>
-        <Text style={styles.retryText}>{t('check_again')}</Text>
+      <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
+        <Settings size={20} color={AtlasColors.textPrimary} />
+        {orders.length > 0 && <View style={styles.notifBadge} />}
       </TouchableOpacity>
     </View>
   );
 
-  const renderErrorState = () => (
-    <View style={styles.errorContainer}>
-      <AlertCircle size={44} color={AtlasColors.offline} />
-      <Text style={styles.errorTitle}>Synchronization Error</Text>
-      <Text style={styles.errorSub}>{errorMsg}</Text>
+  const renderLoading = () => (
+    <View style={styles.centered}>
+      <ActivityIndicator size="large" color={AtlasColors.primary} />
+      <Text style={styles.centeredText}>Recherche de commandes...</Text>
+    </View>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.centered}>
+      <Compass size={50} color={AtlasColors.textMuted} strokeWidth={1.2} />
+      <Text style={styles.emptyTitle}>Aucune commande</Text>
+      <Text style={styles.emptySubtitle}>Vous serez notifié dès qu'un client propose une course.</Text>
       <TouchableOpacity style={styles.retryBtn} onPress={() => fetchOrders()}>
-        <Text style={styles.retryText}>Retry</Text>
+        <Text style={styles.retryText}>Réessayer</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderError = () => (
+    <View style={styles.centered}>
+      <AlertCircle size={44} color={AtlasColors.offline} />
+      <Text style={styles.emptyTitle}>Erreur de synchronisation</Text>
+      <Text style={styles.emptySubtitle}>{errorMsg}</Text>
+      <TouchableOpacity style={styles.retryBtn} onPress={() => fetchOrders()}>
+        <Text style={styles.retryText}>Réessayer</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderContent = () => {
-    if (loading) {
-      return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={AtlasColors.primary} />
-          <Text style={styles.loadingText}>Fetching nearby ride offers...</Text>
-        </View>
-      );
-    }
-
-    if (errorMsg) {
-      return renderErrorState();
-    }
-
-    if (orders.length === 0) {
-      return renderEmptyState();
-    }
+    if (loading)   return renderLoading();
+    if (errorMsg)  return renderError();
+    if (!orders.length) return renderEmpty();
 
     return (
       <FlatList
         data={orders}
-        renderItem={({ item }) => (
-          <OrderCard order={item} onPress={handleOrderPress} />
-        )}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        renderItem={({ item }) => (
+          <OrderCard order={item} onPress={handleCardPress} />
+        )}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        removeClippedSubviews={true}
+        removeClippedSubviews
         maxToRenderPerBatch={8}
         windowSize={5}
         initialNumToRender={5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[AtlasColors.primary]}
+            onRefresh={onRefresh}
             tintColor={AtlasColors.primary}
+            colors={[AtlasColors.primary]}
           />
         }
       />
@@ -184,174 +164,125 @@ export const OrdersListScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeContainer} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <RNStatusBar barStyle="light-content" backgroundColor={AtlasColors.bg} />
-      
-      {/* Header element */}
+
       {renderHeader()}
 
-      {/* Main orders feed block */}
-      <View style={styles.feedWrapper}>
-        <View style={styles.feedHeadingRow}>
-          <Text style={styles.feedTitle}>{t('nearby_requests')}</Text>
-          <TouchableOpacity style={styles.syncBtn} onPress={() => fetchOrders()} disabled={loading}>
-            <RefreshCw size={13} color={AtlasColors.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
+      <View style={styles.feed}>
         {renderContent()}
       </View>
 
-      {/* Drawer menu overlay (Step 2) */}
-      <SideDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
-
-      {/* Bottom tabs menu navigation overlay */}
+      {/* Bottom Navigation (Phase 3) */}
       <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
+
+      {/* Side Drawer (Phase 5 — placeholder) */}
+      <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      {/* Trip Details Bottom Sheet (Phase 4) */}
+      <TripDetailsBottomSheet
+        order={selectedOrder}
+        onAccept={handleAccept}
+        onClose={handleCloseSheet}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeContainer: {
+  container: {
     flex: 1,
-    backgroundColor: AtlasColors.bg,
+    backgroundColor: '#0D1117', // Very dark, matching inDrive screenshot background
   },
+
+  // ── Header ────────────────────────────────────────────────
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection:    'row',
+    alignItems:       'center',
+    justifyContent:   'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical:   10,
+    backgroundColor:  '#0D1117',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
-    backgroundColor: AtlasColors.surface,
+    borderBottomColor: 'rgba(255,255,255,0.04)',
   },
-  headerIconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: AtlasColors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.04)',
+  iconBtn: {
+    width:           40,
+    height:          40,
+    borderRadius:    10,
+    backgroundColor: '#161D2B',
+    alignItems:      'center',
+    justifyContent:  'center',
   },
-  rightHeaderControls: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  badgeDot: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+  notifBadge: {
+    position:        'absolute',
+    top:             10,
+    right:           10,
+    width:            7,
+    height:           7,
+    borderRadius:     4,
     backgroundColor: AtlasColors.offline,
-    borderWidth: 1,
-    borderColor: AtlasColors.surfaceAlt,
   },
   statusCapsule: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
+    flexDirection:    'row',
+    alignItems:       'center',
+    gap:               7,
+    paddingHorizontal: 16,
+    paddingVertical:    8,
+    borderRadius:      24,
+    borderWidth:        1,
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width:        7,
+    height:       7,
+    borderRadius: 3.5,
   },
-  statusText: {
-    fontSize: 10,
+  statusLabel: {
+    fontSize:   12,
     fontWeight: '800',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
-  feedWrapper: {
+
+  // ── Feed ──────────────────────────────────────────────────
+  feed: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
-  feedHeadingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  listContent: {
+    paddingBottom: 90, // clear bottom nav
   },
-  feedTitle: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: AtlasColors.textPrimary,
-  },
-  syncBtn: {
-    padding: 6,
-    borderRadius: 6,
-    backgroundColor: AtlasColors.surfaceAlt,
-  },
-  listContainer: {
-    paddingBottom: 110, // clear navigation footer
-  },
-  loadingContainer: {
-    flex: 0.8,
+
+  // ── States ────────────────────────────────────────────────
+  centered: {
+    flex:           1,
+    alignItems:     'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 12,
-    color: AtlasColors.textSecondary,
-  },
-  emptyContainer: {
-    flex: 0.8,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: 32,
-    gap: 12,
+    gap:             14,
+  },
+  centeredText: {
+    fontSize: 13,
+    color:    AtlasColors.textSecondary,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize:   16,
     fontWeight: '800',
-    color: AtlasColors.textPrimary,
-    marginTop: 6,
+    color:      AtlasColors.textPrimary,
   },
-  emptySub: {
-    fontSize: 12,
-    color: AtlasColors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
+  emptySubtitle: {
+    fontSize:   12,
+    color:      AtlasColors.textSecondary,
+    textAlign:  'center',
+    lineHeight:  18,
   },
   retryBtn: {
     backgroundColor: AtlasColors.primary,
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginTop: 8,
+    borderRadius:    10,
+    paddingVertical:  8,
+    paddingHorizontal: 22,
   },
   retryText: {
-    color: '#fff',
-    fontSize: 12,
+    color:      '#fff',
+    fontSize:   12,
     fontWeight: '700',
-  },
-  errorContainer: {
-    flex: 0.8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    gap: 12,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: AtlasColors.textPrimary,
-    marginTop: 6,
-  },
-  errorSub: {
-    fontSize: 12,
-    color: AtlasColors.textSecondary,
-    textAlign: 'center',
   },
 });

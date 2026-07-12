@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Dimensions,
   TouchableWithoutFeedback,
   ScrollView,
@@ -15,7 +14,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { useTranslation } from 'react-i18next';
 import {
   Wallet,
   MapPin,
@@ -24,13 +22,10 @@ import {
   Settings,
   HelpCircle,
   MessageSquare,
-  Facebook,
-  MessageCircle,
-  Instagram,
-  UserCheck
+  User,
+  Car,
 } from 'lucide-react-native';
 import { AtlasColors } from '../../../theme/atlas';
-import { useProfileStore } from '../../../store/useProfileStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const DRAWER_WIDTH = SCREEN_W * 0.82;
@@ -40,119 +35,85 @@ interface SideDrawerProps {
   onClose: () => void;
 }
 
+const MENU_ITEMS = [
+  { key: 'wallet',        label: 'Portefeuille',    icon: Wallet },
+  { key: 'city',          label: 'Ville',           icon: MapPin },
+  { key: 'notifications', label: 'Notifications',   icon: Bell },
+  { key: 'security',      label: 'Sécurité',        icon: Lock },
+  { key: 'settings',      label: 'Paramètres',      icon: Settings },
+  { key: 'help',          label: 'Aide',            icon: HelpCircle },
+  { key: 'support',       label: 'Support',         icon: MessageSquare },
+];
+
 export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
-  const { t } = useTranslation();
-  const { profile } = useProfileStore();
   const translateX = useSharedValue(-DRAWER_WIDTH);
 
   useEffect(() => {
     translateX.value = isOpen
       ? withSpring(0, { damping: 20, stiffness: 100 })
-      : withTiming(-DRAWER_WIDTH, { duration: 250 });
+      : withTiming(-DRAWER_WIDTH, { duration: 240 });
   }, [isOpen]);
 
-  const drawerStyle = useAnimatedStyle(() => ({
+  const drawerStyle  = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
-  const backdropStyle = useAnimatedStyle(() => ({
-    opacity: isOpen
-      ? withTiming(0.6, { duration: 250 })
-      : withTiming(0, { duration: 220 }),
+  const backdropOpacity = useAnimatedStyle(() => ({
+    opacity: withTiming(isOpen ? 1 : 0, { duration: 220 }),
+    pointerEvents: isOpen ? 'auto' : 'none',
   }));
 
-  if (!isOpen && translateX.value === -DRAWER_WIDTH) {
-    return null;
-  }
-
-  const menuItems = [
-    { key: 'wallet',        label: t('wallet'),        icon: Wallet,        value: `${profile.balanceMAD.toFixed(2)} MAD` },
-    { key: 'city',          label: t('city'),          icon: MapPin,        value: profile.city },
-    { key: 'notifications', label: t('notifications'), icon: Bell },
-    { key: 'security',      label: t('security'),      icon: Lock },
-    { key: 'settings',      label: t('settings'),      icon: Settings },
-    { key: 'help',          label: t('help'),          icon: HelpCircle },
-    { key: 'support',       label: t('support'),       icon: MessageSquare },
-  ];
-
   return (
-    <View style={StyleSheet.absoluteFill}>
-      {/* Dark overlay backdrop */}
+    <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? 'auto' : 'none'}>
+      {/* Backdrop */}
       <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View style={[styles.backdrop, backdropStyle]} />
+        <Animated.View style={[styles.backdrop, backdropOpacity]} />
       </TouchableWithoutFeedback>
 
-      {/* Main Drawer Menu */}
+      {/* Drawer panel */}
       <Animated.View style={[styles.drawer, drawerStyle]}>
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-          
-          {/* Driver Rich Profile Card */}
+
+          {/* ── Placeholder profile header ─────────────────── */}
           <View style={styles.profileHeader}>
-            <Image source={{ uri: profile.avatar }} style={styles.avatar} />
-            <Text style={styles.driverName}>{profile.name}</Text>
-            <View style={styles.ratingBox}>
-              <Text style={styles.ratingText}>⭐ {profile.rating.toFixed(2)}</Text>
+            <View style={styles.avatarPlaceholder}>
+              <User size={28} color={AtlasColors.textMuted} />
             </View>
-            
-            {/* Vehicle Indicator */}
+            <Text style={styles.driverName}>Hamza El Aourf</Text>
+            <Text style={styles.driverRating}>⭐ 4.85</Text>
             <View style={styles.vehicleBadge}>
-              <Text style={styles.vehicleLabel}>
-                🚘 {profile.vehicle.color} {profile.vehicle.make} {profile.vehicle.model}
-              </Text>
-              <Text style={styles.vehiclePlate}>{profile.vehicle.plate}</Text>
+              <Car size={12} color={AtlasColors.primary} />
+              <Text style={styles.vehicleText}>Dacia Logan • 12-A-34567</Text>
             </View>
           </View>
 
-          {/* List Options */}
-          <View style={styles.menuContainer}>
-            {menuItems.map((item) => {
-              const IconComp = item.icon;
+          {/* ── Menu list ──────────────────────────────────── */}
+          <View style={styles.menuList}>
+            {MENU_ITEMS.map((item) => {
+              const Icon = item.icon;
               return (
                 <TouchableOpacity
                   key={item.key}
                   style={styles.menuRow}
                   activeOpacity={0.7}
-                  onPress={() => {
-                    console.log(`[Drawer] Clicked ${item.key}`);
-                    onClose();
-                  }}
+                  onPress={onClose}
                 >
-                  <View style={styles.menuRowLeft}>
-                    <IconComp size={19} color={AtlasColors.textSecondary} />
+                  <View style={styles.menuLeft}>
+                    <Icon size={18} color={AtlasColors.textSecondary} />
                     <Text style={styles.menuLabel}>{item.label}</Text>
                   </View>
-                  {item.value ? (
-                    <Text style={styles.menuValue}>{item.value}</Text>
-                  ) : (
-                    <Text style={styles.menuArrow}>→</Text>
-                  )}
+                  <Text style={styles.menuChevron}>›</Text>
                 </TouchableOpacity>
               );
             })}
           </View>
 
-          {/* Footer Social Accounts & Passenger Switch */}
-          <View style={styles.footerContainer}>
-            {/* Mode Switcher */}
-            <TouchableOpacity style={styles.modeSwitchBtn} activeOpacity={0.8}>
-              <UserCheck size={18} color={AtlasColors.accent} />
-              <Text style={styles.modeSwitchText}>{t('passenger_mode')}</Text>
+          {/* ── Footer placeholder ─────────────────────────── */}
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.passengerModeBtn} onPress={onClose}>
+              <Text style={styles.passengerModeText}>Mode Passager</Text>
             </TouchableOpacity>
-
-            {/* Social Medias Badges */}
-            <View style={styles.socialRow}>
-              <TouchableOpacity style={styles.socialBtn}>
-                <Facebook size={16} color={AtlasColors.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialBtn}>
-                <MessageCircle size={16} color={AtlasColors.textSecondary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.socialBtn}>
-                <Instagram size={16} color={AtlasColors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.versionText}>Atlas Driver v1.0.4 - Premium Edition</Text>
+            <Text style={styles.version}>Atlas Driver • v1.0</Text>
           </View>
 
         </ScrollView>
@@ -164,153 +125,119 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     zIndex: 999,
   },
   drawer: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: DRAWER_WIDTH,
-    backgroundColor: AtlasColors.surface,
-    borderTopRightRadius: 20,
-    borderBottomRightRadius: 20,
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 16,
+    position:        'absolute',
+    left:            0,
+    top:             0,
+    bottom:          0,
+    width:           DRAWER_WIDTH,
+    backgroundColor: '#111827',
+    borderTopRightRadius:    18,
+    borderBottomRightRadius: 18,
+    zIndex:          1000,
+    shadowColor:     '#000',
+    shadowOffset:    { width: 6, height: 0 },
+    shadowOpacity:   0.35,
+    shadowRadius:    20,
+    elevation:       20,
   },
   scrollContent: {
     flexGrow: 1,
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 30,
   },
   profileHeader: {
-    alignItems: 'center',
+    alignItems:       'center',
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom:      28,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
-    borderColor: AtlasColors.primary,
-    backgroundColor: '#334155',
-    marginBottom: 10,
+  avatarPlaceholder: {
+    width:           68,
+    height:          68,
+    borderRadius:    34,
+    backgroundColor: '#1C2438',
+    alignItems:      'center',
+    justifyContent:  'center',
+    borderWidth:     2,
+    borderColor:     AtlasColors.primary,
+    marginBottom:    10,
   },
   driverName: {
-    fontSize: 16,
+    fontSize:   15,
     fontWeight: '800',
-    color: AtlasColors.textPrimary,
+    color:      AtlasColors.textPrimary,
   },
-  ratingBox: {
-    backgroundColor: 'rgba(234, 179, 8, 0.1)',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginTop: 4,
-  },
-  ratingText: {
-    color: AtlasColors.warning,
-    fontSize: 11,
+  driverRating: {
+    fontSize:  11,
+    color:     '#F59E0B',
+    marginTop:  3,
     fontWeight: '700',
   },
   vehicleBadge: {
-    backgroundColor: AtlasColors.surfaceAlt,
-    borderRadius: 10,
-    padding: 10,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.03)',
+    flexDirection:   'row',
+    alignItems:      'center',
+    gap:              5,
+    backgroundColor: '#1C2438',
+    borderRadius:     8,
+    paddingHorizontal: 10,
+    paddingVertical:   5,
+    marginTop:         12,
   },
-  vehicleLabel: {
-    fontSize: 11,
-    color: AtlasColors.textSecondary,
+  vehicleText: {
+    fontSize:   10,
+    color:      AtlasColors.textSecondary,
     fontWeight: '600',
   },
-  vehiclePlate: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: AtlasColors.primary,
-    marginTop: 2,
-  },
-  menuContainer: {
+  menuList: {
     paddingHorizontal: 16,
     flex: 1,
   },
   menuRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
+    flexDirection:    'row',
+    justifyContent:   'space-between',
+    alignItems:       'center',
+    paddingVertical:   15,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.03)',
+    borderBottomColor: 'rgba(255,255,255,0.04)',
   },
-  menuRowLeft: {
+  menuLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    alignItems:    'center',
+    gap:            12,
   },
   menuLabel: {
-    fontSize: 13,
+    fontSize:   13,
     fontWeight: '600',
-    color: AtlasColors.textPrimary,
+    color:      AtlasColors.textPrimary,
   },
-  menuValue: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: AtlasColors.accent,
+  menuChevron: {
+    fontSize: 18,
+    color:    AtlasColors.textMuted,
   },
-  menuArrow: {
-    fontSize: 14,
-    color: AtlasColors.textMuted,
-  },
-  footerContainer: {
+  footer: {
     paddingHorizontal: 20,
-    marginTop: 40,
-    gap: 16,
-    alignItems: 'center',
+    marginTop:         32,
+    alignItems:        'center',
+    gap:                12,
   },
-  modeSwitchBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: AtlasColors.primary + '20',
-    width: '100%',
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: AtlasColors.primary + '40',
+  passengerModeBtn: {
+    backgroundColor: '#1C2438',
+    borderRadius:    12,
+    paddingVertical:  10,
+    paddingHorizontal: 24,
+    borderWidth:       1,
+    borderColor:       AtlasColors.primary + '40',
   },
-  modeSwitchText: {
-    color: AtlasColors.accent,
-    fontSize: 13,
-    fontWeight: '800',
+  passengerModeText: {
+    fontSize:   12,
+    fontWeight: '700',
+    color:      AtlasColors.accent,
   },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: AtlasColors.surfaceAlt,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.03)',
-  },
-  versionText: {
+  version: {
     fontSize: 9,
-    color: AtlasColors.textMuted,
-    marginTop: 8,
+    color:    AtlasColors.textMuted,
   },
 });
