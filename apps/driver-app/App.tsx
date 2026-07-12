@@ -6,6 +6,7 @@ import { store } from './src/store';
 import { initI18n } from './src/i18n';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { navigationRef } from './src/navigation/navigationRef';
 import { StatusBar, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -14,6 +15,7 @@ import { SplashScreen } from './src/features/auth/SplashScreen';
 import { LoginScreen } from './src/features/auth/LoginScreen';
 import { OTPVerifyScreen } from './src/features/auth/OTPVerifyScreen';
 import { DashboardScreen } from './src/features/dashboard/DashboardScreen';
+import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen';
 
 // Navigation Types
 export type RootStackParamList = {
@@ -41,12 +43,12 @@ const App = () => {
             backgroundColor="transparent"
             translucent
           />
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
               <Stack.Screen name="Splash" component={SplashScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
               <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
-              <Stack.Screen name="Dashboard" component={DashboardScreen} />
+              <Stack.Screen name="Dashboard" component={OrdersListScreen} />
             </Stack.Navigator>
           </NavigationContainer>
         </SafeAreaProvider>
