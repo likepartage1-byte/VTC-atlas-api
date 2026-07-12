@@ -25,24 +25,40 @@ export const DashboardScreen = () => {
   // Tracks a queued presence update when socket wasn't ready yet
   const pendingPresence = React.useRef<'AVAILABLE' | 'ONLINE' | null>(null);
 
+  // Keep a ref of isAvailable to prevent closure stale-value bugs in socket callbacks
+  const isAvailableRef = React.useRef(isAvailable);
+  useEffect(() => {
+    isAvailableRef.current = isAvailable;
+  }, [isAvailable]);
+
   // تفعيل تتبع الموقع عند دخول وضع "AVAILABLE"
   useLocationTracking(isAvailable);
 
-  // 1. Socket and Heartbeat setup (Runs once on mount)
   useEffect(() => {
     // الاتصال بالسوكت فور تحميل الشاشة
     socketService.connect((event, data) => {
       if (event === 'status') {
         setSocketStatus(data);
-        // If user already toggled presence while we were connecting, send it now
-        if (data === 'connected' && pendingPresence.current) {
-          console.log('[Dashboard] Flushing queued presence:', pendingPresence.current);
-          socketService.setPresence(pendingPresence.current);
-          pendingPresence.current = null;
+        if (data === 'connected') {
+          if (pendingPresence.current) {
+            console.log('[Dashboard] Flushing queued presence:', pendingPresence.current);
+            socketService.setPresence(pendingPresence.current);
+            pendingPresence.current = null;
+          } else if (isAvailableRef.current) {
+            // Auto-restore database availability if the UI switch is active!
+            console.log('[Dashboard] Socket reconnected, auto-restoring presence: AVAILABLE');
+            socketService.setPresence('AVAILABLE');
+          }
         }
       }
       if (event === 'ride_offer') setLastOffer(data);
     });
+
+    const watchId = Geolocation.watchPosition(
+      (pos) => setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => console.log(err),
+      { distanceFilter: 5 }
+    );
 
     // Heartbeat: silently validates session every 10s.
     // Stops immediately on terminal errors (404/403).
@@ -65,29 +81,9 @@ export const DashboardScreen = () => {
     return () => {
       clearInterval(interval);
       socketService.disconnect();
+      Geolocation.clearWatch(watchId);
     };
   }, []);
-
-  // 2. Geolocation Watch for Dashboard UI Coordinates (Depends on isAvailable)
-  useEffect(() => {
-    let watchId: number | null = null;
-    if (isAvailable) {
-      watchId = Geolocation.watchPosition(
-        (pos) => {
-          console.log('[Dashboard] GPS UI Update:', pos.coords.latitude, pos.coords.longitude);
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        },
-        (err) => console.warn('[Dashboard] GPS UI Watch Error:', err.message),
-        { distanceFilter: 5, enableHighAccuracy: true }
-      );
-    }
-
-    return () => {
-      if (watchId !== null) {
-        Geolocation.clearWatch(watchId);
-      }
-    };
-  }, [isAvailable]);
 
   const togglePresence = () => {
     const nextState = !isAvailable;
