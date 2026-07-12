@@ -20,8 +20,8 @@ const getGpsStatusColor = (status: string) => {
   switch (status) {
     case 'ACTIVE':
       return '#22c55e'; // Green
-    case 'DISABLED':
-      return '#ef4444'; // Red
+    case 'STALE':
+      return '#ef4444'; // Red — GPS disabled / no signal
     case 'PERMISSION_DENIED':
       return '#f97316'; // Orange
     case 'OFF':
@@ -34,8 +34,8 @@ const getGpsStatusLabel = (status: string) => {
   switch (status) {
     case 'ACTIVE':
       return 'Connected';
-    case 'DISABLED':
-      return 'GPS Disabled';
+    case 'STALE':
+      return 'GPS Off';
     case 'PERMISSION_DENIED':
       return 'No Permission';
     case 'OFF':
@@ -158,8 +158,8 @@ export const DashboardScreen = () => {
           </View>
           <Text style={styles.value}>Lat: {liveLocation.latitude.toFixed(6)}</Text>
           <Text style={styles.value}>Lng: {liveLocation.longitude.toFixed(6)}</Text>
-          {gpsStatus === 'DISABLED' && (
-            <Text style={styles.warningText}>⚠️ Please turn on GPS services on your phone</Text>
+          {gpsStatus === 'STALE' && (
+            <Text style={styles.warningText}>⚠️ GPS signal lost — please enable Location services</Text>
           )}
           {gpsStatus === 'PERMISSION_DENIED' && (
             <Text style={styles.warningText}>⚠️ Location permission is denied</Text>

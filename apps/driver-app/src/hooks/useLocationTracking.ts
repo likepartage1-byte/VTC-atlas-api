@@ -4,22 +4,43 @@ import Geolocation from '@react-native-community/geolocation';
 import { socketService } from '../services/socket.service';
 import { api } from '../api/axios.instance';
 
-export type GpsStatus = 'OFF' | 'ACTIVE' | 'DISABLED' | 'PERMISSION_DENIED';
+export type GpsStatus = 'OFF' | 'ACTIVE' | 'STALE' | 'PERMISSION_DENIED';
+
+// If no position update arrives within this window, GPS is considered stale/disabled
+const GPS_STALENESS_TIMEOUT_MS = 15_000;
 
 export const useLocationTracking = (isOnline: boolean) => {
   const watchId = useRef<number | null>(null);
+  const stalenessTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [location, setLocation] = useState({ latitude: 0, longitude: 0 });
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('OFF');
-
-  // Track status ref to avoid alert loops in callbacks
   const prevStatusRef = useRef<GpsStatus>('OFF');
 
   const updateStatus = (newStatus: GpsStatus) => {
     if (prevStatusRef.current !== newStatus) {
-      console.log(`[GPS] Status transition: ${prevStatusRef.current} -> ${newStatus}`);
+      console.log(`[GPS] Status: ${prevStatusRef.current} → ${newStatus}`);
       prevStatusRef.current = newStatus;
       setGpsStatus(newStatus);
     }
+  };
+
+  const clearStalenessTimer = () => {
+    if (stalenessTimer.current) {
+      clearTimeout(stalenessTimer.current);
+      stalenessTimer.current = null;
+    }
+  };
+
+  /**
+   * Arm a staleness timer. Each time a fresh position arrives it is reset.
+   * If it fires it means GPS stopped sending updates (user disabled it).
+   */
+  const armStalenessTimer = () => {
+    clearStalenessTimer();
+    stalenessTimer.current = setTimeout(() => {
+      console.warn('[GPS] No position update received — GPS likely disabled');
+      updateStatus('STALE');
+    }, GPS_STALENESS_TIMEOUT_MS);
   };
 
   useEffect(() => {
@@ -28,7 +49,6 @@ export const useLocationTracking = (isOnline: boolean) => {
     } else {
       stopTracking();
     }
-
     return () => stopTracking();
   }, [isOnline]);
 
@@ -44,18 +64,16 @@ export const useLocationTracking = (isOnline: boolean) => {
           buttonPositive: 'Allow',
         }
       );
-
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        console.warn('⚠️ [Location] Permission denied — GPS tracking disabled');
+        console.warn('⚠️ [Location] Permission denied');
         updateStatus('PERMISSION_DENIED');
         Alert.alert(
           'Location Permission Denied',
-          'Atlas Driver requires location permissions to work. Please grant permission in your system settings.'
+          'Atlas Driver requires location permission to work. Please enable it in your phone settings.'
         );
         return;
       }
     }
-
     startTracking();
   };
 
@@ -65,47 +83,40 @@ export const useLocationTracking = (isOnline: boolean) => {
       authorizationLevel: 'always',
     });
 
+    // Arm the first staleness check immediately
+    armStalenessTimer();
+
     watchId.current = Geolocation.watchPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        
-        // Update local state
         setLocation({ latitude, longitude });
 
-        // If transitioning into ACTIVE from an error state, show a clean alert/log
-        if (prevStatusRef.current !== 'ACTIVE') {
-          console.log('[GPS] Connected successfully');
-        }
+        // Got a fresh fix — reset the stale timer and mark as active
+        armStalenessTimer();
         updateStatus('ACTIVE');
 
-        // 1. Send to Socket for real-time dispatching
+        // 1. Real-time dispatch via socket
         socketService.sendLocation(latitude, longitude);
 
-        // 2. Persist to API periodically
+        // 2. Persist to REST API
         try {
           await api.post('/driver/location', { latitude, longitude });
-        } catch (error) {
-          console.log('Location API update failed', error);
+        } catch (err) {
+          console.log('[GPS] Location API update failed:', err);
         }
       },
       (error) => {
-        console.warn('⚠️ [Location Error]:', error.message, 'Code:', error.code);
-        
-        if (error.code === 1) { // PERMISSION_DENIED
+        console.warn('⚠️ [Location Error]', error.code, error.message);
+        clearStalenessTimer();
+        if (error.code === 1) {
           updateStatus('PERMISSION_DENIED');
           Alert.alert(
             'Permissions Required',
-            'Location permission is not granted. Please go to settings and allow location access.'
+            'Location permission was revoked. Please re-enable it in your settings.'
           );
-        } else if (error.code === 2) { // POSITION_UNAVAILABLE (GPS turned off)
-          const wasDisabled = prevStatusRef.current === 'DISABLED';
-          updateStatus('DISABLED');
-          if (!wasDisabled) {
-            Alert.alert(
-              'GPS Disabled',
-              'Your location services are currently turned off. Please turn on GPS/Location services to receive ride requests.'
-            );
-          }
+        } else {
+          // code 2 = POSITION_UNAVAILABLE, code 3 = TIMEOUT
+          updateStatus('STALE');
         }
       },
       {
@@ -118,6 +129,7 @@ export const useLocationTracking = (isOnline: boolean) => {
   };
 
   const stopTracking = () => {
+    clearStalenessTimer();
     if (watchId.current !== null) {
       Geolocation.clearWatch(watchId.current);
       watchId.current = null;
