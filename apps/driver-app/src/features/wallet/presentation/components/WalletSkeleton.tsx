@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import { WalletColors } from '../theme/WalletColors';
+import { useTheme } from '../../../../theme/ThemeContext';
 
 export const WalletSkeleton = () => {
+  const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
@@ -25,26 +26,26 @@ export const WalletSkeleton = () => {
   return (
     <View style={styles.container}>
       {/* Balance Placeholders */}
-      <Animated.View style={[styles.shimmer, styles.labelPlaceholder, { opacity: pulseAnim }]} />
-      <Animated.View style={[styles.shimmer, styles.balancePlaceholder, { opacity: pulseAnim }]} />
-      <Animated.View style={[styles.shimmer, styles.pendingPlaceholder, { opacity: pulseAnim }]} />
-      <Animated.View style={[styles.shimmer, styles.btnPlaceholder, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.labelPlaceholder, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.balancePlaceholder, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.pendingPlaceholder, { opacity: pulseAnim }]} />
+      <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.btnPlaceholder, { opacity: pulseAnim }]} />
 
       {/* Transactions List Placeholders */}
       <View style={styles.list}>
-        <Animated.View style={[styles.shimmer, styles.sectionTitlePlaceholder, { opacity: pulseAnim }]} />
+        <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.sectionTitlePlaceholder, { opacity: pulseAnim }]} />
         <View style={styles.row}>
-          <Animated.View style={[styles.shimmer, styles.circlePlaceholder, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.circlePlaceholder, { opacity: pulseAnim }]} />
           <View style={styles.textGroup}>
-            <Animated.View style={[styles.shimmer, styles.linePlaceholderShort, { opacity: pulseAnim }]} />
-            <Animated.View style={[styles.shimmer, styles.linePlaceholderLong, { opacity: pulseAnim }]} />
+            <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.linePlaceholderShort, { opacity: pulseAnim }]} />
+            <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.linePlaceholderLong, { opacity: pulseAnim }]} />
           </View>
         </View>
         <View style={styles.row}>
-          <Animated.View style={[styles.shimmer, styles.circlePlaceholder, { opacity: pulseAnim }]} />
+          <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.circlePlaceholder, { opacity: pulseAnim }]} />
           <View style={styles.textGroup}>
-            <Animated.View style={[styles.shimmer, styles.linePlaceholderShort, { opacity: pulseAnim }]} />
-            <Animated.View style={[styles.shimmer, styles.linePlaceholderLong, { opacity: pulseAnim }]} />
+            <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.linePlaceholderShort, { opacity: pulseAnim }]} />
+            <Animated.View style={[styles.shimmer, { backgroundColor: colors.surfaceAlt }, styles.linePlaceholderLong, { opacity: pulseAnim }]} />
           </View>
         </View>
       </View>
@@ -58,7 +59,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   shimmer: {
-    backgroundColor: WalletColors.surfaceLight,
     borderRadius: 8,
   },
   labelPlaceholder: {

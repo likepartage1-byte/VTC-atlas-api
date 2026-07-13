@@ -19,6 +19,8 @@ import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen
 import { WalletNavigator } from './src/features/wallet/navigation/WalletNavigator';
 
 // Navigation Types
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -29,9 +31,30 @@ export type RootStackParamList = {
 
 const Stack = createStackNavigator<RootStackParamList>();
 
-const App = () => {
-  const isDarkMode = useColorScheme() === 'dark';
+const AppContent = () => {
+  const { isDarkMode, colors } = useTheme();
 
+  return (
+    <SafeAreaProvider>
+      <StatusBar 
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
+        backgroundColor="transparent"
+        translucent
+      />
+      <NavigationContainer ref={navigationRef}>
+        <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: colors.bg } }}>
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
+          <Stack.Screen name="Dashboard" component={OrdersListScreen} />
+          <Stack.Screen name="Wallet"    component={WalletNavigator} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
+};
+
+const App = () => {
   useEffect(() => {
     initI18n();
   }, []);
@@ -39,22 +62,9 @@ const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
-        <SafeAreaProvider>
-          <StatusBar 
-            barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
-            backgroundColor="transparent"
-            translucent
-          />
-          <NavigationContainer ref={navigationRef}>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Splash" component={SplashScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
-              <Stack.Screen name="Dashboard" component={OrdersListScreen} />
-              <Stack.Screen name="Wallet"    component={WalletNavigator} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </SafeAreaProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </Provider>
     </GestureHandlerRootView>
   );

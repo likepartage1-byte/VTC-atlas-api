@@ -1,13 +1,14 @@
-import { AtlasColors } from '../../../../theme/atlas';
+import { ThemeColorsType } from '../../../../theme/ThemeContext';
 
-export const WalletColors = {
-  ...AtlasColors,
-  balanceText:  '#F8FAFC',
+export const getWalletColors = (themeColors: ThemeColorsType) => ({
+  ...themeColors,
+  balanceText:  themeColors.textPrimary,
   pending:      '#F59E0B',
   debit:        '#EF4444',
   credit:       '#10B981',
-  rechargeBtn:  '#6366F1',
-  cardBg:       '#131C2E',
-  separator:    'rgba(255, 255, 255, 0.05)',
-  surfaceLight: '#1E293B',
-};
+  rechargeBtn:  themeColors.primary,
+  cardBg:       themeColors.surfaceAlt,
+  separator:    themeColors.bg === '#0A0F1E' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.08)',
+  surfaceLight: themeColors.surfaceAlt,
+});
+export type WalletColorsType = ReturnType<typeof getWalletColors>;

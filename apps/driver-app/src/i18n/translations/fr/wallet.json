@@ -25,5 +25,9 @@
   "cancelled":           "Annulé",
   "today":               "Aujourd'hui",
   "yesterday":           "Hier",
-  "older":               "Plus ancien"
+  "older":               "Plus ancien",
+  "language":            "Langue",
+  "darkMode":            "Mode sombre",
+  "lightMode":           "Mode clair",
+  "lang_select_title":   "Sélectionner la langue"
 }

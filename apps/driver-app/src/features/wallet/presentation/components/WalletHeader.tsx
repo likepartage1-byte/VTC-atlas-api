@@ -1,27 +1,32 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { X, Globe } from 'lucide-react-native';
-import { WalletColors } from '../theme/WalletColors';
-import { WalletTypography } from '../theme/WalletTypography';
+import { X } from 'lucide-react-native';
+import { useTheme } from '../../../../theme/ThemeContext';
+import { getWalletColors } from '../theme/WalletColors';
 
 interface WalletHeaderProps {
   title: string;
   onClose: () => void;
-  onLanguagePress?: () => void;
 }
 
-export const WalletHeader = memo(({ title, onClose, onLanguagePress }: WalletHeaderProps) => {
+export const WalletHeader = memo(({ title, onClose }: WalletHeaderProps) => {
+  const { colors } = useTheme();
+  const wColors = getWalletColors(colors);
+
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.btn} onPress={onClose} activeOpacity={0.7}>
-        <X size={22} color={WalletColors.textPrimary} />
+    <View style={[styles.container, { backgroundColor: wColors.surface, borderBottomColor: wColors.separator }]}>
+      <TouchableOpacity 
+        style={[styles.btn, { backgroundColor: colors.surfaceAlt }]} 
+        onPress={onClose} 
+        activeOpacity={0.7}
+      >
+        <X size={22} color={colors.textPrimary} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
 
-      <TouchableOpacity style={styles.btn} onPress={onLanguagePress} activeOpacity={0.7}>
-        <Globe size={20} color={WalletColors.textPrimary} />
-      </TouchableOpacity>
+      {/* Spacer to keep title centered */}
+      <View style={styles.spacer} />
     </View>
   );
 });
@@ -34,8 +39,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: WalletColors.separator,
-    backgroundColor: WalletColors.bg,
+    height: 56,
   },
   btn: {
     width: 38,
@@ -43,11 +47,12 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
   title: {
     fontSize: 16,
     fontWeight: '800',
-    color: WalletColors.textPrimary,
+  },
+  spacer: {
+    width: 38,
   },
 });

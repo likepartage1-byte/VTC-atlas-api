@@ -24,5 +24,9 @@
   "cancelled":           "ملغى",
   "today":               "اليوم",
   "yesterday":           "أمس",
-  "older":               "أقدم"
+  "older":               "أقدم",
+  "language":            "اللغة",
+  "darkMode":            "الوضع الداكن",
+  "lightMode":           "الوضع الفاتح",
+  "lang_select_title":   "اختر اللغة"
 }

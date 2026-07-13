@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Wallet } from 'lucide-react-native';
-import { WalletColors } from '../theme/WalletColors';
+import { useTheme } from '../../../../theme/ThemeContext';
 import { WalletTypography } from '../theme/WalletTypography';
 
 interface EmptyWalletProps {
@@ -10,13 +10,15 @@ interface EmptyWalletProps {
 }
 
 export const EmptyWallet = memo(({ title, subtitle }: EmptyWalletProps) => {
+  const { colors } = useTheme();
+
   return (
     <View style={styles.container}>
-      <View style={styles.iconCircle}>
-        <Wallet size={32} color={WalletColors.textSecondary} />
+      <View style={[styles.iconCircle, { backgroundColor: colors.surfaceAlt }]}>
+        <Wallet size={32} color={colors.textSecondary} />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
+      <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
     </View>
   );
 });
@@ -32,19 +34,16 @@ const styles = StyleSheet.create({
     width: 68,
     height: 68,
     borderRadius: 34,
-    backgroundColor: WalletColors.surfaceLight,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
   },
   title: {
     ...WalletTypography.amount,
-    color: WalletColors.textPrimary,
     fontSize: 16,
   },
   subtitle: {
     ...WalletTypography.caption,
-    color: WalletColors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 32,
   },

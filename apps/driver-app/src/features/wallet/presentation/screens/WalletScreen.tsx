@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../../../theme/ThemeContext';
 import { useWallet } from '../hooks/useWallet';
 import { WalletHeader } from '../components/WalletHeader';
 import { BalanceCard } from '../components/BalanceCard';
@@ -19,7 +20,7 @@ import { TransactionItem } from '../components/TransactionItem';
 import { SectionHeader } from '../components/SectionHeader';
 import { WalletSkeleton } from '../components/WalletSkeleton';
 import { EmptyWallet } from '../components/EmptyWallet';
-import { WalletColors } from '../theme/WalletColors';
+import { getWalletColors } from '../theme/WalletColors';
 import { WalletSpacing } from '../theme/WalletSpacing';
 import { WalletTypography } from '../theme/WalletTypography';
 import { WALLET_ROUTES } from '../../navigation/wallet.routes';
@@ -28,6 +29,9 @@ import { Transaction } from '../../domain/entities/wallet.types';
 export const WalletScreen = () => {
   const { t } = useTranslation('wallet');
   const navigation = useNavigation<any>();
+  const { colors } = useTheme();
+  const wColors = getWalletColors(colors);
+
   const {
     status,
     error,
@@ -97,7 +101,6 @@ export const WalletScreen = () => {
   }, [transactions, t]);
 
   const handleClose = () => {
-    // Navigate back to Main Orders List Screen
     navigation.goBack();
   };
 
@@ -129,7 +132,7 @@ export const WalletScreen = () => {
     if (item.type === 'footer') {
       return (
         <TouchableOpacity style={styles.footerLink} onPress={handleShowAll} activeOpacity={0.7}>
-          <Text style={styles.footerText}>{t('show_all')} ›</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('show_all')} ›</Text>
         </TouchableOpacity>
       );
     }
@@ -137,8 +140,7 @@ export const WalletScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Universal header component */}
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <WalletHeader
         title={t('wallet')}
         onClose={handleClose}
@@ -148,9 +150,9 @@ export const WalletScreen = () => {
         <WalletSkeleton />
       ) : status === 'error' ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error || t('error_load')}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => load()}>
-            <Text style={styles.retryText}>{t('retry')}</Text>
+          <Text style={[styles.errorText, { color: wColors.debit }]}>{error || t('error_load')}</Text>
+          <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.surfaceAlt }]} onPress={() => load()}>
+            <Text style={[styles.retryText, { color: colors.textPrimary }]}>{t('retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -163,9 +165,9 @@ export const WalletScreen = () => {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={refresh}
-              tintColor={WalletColors.textPrimary}
-              colors={[WalletColors.textPrimary]}
-              progressBackgroundColor={WalletColors.surfaceLight}
+              tintColor={colors.textPrimary}
+              colors={[colors.primary]}
+              progressBackgroundColor={colors.surface}
             />
           }
           ListHeaderComponent={
@@ -197,7 +199,6 @@ export const WalletScreen = () => {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: WalletColors.bg,
   },
   scroll: {
     paddingHorizontal: WalletSpacing.screen,
@@ -215,18 +216,15 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...WalletTypography.amount,
-    color: WalletColors.debit,
     textAlign: 'center',
   },
   retryBtn: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
-    backgroundColor: WalletColors.surfaceLight,
   },
   retryText: {
     ...WalletTypography.label,
-    color: WalletColors.textPrimary,
   },
   footerLink: {
     paddingVertical: 16,
@@ -234,7 +232,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     ...WalletTypography.label,
-    color: WalletColors.textSecondary,
   },
 });
+
 export default WalletScreen;
