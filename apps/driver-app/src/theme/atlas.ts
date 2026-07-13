@@ -4,6 +4,7 @@ export const AtlasColors = {
   bg:          '#0A0F1E',  // Deep navy
   surface:     '#111827',  // Card background
   surfaceAlt:  '#1C2438',  // Elevated surface
+  border:      'rgba(255,255,255,0.08)', // Subtle divider
   overlay:     'rgba(10,15,30,0.85)',
 
   // Brand

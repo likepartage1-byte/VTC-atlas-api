@@ -1,8 +1,15 @@
-import React, { memo, useEffect, useRef } from 'react';
-import { StyleSheet, Text, Animated } from 'react-native';
+import React, { memo, useEffect } from 'react';
+import { StyleSheet, Text } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+} from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { WalletTypography } from '../theme/WalletTypography';
+import { WalletAnimations } from '../theme/WalletAnimations';
 import { formatCurrency } from '../utils/CurrencyFormatter';
 import { CurrencyCode } from '../../domain/entities/wallet.types';
 
@@ -16,36 +23,31 @@ export const BalanceCard = memo(({ amount, currency, lastUpdated }: BalanceCardP
   const { t } = useTranslation('wallet');
   const { colors } = useTheme();
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(8)).current;
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(12);
 
   useEffect(() => {
-    fadeAnim.setValue(0);
-    slideAnim.setValue(8);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [amount, fadeAnim, slideAnim]);
+    opacity.value = 0;
+    translateY.value = 12;
+    opacity.value = withTiming(1, { duration: WalletAnimations.timing.duration });
+    translateY.value = withSpring(0, WalletAnimations.spring);
+  }, [amount]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
-        styles.card, 
-        { 
-          backgroundColor: colors.surface, 
+        styles.card,
+        {
+          backgroundColor: colors.surface,
           borderColor: colors.border,
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }]
-        }
+          shadowColor: colors.textPrimary,
+        },
+        animatedStyle,
       ]}
     >
       <Text style={[styles.label, { color: colors.textSecondary }]}>
@@ -54,11 +56,11 @@ export const BalanceCard = memo(({ amount, currency, lastUpdated }: BalanceCardP
       <Text style={[styles.amountText, { color: colors.textPrimary }]}>
         {formatCurrency(amount, currency)}
       </Text>
-      {lastUpdated && (
+      {lastUpdated ? (
         <Text style={[styles.updatedText, { color: colors.textMuted }]}>
           {lastUpdated}
         </Text>
-      )}
+      ) : null}
     </Animated.View>
   );
 });
@@ -67,24 +69,21 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     borderWidth: 1,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
     elevation: 2,
-    marginBottom: 20,
-    marginTop: 10,
+    marginBottom: 16,
   },
   label: {
     ...WalletTypography.caption,
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
     fontWeight: '700',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   amountText: {
     ...WalletTypography.balance,
@@ -92,6 +91,6 @@ const styles = StyleSheet.create({
   updatedText: {
     fontSize: 11,
     fontWeight: '500',
-    marginTop: 8,
+    marginTop: 10,
   },
 });
