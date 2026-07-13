@@ -29,7 +29,7 @@ export const SplashScreen = ({ navigation }: Props) => {
 
   const checkAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem('driver_token');
+      const token = await AsyncStorage.getItem('driver_access_token');
       setTimeout(() => {
         if (token) {
           dispatch(setAuthenticated(token));

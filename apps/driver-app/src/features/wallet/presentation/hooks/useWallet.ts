@@ -16,7 +16,17 @@ const repo = new WalletMockRepository();
 
 // ─────────────────────────────────────────────────────────────────────────────
 export const useWallet = () => {
-  const store = useWalletStore();
+  // Stable Actions (never change)
+  const setBalance = useWalletStore((s) => s.setBalance);
+  const setTransactions = useWalletStore((s) => s.setTransactions);
+  const setPendingPayments = useWalletStore((s) => s.setPendingPayments);
+  const setPaymentMethods = useWalletStore((s) => s.setPaymentMethods);
+
+  // Selected State Values
+  const balance = useWalletStore((s) => s.balance);
+  const transactions = useWalletStore((s) => s.transactions);
+  const pendingPayments = useWalletStore((s) => s.pendingPayments);
+  const paymentMethods = useWalletStore((s) => s.paymentMethods);
 
   const [state, setState] = useState<WalletHookState>({
     status:       'idle',
@@ -46,10 +56,10 @@ export const useWallet = () => {
       if (!pendingRes.success) throw new Error(pendingRes.error);
       if (!methodsRes.success) throw new Error(methodsRes.error);
 
-      store.setBalance(balanceRes.data);
-      store.setTransactions(txnsRes.data);
-      store.setPendingPayments(pendingRes.data);
-      store.setPaymentMethods(methodsRes.data);
+      setBalance(balanceRes.data);
+      setTransactions(txnsRes.data);
+      setPendingPayments(pendingRes.data);
+      setPaymentMethods(methodsRes.data);
 
       setState({
         status:       txnsRes.data.length === 0 ? 'empty' : 'loaded',
@@ -60,7 +70,7 @@ export const useWallet = () => {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       setState({ status: 'error', error: message, isRefreshing: false });
     }
-  }, [store]);
+  }, [setBalance, setTransactions, setPendingPayments, setPaymentMethods]);
 
   const refresh = useCallback(() => load(true), [load]);
 
@@ -69,11 +79,11 @@ export const useWallet = () => {
     status:       state.status,
     error:        state.error,
     isRefreshing: state.isRefreshing,
-    // Data (from store)
-    balance:         store.balance,
-    transactions:    store.transactions,
-    pendingPayments: store.pendingPayments,
-    paymentMethods:  store.paymentMethods,
+    // Data (from selectors)
+    balance,
+    transactions,
+    pendingPayments,
+    paymentMethods,
     // Actions
     load,
     refresh,

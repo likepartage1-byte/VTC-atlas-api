@@ -38,8 +38,11 @@ export const WalletScreen = () => {
     refresh,
   } = useWallet();
 
+  console.log('[DEBUG WalletScreen] status:', status, 'error:', error, 'balance:', balance, 'transactions count:', transactions?.length);
+
   // Load data on focus or mount
   useEffect(() => {
+    console.log('[DEBUG WalletScreen] Triggering load()');
     load();
   }, [load]);
 

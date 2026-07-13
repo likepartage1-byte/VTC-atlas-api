@@ -62,7 +62,15 @@
   },
   "overrides": {
     "ws": "8.21.0",
-    "socket.io": "4.8.3"
+    "socket.io": "4.8.3",
+    "@react-native-community/cli-server-api": "15.0.1",
+    "react-native-screens": "4.8.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@react-native-community/cli-server-api": "15.0.1",
+      "react-native-screens": "4.8.0"
+    }
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
