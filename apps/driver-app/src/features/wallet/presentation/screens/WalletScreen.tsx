@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
   SafeAreaView,
-  FlatList,
+  ScrollView,
   RefreshControl,
   Text,
   TouchableOpacity,
@@ -19,15 +19,24 @@ import { RechargeButton } from '../components/RechargeButton';
 import { TransactionItem } from '../components/TransactionItem';
 import { SectionHeader } from '../components/SectionHeader';
 import { WalletSkeleton } from '../components/WalletSkeleton';
-import { EmptyWallet } from '../components/EmptyWallet';
 import { getWalletColors } from '../theme/WalletColors';
 import { WalletSpacing } from '../theme/WalletSpacing';
 import { WalletTypography } from '../theme/WalletTypography';
 import { WALLET_ROUTES } from '../../navigation/wallet.routes';
-import { Transaction } from '../../domain/entities/wallet.types';
+import {
+  Wallet,
+  AlertTriangle,
+  Clock,
+  CreditCard,
+  Percent,
+  FileText,
+  Award,
+  ChevronRight,
+  ChevronLeft,
+} from 'lucide-react-native';
 
 export const WalletScreen = () => {
-  const { t } = useTranslation('wallet');
+  const { t, i18n } = useTranslation('wallet');
   const navigation = useNavigation<any>();
   const { colors } = useTheme();
   const wColors = getWalletColors(colors);
@@ -42,63 +51,28 @@ export const WalletScreen = () => {
     refresh,
   } = useWallet();
 
-  console.log('[DEBUG WalletScreen] status:', status, 'error:', error, 'balance:', balance, 'transactions count:', transactions?.length);
+  const [lastUpdatedText, setLastUpdatedText] = useState<string>('');
 
-  // Load data on focus or mount
+  // Load data on mount
   useEffect(() => {
-    console.log('[DEBUG WalletScreen] Triggering load()');
     load();
   }, [load]);
 
-  // Group transactions (Today, Yesterday, Older)
-  const groupedData = useMemo(() => {
-    if (!transactions || transactions.length === 0) return [];
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-
-    const todayItems: Transaction[] = [];
-    const yesterdayItems: Transaction[] = [];
-    const olderItems: Transaction[] = [];
-
-    transactions.forEach((tx) => {
-      const txDate = new Date(tx.createdAt);
-      const compareDate = new Date(txDate.getFullYear(), txDate.getMonth(), txDate.getDate());
-
-      if (compareDate.getTime() === today.getTime()) {
-        todayItems.push(tx);
-      } else if (compareDate.getTime() === yesterday.getTime()) {
-        yesterdayItems.push(tx);
-      } else {
-        olderItems.push(tx);
-      }
-    });
-
-    const list: Array<{ type: 'header' | 'item' | 'footer'; title?: string; item?: Transaction }> = [];
-
-    list.push({ type: 'header', title: t('transactions') });
-
-    if (todayItems.length > 0) {
-      list.push({ type: 'header', title: t('today') });
-      todayItems.forEach((item) => list.push({ type: 'item', item }));
+  // Set last updated time when balance is loaded
+  useEffect(() => {
+    if (status === 'loaded' && balance) {
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setLastUpdatedText(t('last_updated_at', { time }));
     }
+  }, [status, balance, t]);
 
-    if (yesterdayItems.length > 0) {
-      list.push({ type: 'header', title: t('yesterday') });
-      yesterdayItems.forEach((item) => list.push({ type: 'item', item }));
-    }
+  const isRTL = i18n.language === 'ar';
 
-    if (olderItems.length > 0) {
-      list.push({ type: 'header', title: t('older') });
-      olderItems.forEach((item) => list.push({ type: 'item', item }));
-    }
-
-    // Add footer for "Tout afficher" if we have items
-    list.push({ type: 'footer' });
-
-    return list;
-  }, [transactions, t]);
+  // Preview only the last 3 transactions
+  const previewTxns = useMemo(() => {
+    if (!transactions) return [];
+    return transactions.slice(0, 3);
+  }, [transactions]);
 
   const handleClose = () => {
     navigation.goBack();
@@ -116,28 +90,16 @@ export const WalletScreen = () => {
     navigation.navigate(WALLET_ROUTES.TRANSACTIONS);
   };
 
-  // Rendering individual flatlist row
-  const renderRow = ({ item }: { item: any }) => {
-    if (item.type === 'header') {
-      return <SectionHeader title={item.title} />;
-    }
-    if (item.type === 'item') {
-      return (
-        <TransactionItem
-          transaction={item.item}
-          statusLabel={t(item.item.status)}
-        />
-      );
-    }
-    if (item.type === 'footer') {
-      return (
-        <TouchableOpacity style={styles.footerLink} onPress={handleShowAll} activeOpacity={0.7}>
-          <Text style={[styles.footerText, { color: colors.textSecondary }]}>{t('show_all')} ›</Text>
-        </TouchableOpacity>
-      );
-    }
-    return null;
-  };
+  // Financial Options (Footer list configuration)
+  const options = [
+    { key: 'recharge',        route: WALLET_ROUTES.RECHARGE,        icon: Wallet },
+    { key: 'pending',         route: WALLET_ROUTES.PENDING,         icon: AlertTriangle },
+    { key: 'transactions',    route: WALLET_ROUTES.TRANSACTIONS,    icon: Clock },
+    { key: 'payment_methods', route: WALLET_ROUTES.PAYMENT_METHODS, icon: CreditCard },
+    { key: 'commission',      route: WALLET_ROUTES.COMMISSION,      icon: Percent },
+    { key: 'invoices',        route: WALLET_ROUTES.INVOICES,        icon: FileText },
+    { key: 'bonus',           route: WALLET_ROUTES.BONUS,           icon: Award },
+  ];
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
@@ -156,10 +118,7 @@ export const WalletScreen = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        <FlatList
-          data={groupedData}
-          keyExtractor={(item, index) => `${item.type}-${index}`}
-          renderItem={renderRow}
+        <ScrollView
           contentContainerStyle={styles.scroll}
           refreshControl={
             <RefreshControl
@@ -170,27 +129,99 @@ export const WalletScreen = () => {
               progressBackgroundColor={colors.surface}
             />
           }
-          ListHeaderComponent={
-            balance ? (
-              <View style={styles.headerSection}>
-                <BalanceCard amount={balance.amount} currency={balance.currency} />
-                <PendingCard
-                  amount={balance.pending}
-                  currency={balance.currency}
-                  label={t('pending_amount')}
-                  onPress={handlePendingPress}
-                />
-                <RechargeButton label={t('recharge')} onPress={handleRecharge} />
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <EmptyWallet
-              title={t('empty_title')}
-              subtitle={t('empty_subtitle')}
-            />
-          }
-        />
+        >
+          {/* ─── Balance Card & Recharge ─── */}
+          {balance && (
+            <View style={styles.mainInfoSection}>
+              <BalanceCard
+                amount={balance.amount}
+                currency={balance.currency}
+                lastUpdated={lastUpdatedText}
+              />
+              
+              <PendingCard
+                amount={balance.pending}
+                currency={balance.currency}
+                label={t('pending_desc')}
+                onPress={handlePendingPress}
+              />
+              
+              <RechargeButton label={t('recharge')} onPress={handleRecharge} />
+            </View>
+          )}
+
+          {/* ─── Recent Transactions (Max 3) ─── */}
+          <View style={styles.sectionContainer}>
+            <SectionHeader title={t('recent_transactions')} />
+            
+            <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {previewTxns.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                  {t('empty_subtitle')}
+                </Text>
+              ) : (
+                <View>
+                  {previewTxns.map((tx, idx) => (
+                    <TransactionItem
+                      key={tx.id}
+                      transaction={tx}
+                      statusLabel={t(tx.status)}
+                    />
+                  ))}
+                  
+                  <TouchableOpacity style={styles.footerLink} onPress={handleShowAll} activeOpacity={0.7}>
+                    <Text style={[styles.footerText, { color: colors.primary }]}>{t('show_all')}</Text>
+                    {isRTL ? (
+                      <ChevronLeft size={16} color={colors.primary} style={styles.chevronMargin} />
+                    ) : (
+                      <ChevronRight size={16} color={colors.primary} style={styles.chevronMargin} />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* ─── Financial Options (Footer Custom List) ─── */}
+          <View style={styles.sectionContainer}>
+            <SectionHeader title={t('financial_options')} />
+            
+            <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              {options.map((opt, idx) => {
+                const IconComponent = opt.icon;
+                const isLast = idx === options.length - 1;
+                
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    style={[
+                      styles.optionRow,
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border }
+                    ]}
+                    onPress={() => navigation.navigate(opt.route)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.optionLeft}>
+                      <View style={[styles.optionIconBg, { backgroundColor: colors.surfaceAlt }]}>
+                        <IconComponent size={18} color={colors.primary} />
+                      </View>
+                      <Text style={[styles.optionTitle, { color: colors.textPrimary }]}>
+                        {t(opt.key)}
+                      </Text>
+                    </View>
+                    <View>
+                      {isRTL ? (
+                        <ChevronLeft size={16} color={colors.textMuted} />
+                      ) : (
+                        <ChevronRight size={16} color={colors.textMuted} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -204,8 +235,63 @@ const styles = StyleSheet.create({
     paddingHorizontal: WalletSpacing.screen,
     paddingBottom: 40,
   },
-  headerSection: {
-    paddingTop: 16,
+  mainInfoSection: {
+    paddingTop: 10,
+  },
+  sectionContainer: {
+    marginTop: 20,
+  },
+  cardContainer: {
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.02,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  emptyText: {
+    paddingVertical: 20,
+    textAlign: 'center',
+    fontSize: 13,
+  },
+  footerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+  },
+  footerText: {
+    ...WalletTypography.label,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  chevronMargin: {
+    marginLeft: 4,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+  },
+  optionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  optionIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
@@ -224,13 +310,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryText: {
-    ...WalletTypography.label,
-  },
-  footerLink: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  footerText: {
     ...WalletTypography.label,
   },
 });

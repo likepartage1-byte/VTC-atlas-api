@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { X } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { getWalletColors } from '../theme/WalletColors';
+import { useTranslation } from 'react-i18next';
 
 interface WalletHeaderProps {
   title: string;
@@ -12,6 +13,9 @@ interface WalletHeaderProps {
 export const WalletHeader = memo(({ title, onClose }: WalletHeaderProps) => {
   const { colors } = useTheme();
   const wColors = getWalletColors(colors);
+  const { i18n } = useTranslation();
+
+  const isRTL = i18n.language === 'ar';
 
   return (
     <View style={[styles.container, { backgroundColor: wColors.surface, borderBottomColor: wColors.separator }]}>
@@ -20,7 +24,11 @@ export const WalletHeader = memo(({ title, onClose }: WalletHeaderProps) => {
         onPress={onClose} 
         activeOpacity={0.7}
       >
-        <X size={22} color={colors.textPrimary} />
+        {isRTL ? (
+          <ArrowRight size={22} color={colors.textPrimary} />
+        ) : (
+          <ArrowLeft size={22} color={colors.textPrimary} />
+        )}
       </TouchableOpacity>
 
       <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>

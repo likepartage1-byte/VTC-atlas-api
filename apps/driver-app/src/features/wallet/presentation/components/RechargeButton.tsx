@@ -1,7 +1,6 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { WalletColors } from '../theme/WalletColors';
-import { WalletSpacing } from '../theme/WalletSpacing';
+import { useTheme } from '../../../../theme/ThemeContext';
 import { WalletTypography } from '../theme/WalletTypography';
 
 interface RechargeButtonProps {
@@ -10,11 +9,13 @@ interface RechargeButtonProps {
 }
 
 export const RechargeButton = memo(({ label, onPress }: RechargeButtonProps) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
-      style={styles.button}
+      style={[styles.button, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
       onPress={onPress}
-      activeOpacity={0.88}
+      activeOpacity={0.8}
     >
       <Text style={styles.text}>{label}</Text>
     </TouchableOpacity>
@@ -23,23 +24,22 @@ export const RechargeButton = memo(({ label, onPress }: RechargeButtonProps) => 
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#32FF7E', // Beautiful Lime/Neon Green like inDrive
     height: 48,
-    borderRadius: 24, // Rounded pill layout
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    width: '60%',
-    alignSelf: 'center',
-    shadowColor: '#32FF7E',
+    width: '100%',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
-    marginBottom: 32,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 3,
+    marginBottom: 24,
   },
   text: {
     ...WalletTypography.amount,
-    color: '#000000', // Black text on lime background
-    fontWeight: '900',
+    fontSize: 15,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });
