@@ -18,6 +18,8 @@ import { PendingCard } from '../components/PendingCard';
 import { RechargeButton } from '../components/RechargeButton';
 import { TransactionItem } from '../components/TransactionItem';
 import { WalletSkeleton } from '../components/WalletSkeleton';
+import { WalletCard } from '../components/WalletCard';
+import { WalletSection } from '../components/WalletSection';
 import { getWalletColors } from '../theme/WalletColors';
 import { WalletTypography } from '../theme/WalletTypography';
 import { WALLET_ROUTES } from '../../navigation/wallet.routes';
@@ -32,10 +34,9 @@ import {
   ChevronLeft,
 } from 'lucide-react-native';
 
-// Unified icon size
 const ICON_SIZE = 20;
 
-// ─── Quick Actions Grid Config ─────────────────────────────────────────────────
+// ─── Quick Actions Config ───────────────────────────────────────────────────
 const QUICK_ACTIONS = [
   { key: 'payment_methods', route: WALLET_ROUTES.PAYMENT_METHODS, icon: CreditCard },
   { key: 'pending',         route: WALLET_ROUTES.PENDING,         icon: AlertTriangle },
@@ -45,7 +46,6 @@ const QUICK_ACTIONS = [
   { key: 'transactions',    route: WALLET_ROUTES.TRANSACTIONS,    icon: Clock },
 ] as const;
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
 export const WalletScreen = () => {
   const { t, i18n } = useTranslation('wallet');
   const navigation = useNavigation<any>();
@@ -57,12 +57,10 @@ export const WalletScreen = () => {
 
   const [lastUpdatedText, setLastUpdatedText] = useState<string>('');
 
-  // Initial load
   useEffect(() => {
     load();
   }, [load]);
 
-  // Record fetch time once data arrives
   useEffect(() => {
     if (status === 'loaded' && balance) {
       const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -70,7 +68,6 @@ export const WalletScreen = () => {
     }
   }, [status, balance, t]);
 
-  // Preview: last 3 transactions only
   const previewTxns = useMemo(
     () => (transactions ? transactions.slice(0, 3) : []),
     [transactions],
@@ -141,21 +138,15 @@ export const WalletScreen = () => {
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* ── Recent Transactions (max 3) ───────────────────────────── */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-                {t('recent_transactions')}
-              </Text>
-            </View>
-
-            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <WalletSection title={t('recent_transactions')}>
+            <WalletCard variant="elevated" style={styles.cardContainer}>
               {previewTxns.length === 0 ? (
                 <Text style={[styles.emptyHint, { color: colors.textMuted }]}>
                   {t('empty_subtitle')}
                 </Text>
               ) : (
                 <>
-                  {previewTxns.map((tx, idx) => (
+                  {previewTxns.map((tx) => (
                     <TransactionItem
                       key={tx.id}
                       transaction={tx}
@@ -173,35 +164,30 @@ export const WalletScreen = () => {
                       {t('show_all')}
                     </Text>
                     {isRTL
-                      ? <ChevronLeft size={ICON_SIZE} color={colors.primary} />
-                      : <ChevronRight size={ICON_SIZE} color={colors.primary} />
+                      ? <ChevronLeft size={16} color={colors.primary} />
+                      : <ChevronRight size={16} color={colors.primary} />
                     }
                   </TouchableOpacity>
                 </>
               )}
-            </View>
-          </View>
+            </WalletCard>
+          </WalletSection>
 
           {/* ── Divider ──────────────────────────────────────────────── */}
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
           {/* ── Quick Actions Grid ───────────────────────────────────── */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-                {t('financial_options')}
-              </Text>
-            </View>
-
+          <WalletSection title={t('financial_options')}>
             <View style={styles.grid}>
               {QUICK_ACTIONS.map((action) => {
                 const Icon = action.icon;
                 return (
-                  <TouchableOpacity
+                  <WalletCard
                     key={action.key}
-                    style={[styles.gridItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    variant="elevated"
+                    interactive
                     onPress={() => navigation.navigate(action.route)}
-                    activeOpacity={0.75}
+                    style={styles.gridItem}
                   >
                     <View style={[styles.gridIconBg, { backgroundColor: colors.surfaceAlt }]}>
                       <Icon size={ICON_SIZE} color={colors.primary} />
@@ -209,18 +195,17 @@ export const WalletScreen = () => {
                     <Text style={[styles.gridLabel, { color: colors.textPrimary }]} numberOfLines={2}>
                       {t(action.key)}
                     </Text>
-                  </TouchableOpacity>
+                  </WalletCard>
                 );
               })}
             </View>
-          </View>
+          </WalletSection>
         </ScrollView>
       )}
     </SafeAreaView>
   );
 };
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -228,52 +213,25 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: 48,
   },
-
-  // Hero
   heroSection: {
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 8,
   },
-
-  // Divider
   divider: {
     height: StyleSheet.hairlineWidth,
     marginVertical: 24,
     marginHorizontal: 20,
   },
-
-  // Generic section
-  section: {
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.1,
-  },
-
-  // Card container (transactions)
-  card: {
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
+  cardContainer: {
     paddingHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 1,
+    paddingVertical: 0,
   },
   emptyHint: {
     paddingVertical: 24,
     textAlign: 'center',
     fontSize: 13,
   },
-
-  // Show all
   showAllRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,26 +244,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-
-  // Quick Actions Grid (2 columns)
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
   },
   gridItem: {
-    width: '47%',
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
+    width: '48%',
     alignItems: 'flex-start',
     gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
   },
   gridIconBg: {
     width: 36,
@@ -319,8 +268,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 18,
   },
-
-  // Error
   centerBox: {
     flex: 1,
     justifyContent: 'center',
