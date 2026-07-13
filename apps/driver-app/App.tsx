@@ -18,8 +18,9 @@ import { OTPVerifyScreen } from './src/features/auth/OTPVerifyScreen';
 import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen';
 import { WalletNavigator } from './src/features/wallet/navigation/WalletNavigator';
 
-// Theme
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import i18n, { initI18n } from './src/i18n';
+import { I18nextProvider } from 'react-i18next';
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -33,10 +34,10 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 const AppContent = () => {
   const { isDarkMode, colors } = useTheme();
-  const { i18n } = useTranslation();
+  const { i18n: currentI18n } = useTranslation();
 
   // Apply RTL/LTR at the root level so the entire app changes direction
-  const isRTL = i18n.language === 'ar';
+  const isRTL = currentI18n.language === 'ar';
 
   return (
     <SafeAreaProvider>
@@ -69,9 +70,11 @@ const App = () => {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Provider store={store}>
-        <ThemeProvider>
-          <AppContent />
-        </ThemeProvider>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider>
+            <AppContent />
+          </ThemeProvider>
+        </I18nextProvider>
       </Provider>
     </GestureHandlerRootView>
   );

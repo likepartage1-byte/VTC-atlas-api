@@ -134,23 +134,32 @@ const resources = {
   },
 };
 
+// Synchronous initialization to ensure i18n instance is ready before React renders
+i18n.use(initReactI18next).init({
+  resources,
+  lng: 'ar',
+  fallbackLng: 'en',
+  ns: ['translation', 'wallet'],
+  defaultNS: 'translation',
+  interpolation: { escapeValue: false },
+});
+
 export const initI18n = async () => {
-  const savedLanguage = await AsyncStorage.getItem('user_language');
-  const language = savedLanguage || 'ar';
+  try {
+    const savedLanguage = await AsyncStorage.getItem('user_language');
+    const language = savedLanguage || 'ar';
 
-  await i18n.use(initReactI18next).init({
-    resources,
-    lng: language,
-    fallbackLng: 'en',
-    ns: ['translation', 'wallet'],
-    defaultNS: 'translation',
-    interpolation: { escapeValue: false },
-  });
+    if (i18n.language !== language) {
+      await i18n.changeLanguage(language);
+    }
 
-  const isRTL = language === 'ar';
-  if (I18nManager.isRTL !== isRTL) {
-    I18nManager.allowRTL(isRTL);
-    I18nManager.forceRTL(isRTL);
+    const isRTL = language === 'ar';
+    if (I18nManager.isRTL !== isRTL) {
+      I18nManager.allowRTL(isRTL);
+      I18nManager.forceRTL(isRTL);
+    }
+  } catch (error) {
+    console.error('Failed to load saved language:', error);
   }
 };
 
