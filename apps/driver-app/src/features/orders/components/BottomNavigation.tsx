@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { List, Zap, BarChart2 } from 'lucide-react-native';
-import { AtlasColors } from '../../../theme/atlas';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../../theme/ThemeContext';
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -9,18 +10,24 @@ interface BottomNavigationProps {
 }
 
 export const BottomNavigation = memo(({ activeTab, onTabPress }: BottomNavigationProps) => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+
   const tabs = [
-    { key: 'orders',      label: 'Commandes de co...', icon: List },
-    { key: 'demand',      label: 'Demande',            icon: Zap },
-    { key: 'performance', label: 'Performance',        icon: BarChart2 },
+    { key: 'orders',      label: t('orders'),      icon: List },
+    { key: 'demand',      label: t('demand'),       icon: Zap },
+    { key: 'performance', label: t('performance'),  icon: BarChart2 },
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {
+      backgroundColor: colors.surface,
+      borderTopColor: colors.surfaceAlt,
+    }]}>
       {tabs.map((tab) => {
         const IconComponent = tab.icon;
         const isActive      = tab.key === activeTab;
-        const tintColor     = isActive ? '#FFF' : AtlasColors.textSecondary;
+        const tintColor     = isActive ? colors.primary : colors.textSecondary;
 
         return (
           <TouchableOpacity
@@ -34,7 +41,10 @@ export const BottomNavigation = memo(({ activeTab, onTabPress }: BottomNavigatio
               color={tintColor}
               strokeWidth={isActive ? 2.5 : 2}
             />
-            <Text style={[styles.tabLabel, { color: tintColor, fontWeight: isActive ? '800' : '500' }]} numberOfLines={1}>
+            <Text
+              style={[styles.tabLabel, { color: tintColor, fontWeight: isActive ? '800' : '500' }]}
+              numberOfLines={1}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -46,27 +56,25 @@ export const BottomNavigation = memo(({ activeTab, onTabPress }: BottomNavigatio
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    backgroundColor: '#0F172A',
-    borderTopWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    flexDirection:   'row',
+    borderTopWidth:  1,
     paddingVertical: 10,
-    paddingBottom: 28, // extra padding for safe area
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    paddingBottom:   28,
+    justifyContent:  'space-around',
+    alignItems:      'center',
+    position:        'absolute',
+    bottom:          0,
+    left:            0,
+    right:           0,
   },
   tabButton: {
-    alignItems: 'center',
+    alignItems:     'center',
     justifyContent: 'center',
-    gap: 4,
-    flex: 1,
+    gap:             4,
+    flex:            1,
   },
   tabLabel: {
-    fontSize: 10,
+    fontSize:     10,
     letterSpacing: 0.1,
   },
 });
