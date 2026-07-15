@@ -48,11 +48,11 @@ const profileAr = {
   logout_confirm: 'هل أنت متأكد أنك تريد تسجيل الخروج؟',
   cancel: 'إلغاء',
   // ─── Weekly achievement system ───
-  weekly_rides_label: 'رحلة هذا الأسبوع',
-  rides_remaining_label: 'رحلة متبقية للوصول إلى Platinum',
-  ride_singular_label: 'رحلة متبقية للوصول إلى Platinum',
+  weekly_rides_label: 'رحلة ناجحة',
+  rides_remaining_label: 'رحلة متبقية للترقية للمستوى التالي',
+  ride_singular_label: 'رحلة واحدة متبقية للترقية للمستوى التالي',
   week_end_label: 'نهاية الأسبوع',
-  weekly_target_label: 'الهدف الأسبوعي',
+  weekly_target_label: 'المستوى المستهدف',
   // ─── Verification modal ───
   verify_modal_title: 'سائق موثق',
   verify_modal_desc: 'تم التحقق من هويتك ووثائقك ومركبتك والموافقة عليها من قبل Yalla VTC. هذه الشارة تدل على أن الركاب يمكنهم الوثوق بك.',
@@ -63,12 +63,12 @@ const profileAr = {
   photo_coming_soon: 'هذه الميزة ستكون متاحة قريباً',
   // ─── Platinum celebration ───
   platinum_congrats: 'مبروك !',
-  platinum_title: 'بلغت مستوى Platinum هذا الأسبوع !',
-  platinum_desc: 'أكملت 30 رحلة هذا الأسبوع. استمتع بمزايا Platinum حتى نهاية الأسبوع.',
-  platinum_benefits_title: 'مزاياك هذا الأسبوع',
+  platinum_title: 'تهانينا! لقد بلغت مستوى Premier !',
+  platinum_desc: 'لقد أكملت 30 رحلة بنجاح. أنت الآن تتمتع بكامل مزايا وأولوية مستوى Premier.',
+  platinum_benefits_title: 'مزاياك الحالية',
   benefit_commission: 'عمولة مخفضة',
   benefit_priority: 'أولوية في استقبال الطلبات الجديدة',
-  benefit_badge: 'شارة Platinum بجانب اسمك',
+  benefit_badge: 'شارة Premier مميزة بجانب اسمك',
   close: 'إغلاق',
   driver_profile_details: 'ملف تعريف السائق',
   joined_date_label: 'تاريخ الانضمام',
@@ -80,6 +80,9 @@ const profileAr = {
   badge_verified_title: 'سائق موثق',
   badge_rides_title: '1000+ رحلة',
   badge_excellent_title: 'خدمة ممتازة',
+  silver_title: 'سائق Silver',
+  gold_title: 'سائق Gold',
+  premier_title: 'سائق Premier',
 };
 
 const profileFr = {
@@ -120,11 +123,11 @@ const profileFr = {
   logout_confirm: 'Êtes-vous sûr de vouloir vous déconnecter ?',
   cancel: 'Annuler',
   // ─── Weekly achievement system ───
-  weekly_rides_label: 'courses cette semaine',
-  rides_remaining_label: 'courses restantes pour atteindre Platinum',
-  ride_singular_label: 'course restante pour atteindre Platinum',
+  weekly_rides_label: 'courses complétées',
+  rides_remaining_label: 'courses restantes pour passer au niveau supérieur',
+  ride_singular_label: 'course restante pour passer au niveau supérieur',
   week_end_label: 'Fin de semaine',
-  weekly_target_label: 'Objectif hebdomadaire',
+  weekly_target_label: 'Niveau cible',
   // ─── Verification modal ───
   verify_modal_title: 'Chauffeur vérifié',
   verify_modal_desc: "Votre identité, vos documents et votre véhicule ont été vérifiés et approuvés par Yalla VTC. Ce badge indique aux passagers qu'ils peuvent vous faire confiance.",
@@ -133,14 +136,14 @@ const profileFr = {
   change_photo: 'Changer la photo',
   photo_title: 'Photo de profil',
   photo_coming_soon: 'Fonctionnalité bientôt disponible',
-  // ─── Platinum celebration ───
+  // ─── Premier celebration ───
   platinum_congrats: 'Félicitations !',
-  platinum_title: 'Niveau Platinum atteint cette semaine !',
-  platinum_desc: 'Vous avez complété 30 courses cette semaine. Profitez des avantages Platinum jusqu\u2019à dimanche 23:59.',
-  platinum_benefits_title: 'Vos avantages cette semaine',
+  platinum_title: 'Niveau Premier atteint !',
+  platinum_desc: 'Vous avez complété 30 courses avec succès. Vous bénéficiez désormais des avantages et de la priorité du niveau Premier.',
+  platinum_benefits_title: 'Vos avantages actuels',
   benefit_commission: 'Commission réduite',
   benefit_priority: 'Priorité dans la réception des nouvelles courses',
-  benefit_badge: 'Badge Platinum affiché sur votre profil',
+  benefit_badge: 'Badge Premier affiché sur votre profil',
   close: 'Fermer',
   driver_profile_details: 'Profil du chauffeur',
   joined_date_label: "Date d'adhésion",
@@ -152,6 +155,9 @@ const profileFr = {
   badge_verified_title: 'Chauffeur vérifié',
   badge_rides_title: '1000+ Courses',
   badge_excellent_title: 'Service Excellent',
+  silver_title: 'Chauffeur Silver',
+  gold_title: 'Chauffeur Gold',
+  premier_title: 'Chauffeur Premier',
 };
 
 const profileEn = {
@@ -192,11 +198,11 @@ const profileEn = {
   logout_confirm: 'Are you sure you want to log out?',
   cancel: 'Cancel',
   // ─── Weekly achievement system ───
-  weekly_rides_label: 'rides this week',
-  rides_remaining_label: 'rides remaining to reach Platinum',
-  ride_singular_label: 'ride remaining to reach Platinum',
+  weekly_rides_label: 'successful rides',
+  rides_remaining_label: 'rides remaining for next level promotion',
+  ride_singular_label: '1 ride remaining for next level promotion',
   week_end_label: 'Week ends',
-  weekly_target_label: 'Weekly target',
+  weekly_target_label: 'Target level',
   // ─── Verification modal ───
   verify_modal_title: 'Verified Driver',
   verify_modal_desc: 'Your identity, documents and vehicle have been verified and approved by Yalla VTC. This badge shows passengers they can trust you.',
@@ -205,14 +211,14 @@ const profileEn = {
   change_photo: 'Change photo',
   photo_title: 'Profile photo',
   photo_coming_soon: 'Feature coming soon',
-  // ─── Platinum celebration ───
+  // ─── Premier celebration ───
   platinum_congrats: 'Congratulations!',
-  platinum_title: 'Platinum level reached this week!',
-  platinum_desc: 'You completed 30 rides this week. Enjoy your Platinum benefits until Sunday 23:59.',
-  platinum_benefits_title: 'Your benefits this week',
+  platinum_title: 'Premier level reached!',
+  platinum_desc: 'You completed 30 rides successfully. You now enjoy full benefits and priority of Premier level.',
+  platinum_benefits_title: 'Your current benefits',
   benefit_commission: 'Reduced commission',
   benefit_priority: 'Priority for receiving new ride requests',
-  benefit_badge: 'Platinum badge on your profile',
+  benefit_badge: 'Special Premier badge on your profile',
   close: 'Close',
   driver_profile_details: 'Driver Profile Details',
   joined_date_label: 'Joined Date',
@@ -224,6 +230,9 @@ const profileEn = {
   badge_verified_title: 'Verified Driver',
   badge_rides_title: '1000+ Rides',
   badge_excellent_title: 'Excellent Service',
+  silver_title: 'Silver Driver',
+  gold_title: 'Gold Driver',
+  premier_title: 'Premier Driver',
 };
 
 const profileEs = {

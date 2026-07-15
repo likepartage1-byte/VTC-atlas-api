@@ -62,6 +62,7 @@ const LEVEL_COLORS: Record<string, string> = {
   BRONZE:   '#CD7F32',
   SILVER:   '#94A3B8',
   GOLD:     '#F59E0B',
+  PREMIER:  '#6366F1',
   PLATINUM: '#6366F1',
   DIAMOND:  '#06B6D4',
 };
@@ -352,7 +353,11 @@ export const ProfileScreen = () => {
   if (!profile) return null;
 
   const displayLevelLabel =
-    currentLevel === 'PLATINUM' ? t('platinum_title') : `${currentLevel.charAt(0) + currentLevel.slice(1).toLowerCase()} Driver`;
+    currentLevel === 'PREMIER' || currentLevel === 'PLATINUM'
+      ? t('premier_title', 'Premier Driver')
+      : currentLevel === 'GOLD'
+      ? t('gold_title', 'Gold Driver')
+      : t('silver_title', 'Silver Driver');
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>

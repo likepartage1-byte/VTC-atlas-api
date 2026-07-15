@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { socketService } from '../../services/socket.service';
 import { useLocationTracking } from '../../hooks/useLocationTracking';
 import { AtlasColors } from '../../theme/atlas';
+import { useOrdersStore } from '../../store/useOrdersStore';
 
 // Sub-components
 import { DriverMarker }        from './components/DriverMarker';
@@ -135,9 +136,48 @@ export const DashboardScreen = () => {
         }
       }
       if (event === 'ride_offer') {
-        const newOffer = data as RideOffer;
-        // Blend incoming socket offers at the start of our list
+        const incoming = data as any;
+        // normalise to RideOffer shape for the dashboard overlay
+        const newOffer: RideOffer = {
+          rideId:        incoming.rideId ?? incoming.id,
+          pickupAddress: incoming.pickupAddress  ?? incoming.pickup?.address ?? '',
+          destAddress:   incoming.dropoffAddress ?? incoming.destination?.address ?? '',
+          distanceKm:    incoming.distance       ?? 0,
+          etaMinutes:    0,
+          priceMAD:      incoming.fare           ?? incoming.offeredPrice ?? incoming.estimatedPrice ?? 0,
+          customerRating: incoming.passengerRating ?? 4.8,
+          customerName:   incoming.passengerName  ?? 'Client',
+          customerRides:  incoming.passengerTripsCount ?? 0,
+          customerSince:  '2025',
+          paymentMethod:  'Cash payment',
+          pickupCoords:  incoming.pickupLat ? { latitude: incoming.pickupLat, longitude: incoming.pickupLng } : undefined,
+          destCoords:    incoming.dropoffLat ? { latitude: incoming.dropoffLat, longitude: incoming.dropoffLng } : undefined,
+        };
         setOffers(prev => [newOffer, ...prev.filter(o => o.rideId !== newOffer.rideId)]);
+
+        // Also push to global OrdersStore so OrdersListScreen stays in sync
+        const { addOrder } = useOrdersStore.getState();
+        addOrder({
+          id:                  incoming.rideId ?? incoming.id,
+          passengerName:       incoming.passengerName       ?? 'Client',
+          passengerRating:     incoming.passengerRating     ?? 4.8,
+          passengerAvatar:     incoming.passengerAvatar,
+          isNewPassenger:      incoming.isNewPassenger      ?? false,
+          passengerTripsCount: incoming.passengerTripsCount ?? 0,
+          isVerified:          incoming.isVerified          ?? true,
+          expiresAt:           incoming.expiresAt           ?? Date.now() + 25_000,
+          distanceToPickup:    incoming.distanceToPickup    ?? '1.5 km',
+          pickupEta:           incoming.pickupEta           ?? '4 min',
+          tripDistance:        incoming.tripDistance        ?? '5 km',
+          tripDuration:        incoming.tripDuration        ?? '12 min',
+          offeredPrice:        incoming.offeredPrice        ?? incoming.fare ?? incoming.estimatedPrice ?? 0,
+          pickupAddress:       incoming.pickupAddress       ?? incoming.pickup?.address ?? '',
+          dropoffAddress:      incoming.dropoffAddress      ?? incoming.destination?.address ?? '',
+          pickupLat:           incoming.pickupLat           ?? 0,
+          pickupLng:           incoming.pickupLng           ?? 0,
+          dropoffLat:          incoming.dropoffLat          ?? 0,
+          dropoffLng:          incoming.dropoffLng          ?? 0,
+        });
       }
     });
 

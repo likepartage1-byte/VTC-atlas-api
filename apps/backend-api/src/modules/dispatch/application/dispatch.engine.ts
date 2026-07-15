@@ -3,23 +3,26 @@ import { RedisService } from '../../../core/redis/redis.service';
 import { DomainEventBus } from '../../../core/events/domain-event-bus';
 import { DispatchCandidateFoundEvent } from '../domain/events/dispatch-events';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import * as crypto from 'crypto';
 
 export type ClaimStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
 
 export interface DispatchClaim {
   id: string;
   rideId: string;
-  driverId: string;
+  driverId?: string;            // For legacy single-driver claims
+  allowedDriverIds?: string[]; // For broadcast multi-driver claims
   status: ClaimStatus;
   createdAt: number;
   expiresAt: number;
+  phase?: 1 | 2;
 }
 
 @Injectable()
 export class DispatchEngine {
   private readonly logger = new Logger(DispatchEngine.name);
   private readonly DRIVERS_GEO_KEY = 'geo:drivers:available';
-  private readonly CLAIM_TTL = 25; // Seconds
+  private readonly CLAIM_TTL = 25; // seconds
 
   constructor(
     private readonly redis: RedisService,
@@ -27,9 +30,8 @@ export class DispatchEngine {
     private readonly prisma: PrismaService,
   ) {}
 
-  /**
-   * Calculates the start of the current week (Monday 00:00)
-   */
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+
   private getStartOfWeek(): Date {
     const now = new Date();
     const day = now.getDay();
@@ -39,25 +41,40 @@ export class DispatchEngine {
     return monday;
   }
 
+  private async getSystemSetting(key: string, defaultValue: any): Promise<any> {
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({ where: { key } });
+      if (setting && setting.value !== undefined && setting.value !== null) {
+        return setting.value;
+      }
+    } catch (_) { /* graceful fallback */ }
+    return defaultValue;
+  }
+
+  // ─── Two-Phase Smart Tier Dispatch ─────────────────────────────────────────
+
   /**
-   * Orchestrates the search, scoring, prioritization, and claim of candidates.
+   * Phase 1 (Premier Window): Exclusively broadcast to Premier drivers (≥30 total rides)
+   *                           for a configurable number of seconds.
+   * Phase 2 (Open Broadcast): If unclaimed, broadcast simultaneously to Gold + Silver drivers.
    */
   async dispatchRide(rideId: string, lat: number, lng: number): Promise<void> {
-    this.logger.log(`Dispatching ride ${rideId}`);
+    this.logger.log(`[SmartDispatch] Two-phase dispatch started for ride ${rideId}`);
 
-    // 1. Fetch nearby available drivers from Redis GEORADIUS with distance
+    const searchRadiusKm   = Number(await this.getSystemSetting('search_radius_km', 5));
+    const premierWindowSec = Number(await this.getSystemSetting('premier_priority_duration', 3));
+
+    // 1. Fetch nearby available drivers from Redis
     const rawResults = await this.redis.getClient().georadius(
       this.DRIVERS_GEO_KEY,
-      lng,
-      lat,
-      5,
+      lng, lat,
+      searchRadiusKm,
       'km',
-      'WITHDIST',
-      'ASC'
+      'WITHDIST', 'ASC',
     ) as any;
 
     if (!rawResults || rawResults.length === 0) {
-      this.logger.warn(`No nearby drivers found for ride ${rideId}`);
+      this.logger.warn(`[SmartDispatch] No nearby drivers found for ride ${rideId}`);
       return;
     }
 
@@ -72,139 +89,163 @@ export class DispatchEngine {
 
     const driverIds = candidates.map(c => c.id);
 
-    // 2. Query Driver details (rating, last completed ride completedAt timestamp) from DB
-    const dbDrivers = await this.prisma.driver.findMany({
-      where: { id: { in: driverIds } },
-      include: {
-        rides: {
-          where: { status: 'COMPLETED' },
-          orderBy: { completedAt: 'desc' },
-          take: 1,
-        },
-      },
-    });
-
-    // 3. Query weekly ride count to evaluate status priority levels
-    const startOfWeek = this.getStartOfWeek();
-    const weeklyRidesCount = await this.prisma.ride.groupBy({
+    // 2. Query total completed rides per driver (determines tier)
+    const totalRidesGroups = await this.prisma.ride.groupBy({
       by: ['driverId'],
-      where: {
-        driverId: { in: driverIds },
-        status: 'COMPLETED',
-        completedAt: { gte: startOfWeek },
-      },
+      where: { driverId: { in: driverIds }, status: 'COMPLETED' },
       _count: { id: true },
     });
 
-    const weeklyCountsMap: Record<string, number> = {};
-    for (const count of weeklyRidesCount) {
-      if (count.driverId) {
-        weeklyCountsMap[count.driverId] = count._count.id;
+    const totalCountsMap: Record<string, number> = {};
+    for (const g of totalRidesGroups) {
+      if (g.driverId) totalCountsMap[g.driverId] = g._count.id;
+    }
+
+    // 3. Classify drivers by tier:
+    //    Premier : ≥ 30 total completed rides
+    //    Gold    :  3–29 total completed rides
+    //    Silver  :  0–2  total completed rides
+    const premierIds: string[]    = [];
+    const goldSilverIds: string[] = [];
+
+    for (const cand of candidates) {
+      const total = totalCountsMap[cand.id] || 0;
+      if (total >= 30) {
+        premierIds.push(cand.id);
+      } else {
+        goldSilverIds.push(cand.id);
       }
     }
 
-    // 4. Map, score, and rank each candidate
-    const scoredCandidates = candidates.map(cand => {
-      const dbDriver = dbDrivers.find(d => d.id === cand.id);
-      const weeklyCount = weeklyCountsMap[cand.id] || 0;
+    this.logger.log(
+      `[SmartDispatch] Ride ${rideId} — Premier: ${premierIds.length}, Gold/Silver: ${goldSilverIds.length}`,
+    );
 
-      const rating = dbDriver ? dbDriver.rating : 5.0;
-      const lastRideCompletedAt = dbDriver?.rides?.[0]?.completedAt || new Date(0);
+    // ── PHASE 1: Premier-exclusive window ──────────────────────────────────
+    if (premierIds.length > 0) {
+      const claimed = await this.createBroadcastClaim(rideId, premierIds, 1);
+      if (claimed) {
+        // Broadcast offer to all Premier drivers simultaneously
+        for (const driverId of premierIds) {
+          await this.eventBus.publish(new DispatchCandidateFoundEvent(rideId, driverId));
+        }
+        this.logger.log(
+          `[SmartDispatch] Phase 1 — Offer sent to ${premierIds.length} Premier driver(s). Waiting ${premierWindowSec}s…`,
+        );
 
-      // Level priorities:
-      // 1. Platinum (weekly >= 30)
-      // 2. Gold (weekly >= 15)
-      // 3. Silver (weekly >= 5)
-      // 4. New Drivers (weekly < 5)
-      let levelPriority = 4;
-      if (weeklyCount >= 30) levelPriority = 1;
-      else if (weeklyCount >= 15) levelPriority = 2;
-      else if (weeklyCount >= 5) levelPriority = 3;
+        // Wait the premier priority window then check if claim was consumed
+        await new Promise(resolve => setTimeout(resolve, premierWindowSec * 1000));
 
-      const idleTimeMs = Date.now() - lastRideCompletedAt.getTime();
+        const remaining = await this.redis.getClient().get(`dispatch:claim:${rideId}`);
+        if (!remaining) {
+          this.logger.log(`[SmartDispatch] Ride ${rideId} claimed during Phase 1. Done.`);
+          return;
+        }
 
-      return {
-        id: cand.id,
-        distance: cand.distance,
-        rating,
-        levelPriority,
-        idleTimeMs,
-      };
-    });
-
-    // 5. Sort candidates: Level (ASC), Distance (ASC), Rating (DESC), IdleTimeMs (ASC)
-    scoredCandidates.sort((a, b) => {
-      if (a.levelPriority !== b.levelPriority) {
-        return a.levelPriority - b.levelPriority;
+        // Expire Phase 1 claim, fall through to Phase 2
+        await this.redis.getClient().del(`dispatch:claim:${rideId}`);
+        this.logger.log(`[SmartDispatch] Phase 1 expired unclaimed. Launching Phase 2 broadcast.`);
       }
-      if (Math.abs(a.distance - b.distance) > 0.01) {
-        return a.distance - b.distance;
-      }
-      if (Math.abs(a.rating - b.rating) > 0.01) {
-        return b.rating - a.rating;
-      }
-      return a.idleTimeMs - b.idleTimeMs;
-    });
+    }
 
-    // 6. Try to create dispatch claim for the top matched candidate
-    for (const matched of scoredCandidates) {
-      const claim = await this.createClaim(rideId, matched.id);
-      if (claim) {
-        this.logger.log(`Dispatch Candidate selected: Driver ${matched.id} (LevelPriority: ${matched.levelPriority}, Dist: ${matched.distance}km)`);
-        await this.eventBus.publish(new DispatchCandidateFoundEvent(rideId, matched.id));
-        return;
+    // ── PHASE 2: Gold + Silver simultaneous broadcast ──────────────────────
+    const phase2Ids = goldSilverIds.length > 0 ? goldSilverIds : premierIds;
+
+    if (phase2Ids.length === 0) {
+      this.logger.warn(`[SmartDispatch] No eligible drivers for Phase 2 on ride ${rideId}`);
+      return;
+    }
+
+    const phase2Claimed = await this.createBroadcastClaim(rideId, phase2Ids, 2);
+    if (phase2Claimed) {
+      for (const driverId of phase2Ids) {
+        await this.eventBus.publish(new DispatchCandidateFoundEvent(rideId, driverId));
       }
+      this.logger.log(
+        `[SmartDispatch] Phase 2 — Offer sent to ${phase2Ids.length} Gold/Silver driver(s).`,
+      );
+    } else {
+      this.logger.warn(`[SmartDispatch] Phase 2 claim failed for ride ${rideId} — possibly already claimed.`);
     }
   }
 
+  // ─── Claim Management ──────────────────────────────────────────────────────
+
   /**
-   * Atomic Claim Creation (Single Source of Truth)
+   * Creates a broadcast claim allowing any driver in allowedDriverIds to race-accept.
+   * Only the first atomic validateAndConsume wins.
    */
-  async createClaim(rideId: string, driverId: string): Promise<DispatchClaim | null> {
-    const redisClient = this.redis.getClient();
+  async createBroadcastClaim(
+    rideId: string,
+    allowedDriverIds: string[],
+    phase: 1 | 2 = 1,
+  ): Promise<DispatchClaim | null> {
     const now = Date.now();
     const claim: DispatchClaim = {
       id: crypto.randomUUID(),
       rideId,
-      driverId,
+      allowedDriverIds,
       status: 'PENDING',
       createdAt: now,
       expiresAt: now + (this.CLAIM_TTL * 1000),
+      phase,
     };
 
     const claimKey = `dispatch:claim:${rideId}`;
-    const driverIdxKey = `driver:claim:${driverId}`;
+    const result = await this.redis.getClient().set(
+      claimKey, JSON.stringify(claim), 'EX', this.CLAIM_TTL, 'NX',
+    );
 
-    const multi = redisClient.multi();
-    multi.set(claimKey, JSON.stringify(claim), 'EX', this.CLAIM_TTL, 'NX');
-    multi.set(driverIdxKey, rideId, 'EX', this.CLAIM_TTL, 'NX');
-
-    const results = await multi.exec();
-    if (!results) return null;
-
-    if (results[0][1] === 'OK' && results[1][1] === 'OK') {
-      return claim;
-    }
-
-    // Rollback partial success
-    if (results[0][1] === 'OK') await redisClient.del(claimKey);
-    if (results[1][1] === 'OK') await redisClient.del(driverIdxKey);
-
-    return null;
+    return result === 'OK' ? claim : null;
   }
 
+  /**
+   * Legacy single-driver claim — delegates to createBroadcastClaim.
+   */
+  async createClaim(rideId: string, driverId: string): Promise<DispatchClaim | null> {
+    return this.createBroadcastClaim(rideId, [driverId], 1);
+  }
+
+  /**
+   * Atomic Lua-based claim validation — supports both single and multi-driver claims.
+   * First driver to call this wins; all others get 0.
+   */
   async validateAndConsume(rideId: string, driverId: string): Promise<boolean> {
     const luaScript = `
       local claim = redis.call('get', KEYS[1])
       if not claim then return 0 end
       local decoded = cjson.decode(claim)
-      if decoded.driverId == ARGV[1] and decoded.status == 'PENDING' then
+      if decoded.status ~= 'PENDING' then return 0 end
+
+      local is_allowed = false
+
+      if decoded.driverId == ARGV[1] then
+        is_allowed = true
+      end
+
+      if not is_allowed and decoded.allowedDriverIds then
+        for _, id in ipairs(decoded.allowedDriverIds) do
+          if id == ARGV[1] then
+            is_allowed = true
+            break
+          end
+        end
+      end
+
+      if is_allowed then
         redis.call('del', KEYS[1])
         redis.call('del', KEYS[2])
         return 1
-      else return 0 end
+      end
+      return 0
     `;
-    const result = await this.redis.getClient().eval(luaScript, 2, `dispatch:claim:${rideId}`, `driver:claim:${driverId}`, driverId);
+
+    const result = await this.redis.getClient().eval(
+      luaScript, 2,
+      `dispatch:claim:${rideId}`,
+      `driver:claim:${driverId}`,
+      driverId,
+    );
     return result === 1;
   }
 

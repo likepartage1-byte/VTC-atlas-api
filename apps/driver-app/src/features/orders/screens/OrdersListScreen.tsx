@@ -8,6 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   I18nManager,
+  Alert,
 } from 'react-native';
 import { Menu, Compass, AlertCircle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,8 +17,12 @@ import { OrderCard } from '../components/OrderCard';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { SideDrawer } from '../components/SideDrawer';
 import { TripDetailsBottomSheet } from '../components/TripDetailsBottomSheet';
-import { ordersRepository, MockOrder } from '../ordersRepository';
+import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
 import { useTheme } from '../../../theme/ThemeContext';
+import { socketService } from '../../../services/socket.service';
+
+// Legacy type alias — OrderCard still expects MockOrder shape
+type MockOrder = RideOrder & { passengerDetail?: any; isFairPrice?: boolean };
 
 type DriverStatus = 'OFFLINE' | 'AVAILABLE' | 'BUSY';
 
@@ -25,36 +30,47 @@ export const OrdersListScreen = () => {
   const { t } = useTranslation();
   const { colors } = useTheme();
 
+  const { orders: storeOrders, removeOrder } = useOrdersStore();
+
   const [status, setStatus]         = useState<DriverStatus>('OFFLINE');
-  const [orders, setOrders]         = useState<MockOrder[]>([]);
-  const [loading, setLoading]       = useState<boolean>(true);
+  const [loading, setLoading]       = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg]     = useState<string | null>(null);
   const [activeTab, setActiveTab]   = useState<string>('orders');
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
 
-  // ── Data ───────────────────────────────────────────────────────────────────
-  const fetchOrders = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    setErrorMsg(null);
-    try {
-      const data = await ordersRepository.getNearbyOrders();
-      setOrders(data);
-    } catch {
-      setErrorMsg(t('wallet:error_load', 'Impossible de récupérer les commandes.'));
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [t]);
+  // Cast store orders to MockOrder shape for OrderCard compatibility
+  const orders = storeOrders as MockOrder[];
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  // ── Auto-cleanup expired orders every 30s ─────────────────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      storeOrders.forEach(o => {
+        if (o.expiresAt && o.expiresAt < now) {
+          removeOrder(o.id);
+        }
+      });
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [storeOrders, removeOrder]);
+
+  // ── Pull-to-refresh: noop since data is driven by live socket ─────────────
+  const fetchOrders = useCallback(async (silent = false) => {
+    // Orders arrive via WebSocket; nothing to fetch manually.
+    // This handler is kept for the refresh control UI.
+    if (!silent) setLoading(true);
+    await new Promise(r => setTimeout(r, 400));
+    setLoading(false);
+    setRefreshing(false);
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchOrders(true);
   }, [fetchOrders]);
+
 
   // ── Status capsule ─────────────────────────────────────────────────────────
   const cycleStatus = useCallback(() => {
@@ -69,15 +85,26 @@ export const OrdersListScreen = () => {
     }
   }, [status, colors, t]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleCardPress = useCallback((order: MockOrder) => {
     setSelectedOrder(order);
   }, []);
 
-  const handleAccept = useCallback((orderId: string, finalPrice: number) => {
-    console.log(`[Orders] Accepted order ${orderId} at ${finalPrice} MAD`);
-    setSelectedOrder(null);
-  }, []);
+  const handleAccept = useCallback(async (orderId: string, finalPrice: number) => {
+    try {
+      await socketService.acceptRide(orderId);
+      removeOrder(orderId);   // Remove from live list on success
+      setSelectedOrder(null);
+    } catch (err: any) {
+      Alert.alert(
+        'Course non disponible',
+        err?.response?.data?.message || 'Cette course a déjà été acceptée par un autre chauffeur.',
+        [{ text: 'OK' }],
+      );
+      removeOrder(orderId);   // Clean up even on conflict
+      setSelectedOrder(null);
+    }
+  }, [removeOrder]);
+
 
   const handleCloseSheet = useCallback(() => {
     setSelectedOrder(null);

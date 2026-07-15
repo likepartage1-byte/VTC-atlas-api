@@ -130,15 +130,12 @@ class SocketService {
     this.socket.emit('driver.location_update', { lat, lng, timestamp: Date.now() });
   }
 
-  /** Attempt to accept a dispatched ride (atomic on backend) */
+  /** Accept a dispatched ride via the REST API (atomic on backend) */
   async acceptRide(rideId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      if (!this.socket?.connected) {
-        reject(new Error('Socket not connected'));
-        return;
-      }
-      this.socket.emit('ride_accept_attempt', { rideId }, (res: any) => resolve(res));
-    });
+    // Import inline to avoid circular dep at module level
+    const { api } = await import('../api/axios.instance');
+    const response = await api.post(`/driver/rides/${rideId}/accept`);
+    return response.data;
   }
 
   isConnected(): boolean {

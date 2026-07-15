@@ -80,10 +80,10 @@ export class ProfileService {
     const endOfWeek = this.getEndOfWeek();
 
     // 2. Load system configurations with fallbacks
-    const weeklyTarget = Number(await this.getSystemSetting('weekly_target', 30));
-    const goldCommission = Number(await this.getSystemSetting('gold_commission', 10));
-    const platinumCommission = Number(await this.getSystemSetting('platinum_commission', 8));
-    const priorityEnabled = Boolean(await this.getSystemSetting('priority_enabled', true));
+    const silverCommission  = Number(await this.getSystemSetting('silver_commission', 15));
+    const goldCommission    = Number(await this.getSystemSetting('gold_commission', 10));
+    const premierCommission = Number(await this.getSystemSetting('premier_commission', 8));
+    const priorityEnabled   = Boolean(await this.getSystemSetting('priority_enabled', true));
 
     // 3. Count total completed rides
     const completedRides = await this.prisma.ride.count({
@@ -168,15 +168,37 @@ export class ProfileService {
     const docPhoto = driver.verification?.documents?.[0];
     const profilePhoto = docPhoto?.url || (docPhoto?.storageKey ? `/uploads/${docPhoto.storageKey}` : null);
 
-    // 10. Verification status & badge level details
+    // 10. Verification status & driver tier (based on total completed rides)
     const isVerified = driver.verification?.status === 'APPROVED';
-    const isPlatinum = weeklyCompletedRides >= weeklyTarget;
-    const currentLevel = isPlatinum ? 'PLATINUM' : 'GOLD';
 
-    const remaining = Math.max(0, weeklyTarget - weeklyCompletedRides);
-    const progress = Number(Math.min(weeklyCompletedRides / weeklyTarget, 1).toFixed(2));
+    // Tier thresholds:
+    //   Silver  : 0–2   total completed rides
+    //   Gold    : 3–29  total completed rides
+    //   Premier : ≥ 30  total completed rides
+    let currentLevel: string;
+    let target: number;
+    let isPremier: boolean;
 
-    const commission = isPlatinum ? platinumCommission : goldCommission;
+    if (completedRides >= 30) {
+      currentLevel = 'PREMIER';
+      target       = 30;
+      isPremier    = true;
+    } else if (completedRides >= 3) {
+      currentLevel = 'GOLD';
+      target       = 30;
+      isPremier    = false;
+    } else {
+      currentLevel = 'SILVER';
+      target       = 3;
+      isPremier    = false;
+    }
+
+    const remaining = Math.max(0, target - completedRides);
+    const progress  = Number(Math.min(completedRides / target, 1).toFixed(2));
+
+    const commission = isPremier
+      ? premierCommission
+      : currentLevel === 'GOLD' ? goldCommission : silverCommission;
 
     return {
       driver: {
@@ -202,17 +224,17 @@ export class ProfileService {
       },
       weeklyChallenge: {
         currentLevel,
-        target: weeklyTarget,
-        completed: weeklyCompletedRides,
+        target,
+        completed: completedRides,
         remaining,
         progress,
         weekStart: startOfWeek.toISOString(),
         weekEnd: endOfWeek.toISOString(),
-        isPlatinum,
+        isPlatinum: isPremier, // kept as `isPlatinum` so frontend works without changes
       },
       benefits: {
         commission,
-        priorityMatching: isPlatinum && priorityEnabled,
+        priorityMatching: isPremier && priorityEnabled,
       },
     };
   }
