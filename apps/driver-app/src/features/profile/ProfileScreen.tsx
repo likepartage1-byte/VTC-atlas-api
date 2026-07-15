@@ -761,11 +761,14 @@ export const ProfileScreen = () => {
         animationType="slide"
         onRequestClose={() => setDetailModalVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setDetailModalVisible(false)}
-        >
+        <View style={styles.modalBackdrop}>
+          {/* Backdrop Touch Closes Sheet */}
+          <TouchableOpacity
+            style={StyleSheet.absoluteFillObject}
+            activeOpacity={1}
+            onPress={() => setDetailModalVisible(false)}
+          />
+
           <View style={[styles.detailSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {/* Close button */}
             <TouchableOpacity
@@ -779,7 +782,7 @@ export const ProfileScreen = () => {
 
             <ScrollView 
               style={{ width: '100%' }}
-              contentContainerStyle={{ alignItems: 'center', paddingVertical: 12 }}
+              contentContainerStyle={{ alignItems: 'center', paddingVertical: 12, paddingBottom: 48 }}
               showsVerticalScrollIndicator={false}
             >
               {/* Profile Title */}
@@ -918,7 +921,7 @@ export const ProfileScreen = () => {
               </TouchableOpacity>
             </ScrollView>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
 
       {/* ── Platinum celebration modal ── */}

@@ -72,13 +72,13 @@ const profileAr = {
   close: 'إغلاق',
   driver_profile_details: 'ملف تعريف السائق',
   joined_date_label: 'تاريخ الانضمام',
-  member_since: 'عضو منذ يوليو ٢٠٢٦',
+  member_since: 'عضو منذ يوليو 2026',
   verification_status: 'حالة التحقق',
   badges_label: 'الشارات المكتسبة',
   change_photo_request: 'طلب تغيير الصورة',
   change_photo_security_alert: 'لأسباب أمنية، لا يمكن تغيير صورة الملف الشخصي مباشرة. إذا تغير مظهرك أو كانت هناك مشكلة في الصورة، يمكنك إرسال طلب إلى إدارة المنصة، وسيتم مراجعة الطلب قبل اعتماد صورة جديدة.',
   badge_verified_title: 'سائق موثق',
-  badge_rides_title: '١٠٠٠+ رحلة',
+  badge_rides_title: '1000+ رحلة',
   badge_excellent_title: 'خدمة ممتازة',
 };
 
