@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,23 +19,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import {
-  Camera,
+  Camera as CameraIcon,
+  Pencil,
   ChevronLeft,
   ChevronRight,
   Info,
   Lock,
   Mail,
   MapPin,
-  Phone,
-  User,
   Check,
   X,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { api } from '../../api/axios.instance';
-import { launchCamera } from 'react-native-image-picker';
 
-const { width: SCREEN_W } = Dimensions.get('window');
+// Native Vision Camera and permission imports
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const CITIES = [
   'Marrakech',
@@ -49,7 +53,7 @@ const CITIES = [
 
 export const PersonalInfoScreen = () => {
   const { t, i18n } = useTranslation();
-  const { colors, isDarkMode } = useTheme();
+  const { colors } = useTheme();
   const navigation = useNavigation();
   const isRTL = i18n.language === 'ar';
 
@@ -62,6 +66,7 @@ export const PersonalInfoScreen = () => {
 
   // Local UI modals state
   const [showCityModal, setShowCityModal] = useState(false);
+  const [showCameraView, setShowCameraView] = useState(false);
 
   // Photos state
   const [approvedPhoto, setApprovedPhoto] = useState<string | null>(null);
@@ -72,6 +77,10 @@ export const PersonalInfoScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Camera reference & device selector
+  const cameraRef = useRef<any>(null);
+  const device = useCameraDevice('front'); // Front facing selfie camera as required!
 
   // Fetch initial profile
   const fetchData = async () => {
@@ -131,38 +140,60 @@ export const PersonalInfoScreen = () => {
     return `${firstTwo}********${lastTwo}`;
   };
 
-  const handleSnapPhoto = () => {
-    launchCamera(
-      {
-        mediaType: 'photo',
-        cameraType: 'face',
-        quality: 0.8,
-        saveToPhotos: false,
-      },
-      async (response) => {
-        if (response.didCancel) return;
-        if (response.errorCode) {
-          Alert.alert(t('error'), response.errorMessage || 'Camera open failed.');
-          return;
-        }
-
-        const assets = response.assets;
-        if (assets && assets.length > 0) {
-          const photoAsset = assets[0];
-          await uploadProfilePhoto(photoAsset);
-        }
-      }
-    );
+  // Check and demand permission locally
+  const checkAndRequestCameraPermission = async () => {
+    const permissionToken =
+      Platform.OS === 'ios' ? PERMISSIONS.IOS.CAMERA : PERMISSIONS.ANDROID.CAMERA;
+    const status = await check(permissionToken);
+    if (status === RESULTS.GRANTED) {
+      return true;
+    }
+    const requestStatus = await request(permissionToken);
+    return requestStatus === RESULTS.GRANTED;
   };
 
-  const uploadProfilePhoto = async (asset: any) => {
+  // Trigger Camera viewport
+  const handleSnapPhotoPress = async () => {
+    const hasPermission = await checkAndRequestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(t('error'), t('camera_permission_required', 'Please grant camera permission to take a photo.'));
+      return;
+    }
+    setShowCameraView(true);
+  };
+
+  // Shutter action
+  const handleCapturePhoto = async () => {
+    if (!cameraRef.current) return;
     setUploading(true);
     try {
+      // Capture selfie using front camera
+      const photoFile = await cameraRef.current.takePhoto({
+        flash: 'off',
+      });
+
+      const localPath = photoFile.path;
+
+      // Compress and resize the image before uploading to reduce bandwidth usage
+      // Target: 600x600 size, jpeg format, 80% quality
+      const resized = await ImageResizer.createResizedImage(
+        localPath,
+        600,
+        600,
+        'JPEG',
+        80,
+        0,
+        undefined,
+        false,
+        { mode: 'contain', onlyScaleDown: true }
+      );
+
+      // Prepare multi-part request body
       const formData = new FormData();
       formData.append('file', {
-        uri: Platform.OS === 'android' ? asset.uri : asset.uri.replace('file://', ''),
-        name: asset.fileName || `profile_photo_${Date.now()}.jpg`,
-        type: asset.type || 'image/jpeg',
+        uri: Platform.OS === 'android' ? resized.uri : resized.uri.replace('file://', ''),
+        name: `selfie_${Date.now()}.jpg`,
+        type: 'image/jpeg',
       } as any);
 
       await api.post('/driver/verification/documents/PROFILE_PHOTO', formData, {
@@ -171,15 +202,17 @@ export const PersonalInfoScreen = () => {
         },
       });
 
-      setPendingPhoto(asset.uri);
+      // Update state local view
+      setPendingPhoto(resized.uri);
       setPhotoStatus('PENDING');
+      setShowCameraView(false);
 
       Alert.alert(
         t('success', 'Succès'),
         t('photo_pending_alert', 'Votre photo de profil a été téléchargée avec succès. Elle est en cours d’examen par l’administration.')
       );
     } catch (err: any) {
-      console.error('[Personal Info] Upload photo error:', err);
+      console.error('[Personal Info] Camera snap / upload error:', err);
       const errMsg = err.response?.data?.message || err.message || 'File upload failed.';
       Alert.alert(t('error'), errMsg);
     } finally {
@@ -250,7 +283,7 @@ export const PersonalInfoScreen = () => {
         >
           {/* Avatar frame area (Indigo color glow around avatar) */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity activeOpacity={0.8} style={styles.avatarWrapper} onPress={handleSnapPhoto}>
+            <TouchableOpacity activeOpacity={0.8} style={styles.avatarWrapper} onPress={handleSnapPhotoPress}>
               <View style={[styles.avatarGlowCircle, { borderColor: colors.primary }]}>
                 {uploading ? (
                   <View style={styles.uploadScrim}>
@@ -272,7 +305,7 @@ export const PersonalInfoScreen = () => {
 
               {/* Blue Camera overlap badge */}
               <View style={[styles.cameraIconBadge, { backgroundColor: colors.primary }]}>
-                <Camera size={14} color="#FFFFFF" />
+                <CameraIcon size={14} color="#FFFFFF" />
               </View>
             </TouchableOpacity>
 
@@ -417,6 +450,52 @@ export const PersonalInfoScreen = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Fullscreen Direct Camera Modal View (prevents gallery selector) */}
+      <Modal
+        visible={showCameraView}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setShowCameraView(false)}
+      >
+        <View style={styles.cameraContainer}>
+          {device != null ? (
+            <Camera
+              ref={cameraRef}
+              style={StyleSheet.absoluteFillObject}
+              device={device}
+              isActive={showCameraView}
+              photo={true}
+            />
+          ) : (
+            <View style={styles.cameraError}>
+              <ActivityIndicator size="large" color="#FFFFFF" style={{ marginBottom: 12 }} />
+              <Text style={{ color: '#FFFFFF', textAlign: 'center' }}>
+                Camera hardware loading or not available...
+              </Text>
+            </View>
+          )}
+
+          {/* Close trigger overlay */}
+          <TouchableOpacity
+            style={styles.cameraCloseBtn}
+            onPress={() => setShowCameraView(false)}
+          >
+            <X size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Shutter button wrapper */}
+          <View style={styles.cameraShutterContainer}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.shutterButton}
+              onPress={handleCapturePhoto}
+            >
+              <View style={styles.shutterInnerCircle} />
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -641,5 +720,52 @@ const styles = StyleSheet.create({
   },
   modalItemText: {
     fontSize: 14.5,
+  },
+  // Camera full screen styles
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  cameraError: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+  },
+  cameraCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  cameraShutterContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  shutterButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 4,
+    borderColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shutterInnerCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: '#FFFFFF',
   },
 });

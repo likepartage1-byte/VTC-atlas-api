@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@bam.tech/react-native-image-resizer": "^3.0.11",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/geolocation": "^3.4.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
@@ -26,11 +27,13 @@
     "react-native-gesture-handler": "2.22.0",
     "react-native-image-picker": "^8.2.1",
     "react-native-maps": "1.18.0",
+    "react-native-permissions": "^5.6.0",
     "react-native-reanimated": "3.17.1",
     "react-native-safe-area-context": "^5.2.0",
     "react-native-screens": "4.8.0",
     "react-native-svg": "^15.11.1",
     "react-native-vector-icons": "^10.2.0",
+    "react-native-vision-camera": "^5.1.0",
     "react-redux": "^9.2.0",
     "socket.io-client": "^4.8.1",
     "zod": "^3.24.2",
