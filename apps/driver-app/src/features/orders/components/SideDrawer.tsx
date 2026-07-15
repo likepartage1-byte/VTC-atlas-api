@@ -32,6 +32,7 @@ import {
   ChevronLeft,
 } from 'lucide-react-native';
 import { useTheme } from '../../../theme/ThemeContext';
+import { api } from '../../../api/axios.instance';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -55,6 +56,27 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
 
   // Drawer slides from left (always, as user requested)
   const translateX = useSharedValue(-DRAWER_WIDTH);
+
+  const [driverName, setDriverName] = useState('Khalid');
+  const [rating, setRating] = useState('4.96');
+
+  // Load driver details dynamically from profile API when drawer is opened
+  useEffect(() => {
+    if (isOpen) {
+      api.get('/driver/profile')
+        .then(res => {
+          if (res.data?.driver) {
+            setDriverName(res.data.driver.name || 'Khalid');
+            if (res.data.driver.rating) {
+              setRating(Number(res.data.driver.rating).toFixed(2));
+            }
+          }
+        })
+        .catch(err => {
+          console.log('[SideDrawer] Error matching driver profile details:', err);
+        });
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     translateX.value = isOpen
@@ -167,10 +189,10 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
               </View>
               <View style={[styles.profileInfo, isRTL && styles.profileInfoRTL]}>
                 <Text style={[styles.driverName, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
-                  Khalid
+                  {driverName}
                 </Text>
                 <Text style={[styles.rating, { textAlign: isRTL ? 'right' : 'left' }]}>
-                  ⭐ 4.96
+                  ⭐ {rating}
                 </Text>
               </View>
             </View>
