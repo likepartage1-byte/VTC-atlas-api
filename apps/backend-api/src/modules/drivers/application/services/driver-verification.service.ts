@@ -344,4 +344,116 @@ export class DriverVerificationService {
       orderBy: { updatedAt: 'asc' }
     });
   }
+
+  /**
+   * Lists pending profile update requests from drivers' metadata.
+   */
+  async listPendingProfileUpdates() {
+    const verifications = await this.prisma.driverVerification.findMany({
+      where: {
+        NOT: { metadata: null },
+      },
+      include: {
+        driver: {
+          include: { user: true },
+        },
+      },
+    });
+
+    return verifications
+      .filter((v: any) => {
+        const metadata = v.metadata as any;
+        return metadata?.profileUpdateRequest?.status === 'PENDING';
+      })
+      .map(v => {
+        const metadata = v.metadata as any;
+        return {
+          verificationId: v.id,
+          driverId: v.driverId,
+          driverName: v.driver.user.fullName,
+          driverPhone: v.driver.user.phoneNumber,
+          pendingFields: metadata?.profileUpdateRequest?.fields || {},
+          submittedAt: metadata?.profileUpdateRequest?.createdAt,
+        };
+      });
+  }
+
+  /**
+   * Admin approves or rejects a pending driver profile update.
+   */
+  async reviewProfileUpdate(
+    driverId: string,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+    adminId?: string
+  ) {
+    const verification = await this.prisma.driverVerification.findUnique({
+      where: { driverId },
+      include: { driver: { include: { user: true } } },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verification record not found');
+    }
+
+    const metadata = (verification.metadata as any) || {};
+    const request = metadata.profileUpdateRequest;
+
+    if (!request || request.status !== 'PENDING') {
+      throw new BadRequestException('No pending profile update request found for this driver');
+    }
+
+    if (status === 'APPROVED') {
+      const fields = request.fields;
+      
+      const updateData: any = {};
+      if (fields.firstName !== undefined) updateData.firstName = fields.firstName;
+      if (fields.lastName !== undefined) updateData.lastName = fields.lastName;
+
+      if (fields.fullName !== undefined && fields.fullName.trim() !== '') {
+        updateData.fullName = fields.fullName;
+      } else if (fields.firstName !== undefined || fields.lastName !== undefined) {
+        const first = fields.firstName !== undefined ? fields.firstName : (verification.driver.user?.firstName || '');
+        const last = fields.lastName !== undefined ? fields.lastName : (verification.driver.user?.lastName || '');
+        updateData.fullName = `${first} ${last}`.trim() || 'New User';
+      }
+
+      if (fields.email !== undefined) updateData.email = fields.email || null;
+      if (fields.birthDate !== undefined) updateData.birthDate = fields.birthDate;
+      if (fields.gender !== undefined) updateData.gender = fields.gender;
+      if (fields.language !== undefined) updateData.language = fields.language;
+      if (fields.city !== undefined) updateData.city = fields.city;
+      if (fields.address !== undefined) updateData.address = fields.address;
+
+      await this.prisma.user.update({
+        where: { id: verification.driver.userId },
+        data: updateData,
+      });
+
+      metadata.profileUpdateRequest = {
+        status: 'APPROVED',
+        createdAt: request.createdAt,
+        approvedAt: new Date().toISOString(),
+        fields: request.fields,
+      };
+    } else {
+      metadata.profileUpdateRequest = {
+        status: 'REJECTED',
+        createdAt: request.createdAt,
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: reason || 'Rejected by administration',
+        fields: request.fields,
+      };
+    }
+
+    await this.prisma.driverVerification.update({
+      where: { id: verification.id },
+      data: { metadata },
+    });
+
+    // Invalidate eligibility cache just in case name changes affect it
+    await this.eligibility.invalidateCache(driverId);
+
+    return { success: true };
+  }
 }

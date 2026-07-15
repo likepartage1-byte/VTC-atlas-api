@@ -265,6 +265,19 @@ export class ProfileService {
       ? premierCommission
       : currentLevel === 'GOLD' ? goldCommission : silverCommission;
 
+    const verificationMetadata = (driver.verification?.metadata as any) || {};
+    const req = verificationMetadata.profileUpdateRequest;
+    let pendingProfileUpdate = null;
+    let rejectedProfileUpdate = null;
+
+    if (req) {
+      if (req.status === 'PENDING') {
+        pendingProfileUpdate = req;
+      } else if (req.status === 'REJECTED') {
+        rejectedProfileUpdate = req;
+      }
+    }
+
     return {
       driver: {
         id: `DRV-${driver.id.substring(0, 5).toUpperCase()}`,
@@ -292,6 +305,8 @@ export class ProfileService {
         city: driver.user.city || '',
         address: driver.user.address || '',
       },
+      pendingProfileUpdate,
+      rejectedProfileUpdate,
       statistics: {
         completedRides,
         weeklyCompletedRides,
@@ -321,34 +336,51 @@ export class ProfileService {
   async updateDriverProfile(userId: string, data: any) {
     const driver = await this.prisma.driver.findUnique({
       where: { userId },
-      include: { user: true },
+      include: { verification: true },
     });
     if (!driver) {
       throw new NotFoundException('Driver not found');
     }
 
-    const updateData: any = {};
-    if (data.firstName !== undefined) updateData.firstName = data.firstName;
-    if (data.lastName !== undefined) updateData.lastName = data.lastName;
-
-    if (data.fullName !== undefined && data.fullName.trim() !== '') {
-      updateData.fullName = data.fullName;
-    } else if (data.firstName !== undefined || data.lastName !== undefined) {
-      const first = data.firstName !== undefined ? data.firstName : (driver.user?.firstName || '');
-      const last = data.lastName !== undefined ? data.lastName : (driver.user?.lastName || '');
-      updateData.fullName = `${first} ${last}`.trim() || 'New User';
+    let verification = driver.verification;
+    if (!verification) {
+      verification = await this.prisma.driverVerification.create({
+        data: {
+          driverId: driver.id,
+          status: 'PENDING',
+        },
+      });
     }
 
-    if (data.email !== undefined) updateData.email = data.email || null;
-    if (data.birthDate !== undefined) updateData.birthDate = data.birthDate;
-    if (data.gender !== undefined) updateData.gender = data.gender;
-    if (data.language !== undefined) updateData.language = data.language;
-    if (data.city !== undefined) updateData.city = data.city;
-    if (data.address !== undefined) updateData.address = data.address;
+    const fields: any = {};
+    if (data.firstName !== undefined) fields.firstName = data.firstName;
+    if (data.lastName !== undefined) fields.lastName = data.lastName;
 
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: updateData,
+    if (data.fullName !== undefined && data.fullName.trim() !== '') {
+      fields.fullName = data.fullName;
+    } else if (data.firstName !== undefined || data.lastName !== undefined) {
+      const first = data.firstName !== undefined ? data.firstName : ((verification.metadata as any)?.profileUpdateRequest?.fields?.firstName || driver.user?.firstName || '');
+      const last = data.lastName !== undefined ? data.lastName : ((verification.metadata as any)?.profileUpdateRequest?.fields?.lastName || driver.user?.lastName || '');
+      fields.fullName = `${first} ${last}`.trim() || 'New User';
+    }
+
+    if (data.email !== undefined) fields.email = data.email || null;
+    if (data.birthDate !== undefined) fields.birthDate = data.birthDate;
+    if (data.gender !== undefined) fields.gender = data.gender;
+    if (data.language !== undefined) fields.language = data.language;
+    if (data.city !== undefined) fields.city = data.city;
+    if (data.address !== undefined) fields.address = data.address;
+
+    const metadata = (verification.metadata as any) || {};
+    metadata.profileUpdateRequest = {
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      fields,
+    };
+
+    await this.prisma.driverVerification.update({
+      where: { id: verification.id },
+      data: { metadata },
     });
 
     return this.getDriverProfile(userId);

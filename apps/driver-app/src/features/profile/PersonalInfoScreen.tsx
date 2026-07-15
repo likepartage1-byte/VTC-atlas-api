@@ -81,6 +81,8 @@ export const PersonalInfoScreen = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [tempCaptureUri, setTempCaptureUri] = useState<string | null>(null);
   const [cameraType, setCameraType] = useState<'front' | 'back'>('front');
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
   // Camera reference & device selector
   const cameraRef = useRef<any>(null);
@@ -100,17 +102,34 @@ export const PersonalInfoScreen = () => {
 
       setIsVerified(profile.driver?.verified || false);
 
-      if (profile.personalInfo) {
+      // Handle pending profile updates
+      if (profile.pendingProfileUpdate && profile.pendingProfileUpdate.fields) {
+        setHasPendingRequest(true);
+        const fields = profile.pendingProfileUpdate.fields;
+        setFirstName(fields.firstName || '');
+        setLastName(fields.lastName || '');
+        setEmail(fields.email || '');
+        setCity(fields.city || 'Marrakech');
+      } else if (profile.personalInfo) {
+        setHasPendingRequest(false);
         setFirstName(profile.personalInfo.firstName || '');
         setLastName(profile.personalInfo.lastName || '');
         setEmail(profile.personalInfo.email || '');
         setCity(profile.personalInfo.city || 'Marrakech');
-        setPhone(profile.personalInfo.phone || profile.driver?.phone || '');
       } else {
+        setHasPendingRequest(false);
         const nameParts = (profile.driver?.name || '').split(' ');
         setFirstName(nameParts[0] || '');
         setLastName(nameParts.slice(1).join(' ') || '');
-        setPhone(profile.driver?.phone || '');
+      }
+
+      setPhone(profile.personalInfo?.phone || profile.driver?.phone || '');
+
+      // Handle rejection reason
+      if (profile.rejectedProfileUpdate) {
+        setRejectionReason(profile.rejectedProfileUpdate.rejectionReason || null);
+      } else {
+        setRejectionReason(null);
       }
 
       setApprovedPhoto(profile.driver?.avatar || null);
@@ -253,35 +272,33 @@ export const PersonalInfoScreen = () => {
       return;
     }
 
-    if (!isVerified) {
-      if (!firstName.trim()) {
-        Alert.alert(t('error'), t('first_name_required', 'Veuillez saisir votre prénom.'));
-        return;
-      }
-      if (!lastName.trim()) {
-        Alert.alert(t('error'), t('last_name_required', 'Veuillez saisir votre nom de famille.'));
-        return;
-      }
-      if (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user') {
-        Alert.alert(t('error'), t('name_cannot_be_default', 'Veuillez saisir un vrai prénom et nom de famille.'));
-        return;
-      }
+    if (!firstName.trim()) {
+      Alert.alert(t('error'), t('first_name_required', 'Veuillez saisir votre prénom.'));
+      return;
+    }
+    if (!lastName.trim()) {
+      Alert.alert(t('error'), t('last_name_required', 'Veuillez saisir votre nom de famille.'));
+      return;
+    }
+    if (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user') {
+      Alert.alert(t('error'), t('name_cannot_be_default', 'Veuillez saisir un vrai prénom et nom de famille.'));
+      return;
     }
 
     setSaving(true);
     try {
       const payload: any = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
         email: email.trim(),
         city,
       };
 
-      if (!isVerified) {
-        payload.firstName = firstName.trim();
-        payload.lastName = lastName.trim();
-      }
-
       await api.patch('/driver/profile', payload);
-      Alert.alert(t('success'), t('update_success', 'Profil mis à jour avec succès!'));
+      Alert.alert(
+        t('success'),
+        t('profile_update_submitted', 'Votre demande de modification a été soumise avec succès pour révision.')
+      );
       await fetchData();
     } catch (err: any) {
       console.error('[Personal Info] Save profile error:', err);
@@ -365,11 +382,11 @@ export const PersonalInfoScreen = () => {
             ) : null}
           </View>
 
-          {/* Group 1: Verified Details Card (Locked status, very unique and premium) */}
+          {/* Group 1: Personal Details Card */}
           <View style={styles.sectionHeader}>
-            <Lock size={14} color={colors.textMuted} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
+            <Pencil size={14} color={colors.textMuted} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
             <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
-              {t('verified_info', 'Informations Vérifiées')}
+              {t('personal_info_section', 'Informations Personnelles')}
             </Text>
           </View>
 
@@ -378,17 +395,13 @@ export const PersonalInfoScreen = () => {
             <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
               <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('first_name', 'Nom')}</Text>
-                {isVerified ? (
-                  <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{firstName || 'Khalid'}</Text>
-                ) : (
-                  <TextInput
-                    style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
-                    value={firstName === 'New' ? '' : firstName}
-                    onChangeText={setFirstName}
-                    placeholder={t('first_name_placeholder', 'Saisir le prénom')}
-                    placeholderTextColor={colors.textMuted}
-                  />
-                )}
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
+                  value={firstName === 'New' ? '' : firstName}
+                  onChangeText={setFirstName}
+                  placeholder={t('first_name_placeholder', 'Saisir le prénom')}
+                  placeholderTextColor={colors.textMuted}
+                />
               </View>
             </View>
 
@@ -396,17 +409,13 @@ export const PersonalInfoScreen = () => {
             <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
               <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('last_name', 'Nom de famille')}</Text>
-                {isVerified ? (
-                  <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{lastName || 'Bouchater'}</Text>
-                ) : (
-                  <TextInput
-                    style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
-                    value={lastName === 'User' ? '' : lastName}
-                    onChangeText={setLastName}
-                    placeholder={t('last_name_placeholder', 'Saisir le nom de famille')}
-                    placeholderTextColor={colors.textMuted}
-                  />
-                )}
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
+                  value={lastName === 'User' ? '' : lastName}
+                  onChangeText={setLastName}
+                  placeholder={t('last_name_placeholder', 'Saisir le nom de famille')}
+                  placeholderTextColor={colors.textMuted}
+                />
               </View>
             </View>
 
@@ -459,11 +468,32 @@ export const PersonalInfoScreen = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Rejection Notice Banner */}
+          {rejectionReason ? (
+            <View style={[styles.infoCard, { backgroundColor: colors.error + '12', borderColor: colors.error + '30', marginTop: 15 }, isRTL && styles.infoCardRTL]}>
+              <X size={18} color={colors.error} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+              <Text style={[styles.infoCardText, { color: colors.error, fontWeight: '500' }]}>
+                {t('profile_update_rejected_notice', 'Votre demande de modification précédente a été rejetée : ')}
+                {rejectionReason}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Pending Notice Banner */}
+          {hasPendingRequest ? (
+            <View style={[styles.infoCard, { backgroundColor: colors.warning + '12', borderColor: colors.warning + '30', marginTop: 15 }, isRTL && styles.infoCardRTL]}>
+              <Info size={18} color={colors.warning} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+              <Text style={[styles.infoCardText, { color: colors.warning, fontWeight: '500' }]}>
+                {t('profile_update_pending_notice', 'Votre demande de modification de profil est en cours de révision.')}
+              </Text>
+            </View>
+          ) : null}
+
           {/* Info verified alert row */}
-          <View style={[styles.infoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }, isRTL && styles.infoCardRTL]}>
-            <Info size={18} color={colors.neutral} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+          <View style={[styles.infoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, marginTop: 15 }, isRTL && styles.infoCardRTL]}>
+            <Info size={18} color={colors.textSecondary} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
             <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
-              {t('info_verified_support')}
+              {t('profile_edit_policy_notice', "Toute modification de vos informations personnelles ou de votre photo est soumise à validation avant d'être effective.")}
             </Text>
           </View>
         </ScrollView>

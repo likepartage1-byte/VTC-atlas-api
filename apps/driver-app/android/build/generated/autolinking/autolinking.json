@@ -3,6 +3,31 @@
   "reactNativePath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native",
   "reactNativeVersion": "0.77",
   "dependencies": {
+    "@bam.tech/react-native-image-resizer": {
+      "root": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/@bam.tech/react-native-image-resizer",
+      "name": "@bam.tech/react-native-image-resizer",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/@bam.tech/react-native-image-resizer/react-native-image-resizer.podspec",
+          "version": "3.0.11",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/@bam.tech/react-native-image-resizer/android",
+          "packageImportPath": "import com.reactnativeimageresizer.ImageResizerPackage;",
+          "packageInstance": "new ImageResizerPackage()",
+          "buildTypes": [],
+          "libraryName": "RNImageResizerSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/@bam.tech/react-native-image-resizer/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
     "@react-native-async-storage/async-storage": {
       "root": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/@react-native-async-storage/async-storage",
       "name": "@react-native-async-storage/async-storage",
@@ -123,6 +148,31 @@
           "buildTypes": [],
           "componentDescriptors": [],
           "cmakeListsPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-maps/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-permissions": {
+      "root": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-permissions",
+      "name": "react-native-permissions",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-permissions/RNPermissions.podspec",
+          "version": "5.6.0",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-permissions/android",
+          "packageImportPath": "import com.zoontek.rnpermissions.RNPermissionsPackage;",
+          "packageInstance": "new RNPermissionsPackage()",
+          "buildTypes": [],
+          "libraryName": "RNPermissionsSpec",
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-permissions/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -293,6 +343,30 @@
           "libraryName": "RNVectorIconsSpec",
           "componentDescriptors": [],
           "cmakeListsPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-vector-icons/android/build/generated/source/codegen/jni/CMakeLists.txt",
+          "cxxModuleCMakeListsModuleName": null,
+          "cxxModuleCMakeListsPath": null,
+          "cxxModuleHeaderName": null,
+          "isPureCxxDependency": false
+        }
+      }
+    },
+    "react-native-vision-camera": {
+      "root": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-vision-camera",
+      "name": "react-native-vision-camera",
+      "platforms": {
+        "ios": {
+          "podspecPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-vision-camera/VisionCamera.podspec",
+          "version": "4.7.3",
+          "configurations": [],
+          "scriptPhases": []
+        },
+        "android": {
+          "sourceDir": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-vision-camera/android",
+          "packageImportPath": "import com.mrousavy.camera.react.CameraPackage;",
+          "packageInstance": "new CameraPackage()",
+          "buildTypes": [],
+          "componentDescriptors": [],
+          "cmakeListsPath": "/Users/benomar/VTC OLD/atlas projet vtc  /apps/driver-app/node_modules/react-native-vision-camera/android/build/generated/source/codegen/jni/CMakeLists.txt",
           "cxxModuleCMakeListsModuleName": null,
           "cxxModuleCMakeListsPath": null,
           "cxxModuleHeaderName": null,
@@ -515,7 +589,7 @@
         {
           "name": "--terminal <string>",
           "description": "Launches the Metro Bundler in a new window using the specified terminal path.",
-          "default": "vscode"
+          "default": ""
         },
         {
           "name": "--binary-path <string>",
@@ -675,7 +749,7 @@
         {
           "name": "--terminal <string>",
           "description": "Launches the Metro Bundler in a new window using the specified terminal path.",
-          "default": "vscode"
+          "default": ""
         },
         {
           "name": "--appId <string>",

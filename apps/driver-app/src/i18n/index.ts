@@ -113,7 +113,6 @@ const profileAr = {
   photo_pending_alert: 'تم رفع صورتك الشخصية بنجاح وهي قيد المراجعة حالياً من قبل الإدارة.',
   camera_permission_required: 'من فضلك اسمح للتطبيق بالوصول للكاميرا لالتقاط صورتك.',
   photo_review_badge: 'قيد المراجعة',
-  info_verified_support: 'لقد تم توثيق اسمك الكامل وصورتك الشخصية. لتحديثهما، برجاء التواصل مع الدعم الفني.',
   profile_settings_title: 'إعدادات الملف الشخصي',
   first_name_placeholder: 'سجل الاسم الأول',
   last_name_placeholder: 'سجل اسم العائلة',
@@ -124,6 +123,10 @@ const profileAr = {
   preview_photo_title: 'معاينة الصورة',
   retake_photo_btn: '🔄 إعادة المحاولة',
   use_photo_btn: '✅ استخدام الصورة',
+  profile_edit_policy_notice: 'أي تعديل على البيانات الشخصية أو الصورة الشخصية يخضع للمراجعة قبل اعتماده.',
+  profile_update_pending_notice: 'طلب تعديل البيانات الشخصية قيد المراجعة حاليًا.',
+  profile_update_rejected_notice: 'تم رفض طلب التعديل السابق: ',
+  profile_update_submitted: 'تم تقديم طلب تعديل ملفك الشخصي بنجاح وهو قيد المراجعة.',
 };
 
 const profileFr = {
@@ -229,7 +232,6 @@ const profileFr = {
   photo_pending_alert: "Votre photo de profil a été téléchargée avec succès. Elle est en cours d'examen par l'administration.",
   camera_permission_required: "Veuillez autoriser l'accès à la caméra pour prendre votre photo.",
   photo_review_badge: 'En cours',
-  info_verified_support: "Votre nom complet et votre photo de profil ont été vérifiés. Pour les mettre à jour, veuillez contacter le Service d'assistance.",
   profile_settings_title: 'Paramètres du profil',
   first_name_placeholder: 'Saisir le prénom',
   last_name_placeholder: 'Saisir le nom de famille',
@@ -240,6 +242,10 @@ const profileFr = {
   preview_photo_title: 'Aperçu du Selfie',
   retake_photo_btn: '🔄 Réessayer',
   use_photo_btn: '✅ Utiliser la photo',
+  profile_edit_policy_notice: "Toute modification de vos informations personnelles ou de votre photo est soumise à validation avant d'être effective.",
+  profile_update_pending_notice: "Votre demande de modification de profil est en cours de révision.",
+  profile_update_rejected_notice: "Votre demande de modification précédente a été rejetée : ",
+  profile_update_submitted: "Votre demande de modification de profil a été soumise avec succès pour révision.",
 };
 
 const profileEn = {
@@ -345,7 +351,6 @@ const profileEn = {
   photo_pending_alert: 'Your profile photo has been successfully uploaded and is currently under review by the administration.',
   camera_permission_required: 'Please grant camera permission to take your photo.',
   photo_review_badge: 'Under Review',
-  info_verified_support: 'Your full name and profile photo have been verified. To update them, please contact Support Service.',
   profile_settings_title: 'Profile Settings',
   first_name_placeholder: 'Enter first name',
   last_name_placeholder: 'Enter last name',
@@ -356,6 +361,10 @@ const profileEn = {
   preview_photo_title: 'Selfie Preview',
   retake_photo_btn: '🔄 Retake',
   use_photo_btn: '✅ Use Photo',
+  profile_edit_policy_notice: 'Any modification to your personal details or profile photo is subject to review before approval.',
+  profile_update_pending_notice: 'Your profile modification request is currently under review.',
+  profile_update_rejected_notice: 'Your previous update request was rejected: ',
+  profile_update_submitted: 'Your profile update request was successfully submitted for review.',
 };
 
 const profileEs = {
@@ -452,7 +461,6 @@ const profileEs = {
   photo_pending_alert: 'Tu foto de perfil ha sido subida con éxito y actualmente está bajo revisión por la administración.',
   camera_permission_required: 'Por favor, otorga permiso de cámara para tomar tu foto.',
   photo_review_badge: 'En revisión',
-  info_verified_support: 'Tu nombre completo y foto de perfil han sido verificados. Para actualizarlos, ponte en contacto con el Servicio de soporte.',
   profile_settings_title: 'Ajustes del perfil',
   first_name_placeholder: 'Saisir el nombre',
   last_name_placeholder: 'Saisir el apellido',
@@ -463,6 +471,10 @@ const profileEs = {
   preview_photo_title: 'Vista previa del selfie',
   retake_photo_btn: '🔄 Reintentar',
   use_photo_btn: '✅ Usar foto',
+  profile_edit_policy_notice: 'Cualquier modificación de sus datos personales o foto de perfil está sujeta a revisión antes de su aprobación.',
+  profile_update_pending_notice: 'Su solicitud de modificación de perfil está actualmente en revisión.',
+  profile_update_rejected_notice: 'Su solicitud de actualización anterior fue rechazada: ',
+  profile_update_submitted: 'Su solicitud de actualización de perfil se envió correctamente para su revisión.',
 };
 
 const resources = {
