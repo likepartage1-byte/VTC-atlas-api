@@ -70,7 +70,7 @@ export const InvoiceCard = ({ invoice }: InvoiceCardProps) => {
         {/* Row 2: Atlas Commission (negative/red color) */}
         <View style={[styles.infoRow, isRTL && styles.infoRowRTL, { marginTop: 8 }]}>
           <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-            {t('atlas_commission') || 'Atlas Commission'}
+            {t('atlas_commission') || 'Commission Yalla VTC'}
           </Text>
           <Text style={[styles.amountCell, { color: colors.warning }]}>
             -{formatCurrency(invoice.atlasCommission, invoice.currency)}

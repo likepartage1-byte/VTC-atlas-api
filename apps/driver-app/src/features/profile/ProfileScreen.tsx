@@ -693,7 +693,7 @@ export const ProfileScreen = () => {
             <Text style={[styles.logoutTxt, { color: colors.offline }]}>{t('logout')}</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.version, { color: colors.textMuted }]}>Atlas Driver v1.0.0</Text>
+          <Text style={[styles.version, { color: colors.textMuted }]}>Yalla VTC Driver v1.0.0</Text>
 
         </Animated.View>
       </ScrollView>
