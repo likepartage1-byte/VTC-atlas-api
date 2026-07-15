@@ -514,10 +514,10 @@ export const ProfileScreen = () => {
                     {t('commission_label', 'Commission')}
                   </Text>
                   <Text style={[styles.commissionVal, { color: levelColor }]}>
-                    {benefitsData.commission}%{' '}
-                    <Text style={[styles.taxSubText, { color: colors.textMuted }]}>
-                      {t('commission_sub_tax', '(Excl. Tax)')}
-                    </Text>
+                    {benefitsData.commission}%
+                  </Text>
+                  <Text style={[styles.taxSubText, { color: colors.textMuted, marginTop: 2, fontSize: 8 }]}>
+                    {t('commission_tax_breakdown')}
                   </Text>
                 </View>
                 <View style={styles.priorityPill}>
