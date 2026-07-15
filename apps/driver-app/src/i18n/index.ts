@@ -70,6 +70,16 @@ const profileAr = {
   benefit_priority: 'أولوية في استقبال الطلبات الجديدة',
   benefit_badge: 'شارة Platinum بجانب اسمك',
   close: 'إغلاق',
+  driver_profile_details: 'ملف تعريف السائق',
+  joined_date_label: 'تاريخ الانضمام',
+  member_since: 'عضو منذ يوليو ٢٠٢٦',
+  verification_status: 'حالة التحقق',
+  badges_label: 'الشارات المكتسبة',
+  change_photo_request: 'طلب تغيير الصورة',
+  change_photo_security_alert: 'لأسباب أمنية، لا يمكن تغيير صورة الملف الشخصي مباشرة. إذا تغير مظهرك أو كانت هناك مشكلة في الصورة، يمكنك إرسال طلب إلى إدارة المنصة، وسيتم مراجعة الطلب قبل اعتماد صورة جديدة.',
+  badge_verified_title: 'سائق موثق',
+  badge_rides_title: '١٠٠٠+ رحلة',
+  badge_excellent_title: 'خدمة ممتازة',
 };
 
 const profileFr = {
@@ -132,6 +142,16 @@ const profileFr = {
   benefit_priority: 'Priorité dans la réception des nouvelles courses',
   benefit_badge: 'Badge Platinum affiché sur votre profil',
   close: 'Fermer',
+  driver_profile_details: 'Profil du chauffeur',
+  joined_date_label: "Date d'adhésion",
+  member_since: 'Membre depuis juillet 2026',
+  verification_status: 'Statut de vérification',
+  badges_label: 'Badges gagnés',
+  change_photo_request: 'Demander un changement de photo',
+  change_photo_security_alert: "Pour des raisons de sécurité, la photo de profil ne peut pas être modifiée directement. Si votre apparence change ou s'il y a un problème avec la photo, vous pouvez envoyer une demande à l'administration de la plateforme, et la demande sera examinée avant d'approuver une nouvelle photo.",
+  badge_verified_title: 'Chauffeur vérifié',
+  badge_rides_title: '1000+ Courses',
+  badge_excellent_title: 'Service Excellent',
 };
 
 const profileEn = {
@@ -194,6 +214,16 @@ const profileEn = {
   benefit_priority: 'Priority for receiving new ride requests',
   benefit_badge: 'Platinum badge on your profile',
   close: 'Close',
+  driver_profile_details: 'Driver Profile Details',
+  joined_date_label: 'Joined Date',
+  member_since: 'Member since July 2026',
+  verification_status: 'Verification Status',
+  badges_label: 'Earned Badges',
+  change_photo_request: 'Request photo change',
+  change_photo_security_alert: 'For security reasons, the profile photo cannot be changed directly. If your appearance changes or there is an issue with the photo, you can send a request to the platform administration, and the request will be reviewed before adopting a new photo.',
+  badge_verified_title: 'Verified Driver',
+  badge_rides_title: '1000+ Rides',
+  badge_excellent_title: 'Excellent Service',
 };
 
 const profileEs = {
@@ -256,6 +286,16 @@ const profileEs = {
   benefit_priority: 'Prioridad en la recepción de nuevos viajes',
   benefit_badge: 'Badge Platinum en tu perfil',
   close: 'Cerrar',
+  driver_profile_details: 'Detalles del perfil del conductor',
+  joined_date_label: 'Fecha de ingreso',
+  member_since: 'Miembro desde julio 2026',
+  verification_status: 'Estado de verificación',
+  badges_label: 'Insignias ganadas',
+  change_photo_request: 'Solicitar cambio de foto',
+  change_photo_security_alert: 'Por razones de seguridad, la foto de perfil no se puede cambiar directamente. Si tu apariencia cambia o hay algún problema con la foto, puedes enviar una solicitud a la administración de la plataforma, y la solicitud será revisada antes de adoptar una nueva foto.',
+  badge_verified_title: 'Conductor verificado',
+  badge_rides_title: '1000+ Viajes',
+  badge_excellent_title: 'Servicio Excelente',
 };
 
 const resources = {

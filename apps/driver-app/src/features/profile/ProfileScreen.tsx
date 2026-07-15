@@ -150,6 +150,7 @@ export const ProfileScreen = () => {
   // ── Modal visibility ──
   const [verifyModalVisible,   setVerifyModalVisible]   = useState(false);
   const [platinumModalVisible, setPlatinumModalVisible] = useState(false);
+  const [detailModalVisible,   setDetailModalVisible]   = useState(false);
 
   // ── Confetti particles ──
   const [confettiParticles, setConfettiParticles] = useState<
@@ -393,13 +394,13 @@ export const ProfileScreen = () => {
           {/* ── Hero Card ── */}
           <View style={[styles.heroCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
 
-            {/* Tappable Avatar */}
+            {/* Tappable Avatar opens Profil du chauffeur modal */}
             <TouchableOpacity
-              onPress={handleAvatarPress}
-              activeOpacity={0.8}
+              onPress={() => setDetailModalVisible(true)}
+              activeOpacity={0.85}
               style={styles.avatarWrap}
               accessibilityRole="button"
-              accessibilityLabel={t('change_photo')}
+              accessibilityLabel={t('driver_profile_details')}
             >
               <View style={[styles.avatarCircle, { backgroundColor: colors.surfaceAlt, borderColor: levelColor }]}>
                 {driverData.avatar ? (
@@ -408,9 +409,6 @@ export const ProfileScreen = () => {
                   <User size={40} color={levelColor} />
                 )}
               </View>
-              <View style={[styles.cameraOverlay, { backgroundColor: colors.primary }]}>
-                <Camera size={11} color="#fff" />
-              </View>
               {driverData.verified && (
                 <View style={[styles.verifiedBadge, { backgroundColor: colors.online, borderColor: colors.surface }]}>
                   <CheckCircle size={12} color="#fff" fill="#fff" />
@@ -418,11 +416,16 @@ export const ProfileScreen = () => {
               )}
             </TouchableOpacity>
 
-            <Text style={[styles.driverName, { color: colors.textPrimary }]} numberOfLines={1}>
-              {driverData.name}
-            </Text>
-
-            <Text style={[styles.driverId, { color: colors.textMuted }]}>{driverData.id}</Text>
+            <TouchableOpacity
+              onPress={() => setDetailModalVisible(true)}
+              activeOpacity={0.85}
+              style={{ alignItems: 'center', gap: 4 }}
+            >
+              <Text style={[styles.driverName, { color: colors.textPrimary }]} numberOfLines={1}>
+                {driverData.name}
+              </Text>
+              <Text style={[styles.driverId, { color: colors.textMuted }]}>{driverData.id}</Text>
+            </TouchableOpacity>
 
             {/* Stars row */}
             <View style={styles.ratingRow}>
@@ -747,6 +750,173 @@ export const ProfileScreen = () => {
             >
               <Text style={styles.verifyCloseBtnTxt}>{t('verify_modal_close')}</Text>
             </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Driver Details modal ── */}
+      <Modal
+        visible={detailModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setDetailModalVisible(false)}
+        >
+          <View style={[styles.detailSheet, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Close button */}
+            <TouchableOpacity
+              style={[styles.sheetCloseBtn, { backgroundColor: colors.surfaceAlt }]}
+              onPress={() => setDetailModalVisible(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+            >
+              <X size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            <ScrollView 
+              style={{ width: '100%' }}
+              contentContainerStyle={{ alignItems: 'center', paddingVertical: 12 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {/* Profile Title */}
+              <Text style={[styles.detailTitleText, { color: colors.textPrimary }]}>
+                {t('driver_profile_details')}
+              </Text>
+
+              {/* Large Avatar container */}
+              <View style={[styles.largeAvatarCircle, { backgroundColor: colors.surfaceAlt, borderColor: levelColor }]}>
+                {driverData.avatar ? (
+                  <Image source={{ uri: driverData.avatar }} style={styles.largeAvatarImage} />
+                ) : (
+                  <User size={50} color={levelColor} />
+                )}
+              </View>
+
+              {/* Name */}
+              <Text style={[styles.detailName, { color: colors.textPrimary }]}>
+                {driverData.name}
+              </Text>
+
+              {/* Driver ID */}
+              <Text style={[styles.detailId, { color: colors.textMuted }]}>
+                {driverData.id}
+              </Text>
+
+              {/* Stats Bar */}
+              <View style={[styles.detailStatsBar, { borderColor: colors.border }]}>
+                <View style={styles.detailStatItem}>
+                  <Star size={14} color="#F59E0B" fill="#F59E0B" />
+                  <Text style={[styles.detailStatVal, { color: colors.textPrimary }]}>
+                    {Number(driverData.rating || 5.0).toFixed(2)}
+                  </Text>
+                  <Text style={[styles.detailStatLabel, { color: colors.textMuted }]}>
+                    Rating
+                  </Text>
+                </View>
+                <View style={[styles.detailStatItem, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: colors.border }]}>
+                  <Car size={14} color={colors.primary} />
+                  <Text style={[styles.detailStatVal, { color: colors.textPrimary }]}>
+                    {statsData.completedRides || 0}
+                  </Text>
+                  <Text style={[styles.detailStatLabel, { color: colors.textMuted }]}>
+                    {t('trips')}
+                  </Text>
+                </View>
+                <View style={styles.detailStatItem}>
+                  <Award size={14} color={levelColor} />
+                  <Text style={[styles.detailStatVal, { color: levelColor }]}>
+                    {currentLevel}
+                  </Text>
+                  <Text style={[styles.detailStatLabel, { color: colors.textMuted }]}>
+                    {t('level')}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Verified & Joined Date details */}
+              <View style={[styles.detailListCard, { backgroundColor: colors.surfaceAlt }]}>
+                <View style={[styles.detailListRow, isRTL && styles.detailListRowRTL]}>
+                  <Text style={[styles.detailListLabel, { color: colors.textSecondary }]}>
+                    {t('verification_status')}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <CheckCircle size={14} color={driverData.verified ? colors.online : colors.warning} fill={driverData.verified ? colors.online : 'none'} />
+                    <Text style={[styles.detailListVal, { color: driverData.verified ? colors.online : colors.warning }]}>
+                      {driverData.verified ? t('verified_driver') : 'Pending'}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={[styles.detailListRow, isRTL && styles.detailListRowRTL, { borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border }]}>
+                  <Text style={[styles.detailListLabel, { color: colors.textSecondary }]}>
+                    {t('joined_date_label')}
+                  </Text>
+                  <Text style={[styles.detailListVal, { color: colors.textPrimary }]}>
+                    {t('member_since')}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Badges Section */}
+              <View style={styles.detailBadgesSection}>
+                <Text style={[styles.detailBadgesTitle, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('badges_label')}
+                </Text>
+                <View style={styles.detailBadgesGrid}>
+                  {/* Verified Badge */}
+                  {driverData.verified && (
+                    <View style={[styles.detailBadgeItem, { backgroundColor: colors.online + '0A', borderColor: colors.online + '33' }]}>
+                      <Text style={styles.detailBadgeIcon}>🏅</Text>
+                      <Text style={[styles.detailBadgeTxt, { color: colors.textPrimary }]}>
+                        {t('badge_verified_title')}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* High rides count badge */}
+                  {Number(statsData.completedRides || 0) >= 10 && (
+                    <View style={[styles.detailBadgeItem, { backgroundColor: colors.primary + '0A', borderColor: colors.primary + '33' }]}>
+                      <Text style={styles.detailBadgeIcon}>🏅</Text>
+                      <Text style={[styles.detailBadgeTxt, { color: colors.textPrimary }]}>
+                        {Number(statsData.completedRides || 0) >= 1000 ? t('badge_rides_title') : `${statsData.completedRides} ${t('trips')}`}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* High rating badge */}
+                  {Number(driverData.rating || 5.0) >= 4.8 && (
+                    <View style={[styles.detailBadgeItem, { backgroundColor: '#F59E0B0A', borderColor: '#F59E0B33' }]}>
+                      <Text style={styles.detailBadgeIcon}>🏅</Text>
+                      <Text style={[styles.detailBadgeTxt, { color: colors.textPrimary }]}>
+                        {t('badge_excellent_title')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Demander un changement de photo (Alert trigger) */}
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    t('change_photo_request'),
+                    t('change_photo_security_alert'),
+                    [{ text: t('verify_modal_close'), style: 'default' }]
+                  );
+                }}
+                style={[styles.photoRequestBtn, { borderColor: colors.primary + '66' }]}
+                activeOpacity={0.7}
+              >
+                <Camera size={14} color={colors.primary} />
+                <Text style={[styles.photoRequestTxt, { color: colors.primary }]}>
+                  {t('change_photo_request')}
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -1334,6 +1504,143 @@ const styles = StyleSheet.create({
   celebCloseBtnTxt: {
     color: '#fff',
     fontSize: 15,
+    fontWeight: '800',
+  },
+  detailSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 24,
+    alignItems: 'center',
+    width: '100%',
+    maxHeight: '85%',
+  },
+  detailTitleText: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  largeAvatarCircle: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  largeAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  detailName: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  detailId: {
+    fontSize: 13,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  detailStatsBar: {
+    flexDirection: 'row',
+    width: '100%',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  detailStatItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  detailStatVal: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  detailStatLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailListCard: {
+    width: '100%',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    marginBottom: 20,
+  },
+  detailListRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  detailListRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  detailListLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  detailListVal: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  detailBadgesSection: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  detailBadgesTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  detailBadgesGrid: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  detailBadgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  detailBadgeIcon: {
+    fontSize: 16,
+  },
+  detailBadgeTxt: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  photoRequestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  photoRequestTxt: {
+    fontSize: 14,
     fontWeight: '800',
   },
 });
