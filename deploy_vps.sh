@@ -126,13 +126,13 @@ const { PrismaClient } = require('./apps/backend-api/node_modules/.prisma/client
 const prisma = new PrismaClient();
 async function seed() {
   const configs = [
-    { key: 'commission_rate',          value: { rate: 0.08 } },
+    { key: 'commission_rate',          value: { rate: 0.084 } },
     { key: 'search_radius_km',          value: 5 },
     { key: 'premier_priority_duration', value: 3 },
     { key: 'premier_weekly_target',     value: 30 },
-    { key: 'silver_commission',         value: 15 },
-    { key: 'gold_commission',           value: 10 },
-    { key: 'premier_commission',        value: 8 },
+    { key: 'silver_commission',         value: 8.4 },
+    { key: 'gold_commission',           value: 8.4 },
+    { key: 'premier_commission',        value: 8.4 },
     { key: 'priority_enabled',          value: true }
   ];
 
