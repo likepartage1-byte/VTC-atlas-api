@@ -77,6 +77,7 @@ export const PersonalInfoScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Camera reference & device selector
   const cameraRef = useRef<any>(null);
@@ -93,6 +94,8 @@ export const PersonalInfoScreen = () => {
 
       const profile = profileRes.data;
       const verifiedData = verificationRes.data;
+
+      setIsVerified(profile.driver?.verified || false);
 
       if (profile.personalInfo) {
         setFirstName(profile.personalInfo.firstName || '');
@@ -154,6 +157,17 @@ export const PersonalInfoScreen = () => {
 
   // Trigger Camera viewport
   const handleSnapPhotoPress = async () => {
+    const isNewUser = !firstName.trim() || !lastName.trim() || 
+      (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user');
+    
+    if (isNewUser) {
+      Alert.alert(
+        t('name_required_title', 'Configuration Requise'),
+        t('name_required_message', 'Veuillez saisir votre vrai nom et prénom, puis enregistrer les modifications en bas avant de prendre une photo selfie.')
+      );
+      return;
+    }
+
     const hasPermission = await checkAndRequestCameraPermission();
     if (!hasPermission) {
       Alert.alert(t('error'), t('camera_permission_required', 'Please grant camera permission to take a photo.'));
@@ -226,16 +240,36 @@ export const PersonalInfoScreen = () => {
       return;
     }
 
+    if (!isVerified) {
+      if (!firstName.trim()) {
+        Alert.alert(t('error'), t('first_name_required', 'Veuillez saisir votre prénom.'));
+        return;
+      }
+      if (!lastName.trim()) {
+        Alert.alert(t('error'), t('last_name_required', 'Veuillez saisir votre nom de famille.'));
+        return;
+      }
+      if (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user') {
+        Alert.alert(t('error'), t('name_cannot_be_default', 'Veuillez saisir un vrai prénom et nom de famille.'));
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         email: email.trim(),
         city,
       };
 
+      if (!isVerified) {
+        payload.firstName = firstName.trim();
+        payload.lastName = lastName.trim();
+      }
+
       await api.patch('/driver/profile', payload);
-      Alert.alert(t('success'), t('update_success'));
-      navigation.goBack();
+      Alert.alert(t('success'), t('update_success', 'Profil mis à jour avec succès!'));
+      await fetchData();
     } catch (err: any) {
       console.error('[Personal Info] Save profile error:', err);
       Alert.alert(t('error'), err.response?.data?.message || t('update_error'));
@@ -328,18 +362,38 @@ export const PersonalInfoScreen = () => {
 
           <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {/* Nom */}
-            <View style={[styles.fieldRow, { borderColor: colors.border }]}>
-              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('first_name', 'Nom')}</Text>
-                <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{firstName || 'Khalid'}</Text>
+                {isVerified ? (
+                  <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{firstName || 'Khalid'}</Text>
+                ) : (
+                  <TextInput
+                    style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
+                    value={firstName === 'New' ? '' : firstName}
+                    onChangeText={setFirstName}
+                    placeholder={t('first_name_placeholder', 'Saisir le prénom')}
+                    placeholderTextColor={colors.textMuted}
+                  />
+                )}
               </View>
             </View>
 
             {/* Nom de famille */}
-            <View style={[styles.fieldRow, { borderColor: colors.border }]}>
-              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('last_name', 'Nom de famille')}</Text>
-                <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{lastName || 'Bouchater'}</Text>
+                {isVerified ? (
+                  <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{lastName || 'Bouchater'}</Text>
+                ) : (
+                  <TextInput
+                    style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
+                    value={lastName === 'User' ? '' : lastName}
+                    onChangeText={setLastName}
+                    placeholder={t('last_name_placeholder', 'Saisir le nom de famille')}
+                    placeholderTextColor={colors.textMuted}
+                  />
+                )}
               </View>
             </View>
 
