@@ -200,9 +200,9 @@ export const ProfileScreen = () => {
   const challengeData = profile?.weeklyChallenge || {};
   const benefitsData  = profile?.benefits || {};
 
-  const currentLevel = (challengeData.currentLevel || 'GOLD').toUpperCase();
+  const currentLevel = (challengeData.currentLevel || 'SILVER').toUpperCase();
   const isPlatinum   = challengeData.isPlatinum || false;
-  const levelColor   = LEVEL_COLORS[currentLevel] || LEVEL_COLORS.GOLD;
+  const levelColor   = LEVEL_COLORS[currentLevel] || LEVEL_COLORS.SILVER;
 
   const weekEndDate = useMemo(() => {
     if (!challengeData.weekEnd) return '';
