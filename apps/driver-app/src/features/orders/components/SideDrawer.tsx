@@ -71,7 +71,6 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
   }));
 
   const MENU_ITEMS = [
-    { key: 'profile',       label: t('profile'),       icon: User },
     { key: 'wallet',        label: t('wallet'),        icon: Wallet },
     { key: 'orders',        label: t('orders'),        icon: Package },
     { key: 'notifications', label: t('notifications'), icon: Bell },
@@ -150,23 +149,33 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
           showsVerticalScrollIndicator={false}
         >
           {/* ── Profile Header ─────────────────────────────────────── */}
-          <View style={[
-            styles.profileHeader,
-            isRTL && styles.profileHeaderRTL,
-            { borderBottomColor: colors.surfaceAlt },
-          ]}>
-            <View style={[styles.avatar, { backgroundColor: colors.surfaceAlt }]}>
-              <User size={28} color={colors.textSecondary} />
+          <TouchableOpacity
+            style={[
+              styles.profileHeader,
+              isRTL && styles.profileHeaderRTL,
+              { borderBottomColor: colors.surfaceAlt },
+            ]}
+            activeOpacity={0.7}
+            onPress={() => {
+              onClose();
+              navigation.navigate('Profile');
+            }}
+          >
+            <View style={[styles.profileHeaderLeft, isRTL && styles.profileHeaderLeftRTL]}>
+              <View style={[styles.avatar, { backgroundColor: colors.surfaceAlt }]}>
+                <User size={28} color={colors.textSecondary} />
+              </View>
+              <View style={[styles.profileInfo, isRTL && styles.profileInfoRTL]}>
+                <Text style={[styles.driverName, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  Khalid
+                </Text>
+                <Text style={[styles.rating, { textAlign: isRTL ? 'right' : 'left' }]}>
+                  ⭐ 4.96
+                </Text>
+              </View>
             </View>
-            <View style={[styles.profileInfo, isRTL && styles.profileInfoRTL]}>
-              <Text style={[styles.driverName, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
-                Khalid
-              </Text>
-              <Text style={[styles.rating, { textAlign: isRTL ? 'right' : 'left' }]}>
-                ⭐ 4.96
-              </Text>
-            </View>
-          </View>
+            <Chevron size={18} color={colors.textMuted} />
+          </TouchableOpacity>
 
           {/* ── Menu Items ──────────────────────────────────────────── */}
           <View style={styles.menuList}>
@@ -379,12 +388,20 @@ const styles = StyleSheet.create({
   profileHeader: {
     flexDirection:  'row',
     alignItems:     'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom:  24,
     borderBottomWidth: 1,
     marginBottom:   18,
   },
   profileHeaderRTL: {
+    flexDirection: 'row-reverse',
+  },
+  profileHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileHeaderLeftRTL: {
     flexDirection: 'row-reverse',
   },
   avatar: {
