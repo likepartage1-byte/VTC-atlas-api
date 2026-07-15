@@ -62,4 +62,18 @@ export class AdminDriverController {
     if (!body.status) throw new BadRequestException('Status is required');
     return this.verificationService.reviewProfileUpdate(driverId, body.status, body.reason);
   }
+
+  @Get('vehicle-updates/pending')
+  async getPendingVehicleUpdates() {
+    return this.verificationService.listPendingVehicleUpdates();
+  }
+
+  @Post(':driverId/vehicle-update/review')
+  async reviewVehicleUpdate(
+    @Param('driverId') driverId: string,
+    @Body() body: { status: 'APPROVED' | 'REJECTED'; reason?: string }
+  ) {
+    if (!body.status) throw new BadRequestException('Status is required');
+    return this.verificationService.reviewVehicleUpdate(driverId, body.status, body.reason);
+  }
 }

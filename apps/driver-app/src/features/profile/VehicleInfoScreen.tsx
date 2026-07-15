@@ -1,0 +1,1630 @@
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  Dimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
+import {
+  Camera as CameraIcon,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  Info,
+  Lock,
+  Check,
+  X,
+  RefreshCw,
+  Car,
+  ChevronDown,
+  Bike,
+} from 'lucide-react-native';
+import { useTheme } from '../../theme/ThemeContext';
+import { api } from '../../api/axios.instance';
+
+// Native Vision Camera and permission imports
+import { Camera, useCameraDevice } from 'react-native-vision-camera';
+import { check, request, PERMISSIONS, RESULTS } from 'react-native-permissions';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+const FUEL_TYPES = ['Diesel', 'Petrol', 'Hybrid', 'Electric'];
+const TRANSMISSIONS = ['Manual', 'Automatic'];
+
+export const VehicleInfoScreen = () => {
+  const navigation = useNavigation();
+  const { t, i18n } = useTranslation('profile');
+  const { colors } = useTheme();
+  const isRTL = i18n.language === 'ar';
+  const RowChevron = isRTL ? ChevronLeft : ChevronRight;
+
+  // --- View State ---
+  // If the vehicle type is not selected yet, we show the type selection cards.
+  const [viewState, setViewState] = useState<'select' | 'form'>('select');
+  const [selectedTypeChoice, setSelectedTypeChoice] = useState<'CAR' | 'MOTORCYCLE'>('CAR');
+
+  // --- API State ---
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+  // --- Form Fields State ---
+  const [vehicleType, setVehicleType] = useState<'CAR' | 'MOTORCYCLE' | null>(null);
+  const [manufacturer, setManufacturer] = useState('');
+  const [brand, setBrand] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState('');
+  const [color, setColor] = useState('');
+  const [fuelType, setFuelType] = useState('Diesel');
+  const [transmission, setTransmission] = useState('Manual');
+  const [seats, setSeats] = useState('4');
+  const [plateNumber, setPlateNumber] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [vin, setVin] = useState('');
+
+  // --- Vehicle Photos State ---
+  const [photos, setPhotos] = useState<{
+    front: string | null;
+    back: string | null;
+    right: string | null;
+    left: string | null;
+    interior: string | null;
+    plate: string | null;
+  }>({
+    front: null,
+    back: null,
+    right: null,
+    left: null,
+    interior: null,
+    plate: null,
+  });
+
+  // --- Modal Selectors ---
+  const [showFuelModal, setShowFuelModal] = useState(false);
+  const [showTransModal, setShowTransModal] = useState(false);
+
+  // --- Camera Overlay State ---
+  const [showCameraView, setShowCameraView] = useState(false);
+  const [cameraType, setCameraType] = useState<'front' | 'back'>('back');
+  const [currentTargetSlot, setCurrentTargetSlot] = useState<keyof typeof photos | null>(null);
+  const [tempCaptureUri, setTempCaptureUri] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const cameraRef = useRef<Camera>(null);
+  const device = useCameraDevice(cameraType);
+
+  // --- Fetch vehicle profile ---
+  const fetchVehicleProfile = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/driver/profile/vehicle');
+      const data = response.data;
+
+      // Extract current vehicle details
+      const vehicle = data.vehicleInfo || {};
+      const activeType = vehicle.type || null;
+
+      setVehicleType(activeType);
+      setManufacturer(vehicle.manufacturer || '');
+      setBrand(vehicle.brand || '');
+      setModel(vehicle.model || '');
+      setYear(vehicle.year ? String(vehicle.year) : '');
+      setColor(vehicle.color || '');
+      setFuelType(vehicle.fuelType || 'Diesel');
+      setTransmission(vehicle.transmission || 'Manual');
+      setSeats(vehicle.seats ? String(vehicle.seats) : '4');
+      setPlateNumber(vehicle.plateNumber || '');
+      setRegistrationNumber(vehicle.registrationNumber || '');
+      setVin(vehicle.vin || '');
+
+      setPhotos({
+        front: vehicle.photos?.front || null,
+        back: vehicle.photos?.back || null,
+        right: vehicle.photos?.right || null,
+        left: vehicle.photos?.left || null,
+        interior: vehicle.photos?.interior || null,
+        plate: vehicle.photos?.plate || null,
+      });
+
+      // Handle pending / rejected states
+      if (data.pendingVehicleUpdate) {
+        setHasPendingRequest(true);
+        setRejectionReason(null);
+
+        // Hydrate inputs with proposed values so driver sees what was submitted
+        const proposed = data.pendingVehicleUpdate.fields || {};
+        const proposedPhotos = data.pendingVehicleUpdate.photos || {};
+        const proposedType = proposed.type || activeType || 'CAR';
+
+        setVehicleType(proposedType);
+        setSelectedTypeChoice(proposedType);
+        if (proposed.manufacturer) setManufacturer(proposed.manufacturer);
+        if (proposed.brand) setBrand(proposed.brand);
+        if (proposed.model) setModel(proposed.model);
+        if (proposed.year) setYear(String(proposed.year));
+        if (proposed.color) setColor(proposed.color);
+        if (proposed.fuelType) setFuelType(proposed.fuelType);
+        if (proposed.transmission) setTransmission(proposed.transmission);
+        if (proposed.seats) setSeats(String(proposed.seats));
+        if (proposed.plateNumber) setPlateNumber(proposed.plateNumber);
+        if (proposed.registrationNumber) setRegistrationNumber(proposed.registrationNumber);
+
+        setPhotos((prev) => ({
+          ...prev,
+          ...proposedPhotos,
+        }));
+
+        setViewState('form');
+      } else if (data.rejectedVehicleUpdate) {
+        setHasPendingRequest(false);
+        setRejectionReason(data.rejectedVehicleUpdate.rejectionReason || 'Rejected by admin');
+        if (activeType) {
+          setSelectedTypeChoice(activeType);
+          setViewState('form');
+        } else {
+          setViewState('select');
+        }
+      } else {
+        setHasPendingRequest(false);
+        setRejectionReason(null);
+        if (activeType) {
+          setSelectedTypeChoice(activeType);
+          setViewState('form');
+        } else {
+          setViewState('select');
+        }
+      }
+    } catch (err: any) {
+      console.error('[Vehicle Info] Error loading details:', err);
+      Alert.alert(t('error', 'Erreur'), t('update_error', 'Impossible de charger les données du véhicule.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicleProfile();
+  }, []);
+
+  // --- Camera Helpers & Permissions ---
+  const checkAndRequestCameraPermission = async () => {
+    const permission =
+      Platform.OS === 'android'
+        ? PERMISSIONS.ANDROID.CAMERA
+        : PERMISSIONS.IOS.CAMERA;
+    const status = await check(permission);
+
+    if (status === RESULTS.GRANTED) {
+      return true;
+    }
+
+    const requestStatus = await request(permission);
+    return requestStatus === RESULTS.GRANTED;
+  };
+
+  const triggerCameraForSlot = async (slot: keyof typeof photos) => {
+    if (hasPendingRequest) {
+      Alert.alert(
+        t('warning', 'Attention'),
+        t(
+          'vehicle_already_pending_warning',
+          'Vous avez déjà une demande en cours. Veuillez patienter pour la décision de l\'administration.'
+        )
+      );
+      return;
+    }
+
+    const hasPermission = await checkAndRequestCameraPermission();
+    if (!hasPermission) {
+      Alert.alert(
+        t('error', 'Erreur'),
+        t('camera_permission_required', 'Veuillez autoriser l’accès à la caméra pour prendre votre photo.')
+      );
+      return;
+    }
+
+    setCurrentTargetSlot(slot);
+    setCameraType('back'); // Vehicle photos always shot using rear lens
+    setTempCaptureUri(null);
+    setShowCameraView(true);
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!cameraRef.current) return;
+    try {
+      const photoFile = await cameraRef.current.takePhoto({
+        flash: 'off',
+      });
+      setTempCaptureUri(photoFile.path);
+    } catch (err: any) {
+      console.error('[Vehicle Info] Capture error:', err);
+      Alert.alert(t('error'), 'Failed to capture photo.');
+    }
+  };
+
+  const handleConfirmCapturedPhoto = async () => {
+    if (!tempCaptureUri || !currentTargetSlot) return;
+    setUploading(true);
+    try {
+      const localPath = tempCaptureUri;
+
+      // Compress photo for upload
+      const resized = await ImageResizer.createResizedImage(
+        localPath,
+        800,
+        600,
+        'JPEG',
+        80,
+        0,
+        undefined,
+        false,
+        { mode: 'contain', onlyScaleDown: true }
+      );
+
+      const formData = new FormData();
+      formData.append('file', {
+        uri: Platform.OS === 'android' ? resized.uri : resized.uri.replace('file://', ''),
+        name: `vehicle_${currentTargetSlot}_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      } as any);
+
+      // Upload file directly to temp media/photos endpoint
+      const response = await api.post('/driver/profile/vehicle/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const uploadedUrl = response.data.url;
+
+      // Set photo in local state
+      setPhotos((prev) => ({
+        ...prev,
+        [currentTargetSlot]: uploadedUrl,
+      }));
+
+      setTempCaptureUri(null);
+      setShowCameraView(false);
+      setCurrentTargetSlot(null);
+    } catch (err: any) {
+      console.error('[Vehicle Info] Photo upload error:', err);
+      const errMsg = err.response?.data?.message || err.message || 'File upload failed.';
+      Alert.alert(t('error'), errMsg);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // --- Save vehicle modifications ---
+  const handleSaveChanges = async () => {
+    if (hasPendingRequest) {
+      Alert.alert(
+        t('warning'),
+        t('vehicle_already_pending_warning', 'Vous avez déjà une modification en cours.')
+      );
+      return;
+    }
+
+    // Required fields check
+    if (
+      !manufacturer.trim() ||
+      !brand.trim() ||
+      !model.trim() ||
+      !year.trim() ||
+      !color.trim() ||
+      !plateNumber.trim() ||
+      !registrationNumber.trim()
+    ) {
+      Alert.alert(t('validation_error', 'Erreur de validation'), t('mandatory_field_error'));
+      return;
+    }
+
+    // Year validation
+    const yearVal = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+    if (isNaN(yearVal) || yearVal < 1980 || yearVal > currentYear + 1) {
+      Alert.alert(t('validation_error'), t('invalid_year_error'));
+      return;
+    }
+
+    // Seats validation (CAR only)
+    if (vehicleType === 'CAR') {
+      const seatsVal = parseInt(seats, 10);
+      if (isNaN(seatsVal) || seatsVal < 1 || seatsVal > 20) {
+        Alert.alert(t('validation_error'), t('invalid_seats_error'));
+        return;
+      }
+    }
+
+    // Plate number basic length validation
+    if (plateNumber.trim().length < 3) {
+      Alert.alert(t('validation_error'), t('invalid_plate_error'));
+      return;
+    }
+
+    // Photo slot checks based on type
+    const requiredCarPhotos = ['front', 'back', 'right', 'left', 'interior', 'plate'];
+    const requiredMotoPhotos = ['front', 'back', 'right', 'left', 'plate'];
+    const checklist = vehicleType === 'CAR' ? requiredCarPhotos : requiredMotoPhotos;
+
+    for (const key of checklist) {
+      if (!(photos as any)[key]) {
+        Alert.alert(t('validation_error'), t('mandatory_field_error', 'Veuillez remplir toutes les photos de la voiture.'));
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        type: vehicleType,
+        manufacturer,
+        brand,
+        model,
+        year: yearVal,
+        color,
+        fuelType: vehicleType === 'CAR' ? fuelType : undefined,
+        transmission: vehicleType === 'CAR' ? transmission : undefined,
+        seats: vehicleType === 'CAR' ? parseInt(seats, 10) : undefined,
+        plateNumber: plateNumber.trim(),
+        registrationNumber: registrationNumber.trim(),
+        photos,
+      };
+
+      await api.patch('/driver/profile/vehicle', payload);
+      setHasPendingRequest(true);
+      setRejectionReason(null);
+
+      Alert.alert(
+        t('success', 'Succès'),
+        t('profile_update_submitted', 'Votre demande a été soumise avec succès pour révision.')
+      );
+    } catch (err: any) {
+      console.error('[Vehicle Info] Save error:', err);
+      const errMsg = err.response?.data?.message || err.message || 'Operation failed.';
+      Alert.alert(t('error'), errMsg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Change type warning prompt
+  const handleChangeVehicleTypePress = () => {
+    if (hasPendingRequest) {
+      Alert.alert(
+        t('warning'),
+        t('vehicle_already_pending_warning', 'Vous avez déjà une modification en cours.')
+      );
+      return;
+    }
+
+    Alert.alert(
+      t('confirm_change_title', 'Changer le type de véhicule'),
+      t(
+        'confirm_change_type_message',
+        'Changer de type de véhicule soumettra une demande de révision et pourrait demander de nouvelles photos.'
+      ),
+      [
+        { text: t('cancel_btn', 'Annuler'), style: 'cancel' },
+        {
+          text: t('continue_btn', 'Continuer'),
+          onPress: () => {
+            setViewState('select');
+          },
+        },
+      ]
+    );
+  };
+
+  // Get guide instructions depending on targeting slot
+  const getCameraInstructions = () => {
+    if (!currentTargetSlot) return { title: '', sub: '' };
+    switch (currentTargetSlot) {
+      case 'front':
+        return {
+          title: t('guide_front', 'Placez l\'avant du véhicule au centre du cadre'),
+          sub: t('face_guide_sub_instruction', 'Assurez-vous que l\'image est nette et lumineuse.'),
+        };
+      case 'back':
+        return {
+          title: t('guide_back', 'Placez l\'arrière du véhicule au centre du cadre'),
+          sub: t('face_guide_sub_instruction', 'Assurez-vous que l\'image est nette et lumineuse.'),
+        };
+      case 'right':
+        return {
+          title: t('guide_right', 'Placez le flanc droit du véhicule dans le cadre'),
+          sub: t('face_guide_sub_instruction', 'Assurez-vous que l\'image est nette et lumineuse.'),
+        };
+      case 'left':
+        return {
+          title: t('guide_left', 'Placez le flanc gauche du véhicule dans le cadre'),
+          sub: t('face_guide_sub_instruction', 'Assurez-source que l\'image est nette.'),
+        };
+      case 'interior':
+        return {
+          title: t('guide_interior', 'Prenez une vue claire de la cabine intérieure'),
+          sub: t('face_guide_sub_instruction', 'Assurez-vous que l\'image est nette et lumineuse.'),
+        };
+      case 'plate':
+        return {
+          title: t('guide_plate', 'Cadrez la plaque d\'immatriculation horizontalement'),
+          sub: t('face_guide_sub_instruction', 'La plaque doit être lisible et centrée.'),
+        };
+      default:
+        return { title: '', sub: '' };
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.loadingRoot, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // --- RENDER ViewState: Select vehicle type cards ---
+  if (viewState === 'select') {
+    return (
+      <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
+        {/* Header Bar */}
+        <View style={[styles.headerBar, { borderBottomColor: colors.border }, isRTL && styles.headerBarRTL]}>
+          <TouchableOpacity
+            style={[styles.headerBackBtn, { backgroundColor: colors.surfaceAlt }]}
+            onPress={() => {
+              if (vehicleType) {
+                setViewState('form');
+              } else {
+                navigation.goBack();
+              }
+            }}
+          >
+            {isRTL ? <ChevronRight size={20} color={colors.textPrimary} /> : <ChevronLeft size={20} color={colors.textPrimary} />}
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            {t('vehicle_type_title', 'Selectionner le type de véhicule')}
+          </Text>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={styles.selectScrollBody} showsVerticalScrollIndicator={false}>
+          <Text style={[styles.selectMainTitle, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('vehicle_type_title', 'Sélectionner le type de véhicule')}
+          </Text>
+          <Text style={[styles.selectSubText, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('vehicle_type_sub', 'Choisissez le type de véhicule que vous utiliserez pour travailler sur Yalla VTC.')}
+          </Text>
+
+          {/* Cards Selection container */}
+          <View style={styles.cardsContainer}>
+            {/* CAR Card */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.choiceCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: selectedTypeChoice === 'CAR' ? colors.primary : colors.border,
+                  borderWidth: selectedTypeChoice === 'CAR' ? 2.5 : 1,
+                },
+                isRTL && styles.choiceCardRTL,
+              ]}
+              onPress={() => setSelectedTypeChoice('CAR')}
+            >
+              <View style={[styles.cardGlowBadge, { backgroundColor: selectedTypeChoice === 'CAR' ? colors.primary + '15' : 'transparent' }]}>
+                <Car size={32} color={selectedTypeChoice === 'CAR' ? colors.primary : colors.textMuted} />
+              </View>
+
+              <View style={[styles.cardTextContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.cardLabel, { color: colors.textPrimary }]}>
+                  {t('type_car_label', 'Voiture')}
+                </Text>
+                <Text style={[styles.cardDesc, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('type_car_desc', 'Pour transporter des passagers en voiture.')}
+                </Text>
+              </View>
+
+              <View style={styles.cardIndicatorWrapper}>
+                {selectedTypeChoice === 'CAR' ? (
+                  <View style={[styles.selectedCheckCircle, { backgroundColor: colors.primary }]}>
+                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                ) : (
+                  <RowChevron size={18} color={colors.textMuted} />
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* MOTORCYCLE Card */}
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={[
+                styles.choiceCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: selectedTypeChoice === 'MOTORCYCLE' ? colors.primary : colors.border,
+                  borderWidth: selectedTypeChoice === 'MOTORCYCLE' ? 2.5 : 1,
+                },
+                isRTL && styles.choiceCardRTL,
+              ]}
+              onPress={() => setSelectedTypeChoice('MOTORCYCLE')}
+            >
+              <View style={[styles.cardGlowBadge, { backgroundColor: selectedTypeChoice === 'MOTORCYCLE' ? colors.primary + '15' : 'transparent' }]}>
+                <Bike size={32} color={selectedTypeChoice === 'MOTORCYCLE' ? colors.primary : colors.textMuted} />
+              </View>
+
+              <View style={[styles.cardTextContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.cardLabel, { color: colors.textPrimary }]}>
+                  {t('type_motorcycle_label', 'Druga / Scooter')}
+                </Text>
+                <Text style={[styles.cardDesc, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('type_motorcycle_desc', 'Pour la livraison ou autre service disponible.')}
+                </Text>
+              </View>
+
+              <View style={styles.cardIndicatorWrapper}>
+                {selectedTypeChoice === 'MOTORCYCLE' ? (
+                  <View style={[styles.selectedCheckCircle, { backgroundColor: colors.primary }]}>
+                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                ) : (
+                  <RowChevron size={18} color={colors.textMuted} />
+                )}
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Footer continue action */}
+        <View style={[styles.footerContainer, { backgroundColor: colors.bg }]}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.btnSave, { backgroundColor: colors.primary }]}
+            onPress={() => {
+              setVehicleType(selectedTypeChoice);
+              setViewState('form');
+            }}
+          >
+            <Text style={styles.btnSaveText}>{t('continue_btn', 'Continuer')}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // --- RENDER ViewState: Form view ---
+  const cameraGuide = getCameraInstructions();
+
+  return (
+    <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
+      {/* Header Bar */}
+      <View style={[styles.headerBar, { borderBottomColor: colors.border }, isRTL && styles.headerBarRTL]}>
+        <TouchableOpacity
+          style={[styles.headerBackBtn, { backgroundColor: colors.surfaceAlt }]}
+          onPress={() => {
+            // If they just navigated from selecting type and have no saved type in DB, go back to select
+            if (!dataPendingCheckHasSavedType()) {
+              setViewState('select');
+            } else {
+              navigation.goBack();
+            }
+          }}
+        >
+          {isRTL ? <ChevronRight size={20} color={colors.textPrimary} /> : <ChevronLeft size={20} color={colors.textPrimary} />}
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+          {vehicleType === 'CAR' ? t('vehicle_info', 'Informations Voiture') : t('motorcycle_info', 'Informations Moto')}
+        </Text>
+        <View style={{ width: 36 }} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollBody}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Rejection Notice Banner */}
+          {rejectionReason ? (
+            <View style={[styles.infoCard, { backgroundColor: colors.error + '12', borderColor: colors.error + '30', marginTop: 0, marginBottom: 15 }, isRTL && styles.infoCardRTL]}>
+              <X size={18} color={colors.error} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+              <Text style={[styles.infoCardText, { color: colors.error, fontWeight: '500' }]}>
+                {t('vehicle_update_rejected_notice', 'Votre demande de modification du véhicule a été rejetée : ')}
+                {rejectionReason}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Pending Notice Banner */}
+          {hasPendingRequest ? (
+            <View style={[styles.infoCard, { backgroundColor: colors.warning + '12', borderColor: colors.warning + '30', marginTop: 0, marginBottom: 15 }, isRTL && styles.infoCardRTL]}>
+              <Info size={18} color={colors.warning} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+              <Text style={[styles.infoCardText, { color: colors.warning, fontWeight: '500' }]}>
+                {t('vehicle_update_pending_notice', 'Les détails du véhicule sont en cours de validation.')}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* General Policy Notice */}
+          <View style={[styles.infoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, marginTop: 0, marginBottom: 15 }, isRTL && styles.infoCardRTL]}>
+            <Info size={18} color={colors.textSecondary} style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }} />
+            <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
+              {t('profile_edit_policy_notice', 'Toute modification de votre véhicule ou de ses photos est soumise à validation avant d\'être active.')}
+            </Text>
+          </View>
+
+          {/* Section: Text Fields details */}
+          <View style={styles.sectionHeader}>
+            <Car size={14} color={colors.textMuted} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              {t('vehicle_info', 'Informations du véhicule')}
+            </Text>
+          </View>
+
+          <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {/* Manufacturer */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('manufacturer_label', 'Constructeur')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={manufacturer}
+                  onChangeText={setManufacturer}
+                  placeholder="ex. Dacia"
+                  placeholderTextColor={colors.textMuted}
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Brand */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('brand_label', 'Marque')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={brand}
+                  onChangeText={setBrand}
+                  placeholder="ex. Logan"
+                  placeholderTextColor={colors.textMuted}
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Model */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('model_label', 'Modèle')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={model}
+                  onChangeText={setModel}
+                  placeholder="ex. 1.5 dCi"
+                  placeholderTextColor={colors.textMuted}
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Year of manufacture */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('year_label', 'Année de fabrication')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={year}
+                  onChangeText={setYear}
+                  placeholder="ex. 2021"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numeric"
+                  maxLength={4}
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Color */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('color_label', 'Couleur du véhicule')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={color}
+                  onChangeText={setColor}
+                  placeholder="ex. Blanc"
+                  placeholderTextColor={colors.textMuted}
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* CAR Only variables */}
+            {vehicleType === 'CAR' && (
+              <>
+                {/* Fuel Type Modal Spinner */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}
+                  onPress={() => !hasPendingRequest && setShowFuelModal(true)}
+                >
+                  <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('fuel_type_label', 'Type de carburant')}</Text>
+                    <Text style={[styles.fieldText, { color: colors.textPrimary }]}>{fuelType}</Text>
+                  </View>
+                  <ChevronDown size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                {/* Transmission Modal Spinner */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}
+                  onPress={() => !hasPendingRequest && setShowTransModal(true)}
+                >
+                  <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('transmission_label', 'Type de transmission')}</Text>
+                    <Text style={[styles.fieldText, { color: colors.textPrimary }]}>{transmission}</Text>
+                  </View>
+                  <ChevronDown size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+
+                {/* Seats count */}
+                <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+                  <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                    <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('seats_label', 'Nombre de places')}</Text>
+                    <TextInput
+                      style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                      value={seats}
+                      onChangeText={setSeats}
+                      placeholder="ex. 4"
+                      placeholderTextColor={colors.textMuted}
+                      keyboardType="numeric"
+                      maxLength={2}
+                      editable={!hasPendingRequest}
+                    />
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* Plate Number */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('plate_number_label', 'Plaque d\'immatriculation')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={plateNumber}
+                  onChangeText={setPlateNumber}
+                  placeholder="ex. 12345-A-66"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="characters"
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Registration Number */}
+            <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('registration_number_label', 'Numéro d\'enregistrement')}</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%' }]}
+                  value={registrationNumber}
+                  onChangeText={setRegistrationNumber}
+                  placeholder="ex. REG-7890-XYZ"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="characters"
+                  editable={!hasPendingRequest}
+                />
+              </View>
+            </View>
+
+            {/* Read-Only VIN Box */}
+            <View style={[styles.fieldRow, { borderBottomWidth: 0 }, isRTL && styles.fieldRowRTL]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('vin_label', 'Numéro VIN (Châssis)')}</Text>
+                  <Lock size={10} color={colors.textMuted} style={{ marginLeft: 4, marginBottom: 1 }} />
+                </View>
+                <Text style={[styles.fieldTextDisabled, { color: colors.textMuted, fontSize: 13.5 }]}>
+                  {vin || 'vf3789b1238910...'}
+                </Text>
+              </View>
+            </View>
+          </View>
+          <Text style={[styles.vinAlert, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
+            {t('vin_readonly_notice', 'Le numéro VIN ne peut pas être modifié pour des raisons de sécurité.')}
+          </Text>
+
+          {/* Change vehicle type option trigger */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.changeTypeOptionRow, { borderColor: colors.border, backgroundColor: colors.surface }]}
+            onPress={handleChangeVehicleTypePress}
+            disabled={hasPendingRequest}
+          >
+            <Text style={[styles.changeTypeOptionText, { color: colors.primary }]}>
+              {t('change_type_btn', 'Changer de type de véhicule')}
+            </Text>
+            <RowChevron size={16} color={colors.primary} />
+          </TouchableOpacity>
+
+          {/* Section: Photos thumbnails */}
+          <View style={styles.sectionHeader}>
+            <CameraIcon size={14} color={colors.textMuted} style={isRTL ? { marginLeft: 6 } : { marginRight: 6 }} />
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>
+              {t('vehicle_photos_section', 'Photos du véhicule')}
+            </Text>
+          </View>
+
+          <View style={styles.photoGrid}>
+            {/* Front Photo */}
+            <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_front', 'Devant')}</Text>
+              <View style={styles.photoStubWrapper}>
+                {photos.front ? (
+                  <Image source={{ uri: photos.front }} style={styles.photoThumbnail} />
+                ) : (
+                  <Car size={36} color={colors.border} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => triggerCameraForSlot('front')}
+                disabled={hasPendingRequest}
+              >
+                <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Back Photo */}
+            <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_back', 'Derrière')}</Text>
+              <View style={styles.photoStubWrapper}>
+                {photos.back ? (
+                  <Image source={{ uri: photos.back }} style={styles.photoThumbnail} />
+                ) : (
+                  <Car size={36} color={colors.border} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => triggerCameraForSlot('back')}
+                disabled={hasPendingRequest}
+              >
+                <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Right Photo */}
+            <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_right', 'Flanc Droit')}</Text>
+              <View style={styles.photoStubWrapper}>
+                {photos.right ? (
+                  <Image source={{ uri: photos.right }} style={styles.photoThumbnail} />
+                ) : (
+                  <Car size={36} color={colors.border} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => triggerCameraForSlot('right')}
+                disabled={hasPendingRequest}
+              >
+                <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Left Photo */}
+            <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_left', 'Flanc Gauche')}</Text>
+              <View style={styles.photoStubWrapper}>
+                {photos.left ? (
+                  <Image source={{ uri: photos.left }} style={styles.photoThumbnail} />
+                ) : (
+                  <Car size={36} color={colors.border} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => triggerCameraForSlot('left')}
+                disabled={hasPendingRequest}
+              >
+                <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Interior Photo (CAR ONLY) */}
+            {vehicleType === 'CAR' && (
+              <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_interior', 'Intérieur')}</Text>
+                <View style={styles.photoStubWrapper}>
+                  {photos.interior ? (
+                    <Image source={{ uri: photos.interior }} style={styles.photoThumbnail} />
+                  ) : (
+                    <Car size={36} color={colors.border} />
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                  onPress={() => triggerCameraForSlot('interior')}
+                  disabled={hasPendingRequest}
+                >
+                  <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Plate Photo */}
+            <View style={[styles.photoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.photoSlotLabel, { color: colors.textSecondary }]}>{t('slot_plate', 'Plaque d\'immat')}</Text>
+              <View style={styles.photoStubWrapper}>
+                {photos.plate ? (
+                  <Image source={{ uri: photos.plate }} style={styles.photoThumbnail} />
+                ) : (
+                  <Car size={36} color={colors.border} />
+                )}
+              </View>
+              <TouchableOpacity
+                style={[styles.btnPhotoUpdate, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => triggerCameraForSlot('plate')}
+                disabled={hasPendingRequest}
+              >
+                <Text style={[styles.btnPhotoUpdateText, { color: colors.primary }]}>{t('update_photo_btn', 'Mettre à jour')}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* --- Footer action button --- */}
+      <View style={[styles.footerContainer, { backgroundColor: colors.bg }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[
+            styles.btnSave,
+            { backgroundColor: hasPendingRequest ? colors.border : colors.primary },
+          ]}
+          onPress={handleSaveChanges}
+          disabled={hasPendingRequest || submitting}
+        >
+          {submitting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.btnSaveText}>{t('save_changes_btn', 'Enregistrer les modifications')}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* --- Fuel Type Bottom Sheet Modal selector --- */}
+      <Modal visible={showFuelModal} animated animateType="slide" transparent>
+        <View style={styles.modalBg}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('fuel_type_label')}</Text>
+              <TouchableOpacity onPress={() => setShowFuelModal(false)}>
+                <X size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {FUEL_TYPES.map((fuel) => (
+                <TouchableOpacity
+                  key={fuel}
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setFuelType(fuel);
+                    setShowFuelModal(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.textPrimary }]}>{fuel}</Text>
+                  {fuelType === fuel && <Check size={16} color={colors.primary} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- Transmission Bottom Sheet Modal selector --- */}
+      <Modal visible={showTransModal} animated animateType="slide" transparent>
+        <View style={styles.modalBg}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('transmission_label')}</Text>
+              <TouchableOpacity onPress={() => setShowTransModal(false)}>
+                <X size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {TRANSMISSIONS.map((trans) => (
+                <TouchableOpacity
+                  key={trans}
+                  style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setTransmission(trans);
+                    setShowTransModal(false);
+                  }}
+                >
+                  <Text style={[styles.modalItemText, { color: colors.textPrimary }]}>{trans}</Text>
+                  {transmission === trans && <Check size={16} color={colors.primary} />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* --- Fullscreen Custom Guided Camera overlay modal --- */}
+      <Modal visible={showCameraView} animationType="slide" transparent={false}>
+        <View style={styles.cameraContainer}>
+          {tempCaptureUri ? (
+            <View style={styles.previewContainer}>
+              <View style={styles.previewHeader}>
+                <Text style={styles.previewTitle}>{t('preview_photo_title', 'Aperçu de la photo')}</Text>
+              </View>
+
+              <Image source={{ uri: `file://${tempCaptureUri}` }} style={{ flex: 1, resizeMode: 'cover' }} />
+
+              {uploading && (
+                <View style={styles.uploadScrim}>
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                </View>
+              )}
+
+              <View style={styles.previewBtnContainer}>
+                <TouchableOpacity
+                  style={[styles.previewBtn, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                  onPress={() => setTempCaptureUri(null)}
+                  disabled={uploading}
+                >
+                  <Text style={[styles.btnPhotoUpdateText, { color: '#FFFFFF' }]}>
+                    {t('retake_photo_btn', '🔄 Recommencer')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.previewBtn, { backgroundColor: colors.primary }]}
+                  onPress={handleConfirmCapturedPhoto}
+                  disabled={uploading}
+                >
+                  <Text style={[styles.btnPhotoUpdateText, { color: '#FFFFFF' }]}>
+                    {t('use_photo_btn', '✅ Utiliser')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <>
+              {device == null ? (
+                <View style={styles.cameraError}>
+                  <ActivityIndicator size="large" color="#FFFFFF" />
+                  <Text style={{ color: '#FFFFFF', marginTop: 15 }}>Loading Camera Hardware...</Text>
+                </View>
+              ) : (
+                <Camera
+                  ref={cameraRef}
+                  style={StyleSheet.absoluteFill}
+                  device={device}
+                  isActive={showCameraView}
+                  photo={true}
+                />
+              )}
+
+              {/* Top guidance message */}
+              <View style={styles.cameraTextOverlay}>
+                <View style={styles.instructionsContainer}>
+                  <Text style={styles.instructionsText}>{cameraGuide.title}</Text>
+                  <Text style={styles.instructionsSubText}>{cameraGuide.sub}</Text>
+                </View>
+              </View>
+
+              {/* Rectangular guide mask cutout overlay */}
+              <View style={styles.maskContainer}>
+                <View style={styles.maskDark} />
+                <View style={{ flexDirection: 'row' }}>
+                  <View style={styles.maskDark} />
+                  <View style={[styles.rectCutout, { borderColor: colors.primary }]} />
+                  <View style={styles.maskDark} />
+                </View>
+                <View style={[styles.maskDark, { flex: 1.3 }]} />
+              </View>
+
+              {/* Close Camera button */}
+              <TouchableOpacity
+                style={styles.cameraCloseBtn}
+                onPress={() => {
+                  setShowCameraView(false);
+                  setCurrentTargetSlot(null);
+                }}
+              >
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Flip camera control */}
+              <TouchableOpacity
+                style={styles.cameraFlipBtn}
+                onPress={() => setCameraType((prev) => (prev === 'front' ? 'back' : 'front'))}
+              >
+                <RefreshCw size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Shot shutter button */}
+              <View style={styles.cameraShutterContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.shutterButton, { borderColor: colors.primary }]}
+                  onPress={handleCapturePhoto}
+                >
+                  <View style={[styles.shutterInnerCircle, { backgroundColor: colors.primary }]} />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+
+  // Helper validation: does the user have any type set in DB/Proposed already?
+  function dataPendingCheckHasSavedType() {
+    return vehicleType !== null;
+  }
+};
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  loadingRoot: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerBar: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerBarRTL: {
+    flexDirection: 'row-reverse',
+  },
+  headerBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  scrollBody: {
+    paddingHorizontal: 16,
+    paddingTop: 15,
+    paddingBottom: 32,
+  },
+  selectScrollBody: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+  },
+  selectMainTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  selectSubText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 32,
+  },
+  cardsContainer: {
+    gap: 16,
+  },
+  choiceCard: {
+    borderRadius: 16,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  choiceCardRTL: {
+    flexDirection: 'row-reverse',
+  },
+  cardGlowBadge: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTextContent: {
+    flex: 1,
+    gap: 4,
+  },
+  cardLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cardDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  cardIndicatorWrapper: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedCheckCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  changeTypeOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 52,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 15,
+  },
+  changeTypeOptionText: {
+    fontSize: 13.5,
+    fontWeight: '700',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardContainer: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 60,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  fieldRowRTL: {
+    flexDirection: 'row-reverse',
+  },
+  fieldContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  fieldLabel: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+  fieldTextDisabled: {
+    fontSize: 14.5,
+    fontWeight: '500',
+  },
+  fieldText: {
+    fontSize: 14.5,
+    fontWeight: '500',
+  },
+  fieldInput: {
+    height: 24,
+    fontSize: 14.5,
+    fontWeight: '500',
+    padding: 0,
+    margin: 0,
+  },
+  vinAlert: {
+    fontSize: 11,
+    paddingHorizontal: 4,
+    marginTop: 6,
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  infoCardRTL: {
+    flexDirection: 'row-reverse',
+  },
+  infoCardText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 16.5,
+    textAlign: 'left',
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  photoCard: {
+    width: (SCREEN_W - 32 - 12) / 2,
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 10,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  photoSlotLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  photoStubWrapper: {
+    width: '100%',
+    height: 90,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  photoThumbnail: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  btnPhotoUpdate: {
+    width: '100%',
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnPhotoUpdateText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  footerContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 16,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  btnSave: {
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  btnSaveText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 30,
+    height: 300,
+  },
+  modalHeader: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalList: {
+    flex: 1,
+  },
+  modalItem: {
+    height: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  modalItemText: {
+    fontSize: 14.5,
+  },
+  // Camera layout styling
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  cameraError: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraTextOverlay: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  instructionsContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  instructionsText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  instructionsSubText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12.5,
+    fontWeight: '500',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  cameraCloseBtn: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  cameraFlipBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  cameraShutterContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  shutterButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shutterInnerCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+  },
+  // Capture view masks
+  maskContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+  },
+  maskDark: {
+    flex: 1.1,
+    backgroundColor: 'rgba(15,23,42,0.65)',
+  },
+  rectCutout: {
+    width: SCREEN_W - 60,
+    height: 220,
+    borderRadius: 14,
+    borderWidth: 3.5,
+    borderStyle: 'solid',
+    backgroundColor: 'transparent',
+  },
+  // Post-capture preview structures
+  previewContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  previewHeader: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  previewTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  previewBtnContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 20,
+  },
+  previewBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  uploadScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    zIndex: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

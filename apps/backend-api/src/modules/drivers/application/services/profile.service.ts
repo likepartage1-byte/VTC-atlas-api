@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { LocalStorageProvider } from '../../infrastructure/storage/storage.provider';
+import * as path from 'path';
 
 @Injectable()
 export class ProfileService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: LocalStorageProvider,
+  ) {}
 
   /**
    * Calculates the start of the current week (Monday 00:00)
@@ -336,7 +341,7 @@ export class ProfileService {
   async updateDriverProfile(userId: string, data: any) {
     const driver = await this.prisma.driver.findUnique({
       where: { userId },
-      include: { verification: true },
+      include: { verification: true, user: true },
     });
     if (!driver) {
       throw new NotFoundException('Driver not found');
@@ -384,6 +389,154 @@ export class ProfileService {
     });
 
     return this.getDriverProfile(userId);
+  }
+
+  /**
+   * Retrieves vehicle info and requests.
+   */
+  async getVehicleProfile(userId: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId },
+      include: { verification: true },
+    });
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const currentVehicle = (driver.vehicleInfo as any) || {};
+
+    const verificationMetadata = (driver.verification?.metadata as any) || {};
+    const req = verificationMetadata.vehicleUpdateRequest;
+    let pendingVehicleUpdate = null;
+    let rejectedVehicleUpdate = null;
+
+    if (req) {
+      if (req.status === 'PENDING') {
+        pendingVehicleUpdate = req;
+      } else if (req.status === 'REJECTED') {
+        rejectedVehicleUpdate = req;
+      }
+    }
+
+    return {
+      vehicleInfo: {
+        type: currentVehicle.type || 'CAR',
+        manufacturer: currentVehicle.manufacturer || '',
+        brand: currentVehicle.brand || '',
+        model: currentVehicle.model || '',
+        year: currentVehicle.year || '',
+        color: currentVehicle.color || '',
+        fuelType: currentVehicle.fuelType || '',
+        transmission: currentVehicle.transmission || '',
+        seats: currentVehicle.seats || 4,
+        plateNumber: currentVehicle.plateNumber || '',
+        registrationNumber: currentVehicle.registrationNumber || '',
+        vin: currentVehicle.vin || '',
+        photos: currentVehicle.photos || {
+          front: null,
+          back: null,
+          right: null,
+          left: null,
+          interior: null,
+          plate: null,
+        },
+      },
+      pendingVehicleUpdate,
+      rejectedVehicleUpdate,
+    };
+  }
+
+  /**
+   * Submit an update request for vehicle details and photos.
+   */
+  async updateVehicleProfile(userId: string, data: any) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId },
+      include: { verification: true },
+    });
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    let verification = driver.verification;
+    if (!verification) {
+      verification = await this.prisma.driverVerification.create({
+        data: {
+          driverId: driver.id,
+          status: 'PENDING',
+        },
+      });
+    }
+
+    const metadata = (verification.metadata as any) || {};
+    const existingReq = metadata.vehicleUpdateRequest;
+    if (existingReq && existingReq.status === 'PENDING') {
+      throw new BadRequestException('You already have a pending vehicle update request');
+    }
+
+    const fields: any = {};
+    if (data.type !== undefined) fields.type = data.type;
+    if (data.manufacturer !== undefined) fields.manufacturer = data.manufacturer;
+    if (data.brand !== undefined) fields.brand = data.brand;
+    if (data.model !== undefined) fields.model = data.model;
+    if (data.year !== undefined) fields.year = Number(data.year) || data.year;
+    if (data.color !== undefined) fields.color = data.color;
+    if (data.fuelType !== undefined) fields.fuelType = data.fuelType;
+    if (data.transmission !== undefined) fields.transmission = data.transmission;
+    if (data.seats !== undefined) fields.seats = Number(data.seats) || data.seats;
+    if (data.plateNumber !== undefined) fields.plateNumber = data.plateNumber;
+    if (data.registrationNumber !== undefined) fields.registrationNumber = data.registrationNumber;
+
+    // VIN is view-only, retrieve from existing configuration.
+    const currentVIN = (driver.vehicleInfo as any)?.vin || '';
+    fields.vin = currentVIN;
+
+    const photos: any = {
+      front: data.photos?.front || (driver.vehicleInfo as any)?.photos?.front || null,
+      back: data.photos?.back || (driver.vehicleInfo as any)?.photos?.back || null,
+      right: data.photos?.right || (driver.vehicleInfo as any)?.photos?.right || null,
+      left: data.photos?.left || (driver.vehicleInfo as any)?.photos?.left || null,
+      plate: data.photos?.plate || (driver.vehicleInfo as any)?.photos?.plate || null,
+    };
+    if (data.type === 'MOTORCYCLE') {
+      photos.interior = null;
+    } else {
+      photos.interior = data.photos?.interior || (driver.vehicleInfo as any)?.photos?.interior || null;
+    }
+
+    metadata.vehicleUpdateRequest = {
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+      fields,
+      photos,
+    };
+
+    await this.prisma.driverVerification.update({
+      where: { id: verification.id },
+      data: { metadata },
+    });
+
+    return this.getVehicleProfile(userId);
+  }
+
+  /**
+   * Upload an image for a vehicle photo slot.
+   */
+  async uploadVehiclePhoto(userId: string, file: Express.Multer.File) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname) || '.jpg';
+    const storageKey = `drivers/${driver.id}/vehicle_${timestamp}${ext}`;
+
+    const { url } = await this.storage.uploadFile(file, storageKey);
+    return { url };
   }
 }
 

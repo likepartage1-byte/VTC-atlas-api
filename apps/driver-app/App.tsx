@@ -18,6 +18,7 @@ import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen
 import { WalletNavigator } from './src/features/wallet/navigation/WalletNavigator';
 import { ProfileScreen } from './src/features/profile/ProfileScreen';
 import { PersonalInfoScreen } from './src/features/profile/PersonalInfoScreen';
+import { VehicleInfoScreen } from './src/features/profile/VehicleInfoScreen';
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import i18n, { initI18n } from './src/i18n';
@@ -31,6 +32,7 @@ export type RootStackParamList = {
   Wallet: undefined;
   Profile: undefined;
   PersonalInfo: undefined;
+  VehicleInfo: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -60,6 +62,7 @@ const AppContent = () => {
             <Stack.Screen name="Wallet"    component={WalletNavigator} />
             <Stack.Screen name="Profile"   component={ProfileScreen} />
             <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+            <Stack.Screen name="VehicleInfo" component={VehicleInfoScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>

@@ -350,9 +350,6 @@ export class DriverVerificationService {
    */
   async listPendingProfileUpdates() {
     const verifications = await this.prisma.driverVerification.findMany({
-      where: {
-        NOT: { metadata: null },
-      },
       include: {
         driver: {
           include: { user: true },
@@ -365,7 +362,7 @@ export class DriverVerificationService {
         const metadata = v.metadata as any;
         return metadata?.profileUpdateRequest?.status === 'PENDING';
       })
-      .map(v => {
+      .map((v: any) => {
         const metadata = v.metadata as any;
         return {
           verificationId: v.id,
@@ -452,6 +449,109 @@ export class DriverVerificationService {
     });
 
     // Invalidate eligibility cache just in case name changes affect it
+    await this.eligibility.invalidateCache(driverId);
+
+    return { success: true };
+  }
+
+  /**
+   * Lists pending vehicle update requests from drivers' metadata.
+   */
+  async listPendingVehicleUpdates() {
+    const verifications = await this.prisma.driverVerification.findMany({
+      include: {
+        driver: {
+          include: { user: true },
+        },
+      },
+    });
+
+    return verifications
+      .filter((v: any) => {
+        const metadata = v.metadata as any;
+        return metadata?.vehicleUpdateRequest?.status === 'PENDING';
+      })
+      .map((v: any) => {
+        const metadata = v.metadata as any;
+        return {
+          verificationId: v.id,
+          driverId: v.driverId,
+          driverName: v.driver.user.fullName,
+          driverPhone: v.driver.user.phoneNumber,
+          pendingFields: metadata?.vehicleUpdateRequest?.fields || {},
+          pendingPhotos: metadata?.vehicleUpdateRequest?.photos || {},
+          submittedAt: metadata?.vehicleUpdateRequest?.createdAt,
+        };
+      });
+  }
+
+  /**
+   * Admin approves or rejects a pending driver vehicle update.
+   */
+  async reviewVehicleUpdate(
+    driverId: string,
+    status: 'APPROVED' | 'REJECTED',
+    reason?: string,
+    adminId?: string
+  ) {
+    const verification = await this.prisma.driverVerification.findUnique({
+      where: { driverId },
+      include: { driver: true },
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Verification record not found');
+    }
+
+    const metadata = (verification.metadata as any) || {};
+    const request = metadata.vehicleUpdateRequest;
+
+    if (!request || request.status !== 'PENDING') {
+      throw new BadRequestException('No pending vehicle update request found for this driver');
+    }
+
+    if (status === 'APPROVED') {
+      const currentVehicle = (verification.driver.vehicleInfo as any) || {};
+      const newVehicleInfo = {
+        ...currentVehicle,
+        ...request.fields,
+        photos: {
+          ...(currentVehicle.photos || {}),
+          ...(request.photos || {}),
+        },
+      };
+
+      await this.prisma.driver.update({
+        where: { id: driverId },
+        data: {
+          vehicleInfo: newVehicleInfo,
+        },
+      });
+
+      metadata.vehicleUpdateRequest = {
+        status: 'APPROVED',
+        createdAt: request.createdAt,
+        approvedAt: new Date().toISOString(),
+        fields: request.fields,
+        photos: request.photos,
+      };
+    } else {
+      metadata.vehicleUpdateRequest = {
+        status: 'REJECTED',
+        createdAt: request.createdAt,
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: reason || 'Rejected by administration',
+        fields: request.fields,
+        photos: request.photos,
+      };
+    }
+
+    await this.prisma.driverVerification.update({
+      where: { id: verification.id },
+      data: { metadata },
+    });
+
+    // Invalidate eligibility cache
     await this.eligibility.invalidateCache(driverId);
 
     return { success: true };
