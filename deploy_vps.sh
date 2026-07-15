@@ -116,25 +116,38 @@ else
   ok "PM2 process started"
 fi
 
-# ─── Step 6: Seed Commission Setting ─────────────────────────
+# ─── Step 6: Seed Smart Dispatch Configuration Settings ─────────
 echo ""
-echo -e "${YELLOW}[BONUS] Seeding commission_rate if missing...${NC}"
+echo -e "${YELLOW}[BONUS] Seeding dispatch logic settings...${NC}"
 
-# Quick Node.js seed script for commission
+# Quick Node.js seed script for all tiered dispatch and commission rate settings
 node -e "
 const { PrismaClient } = require('./apps/backend-api/node_modules/.prisma/client');
 const prisma = new PrismaClient();
 async function seed() {
-  await prisma.systemSetting.upsert({
-    where: { key: 'commission_rate' },
-    update: {},
-    create: { key: 'commission_rate', value: { rate: 0.08 } }
-  });
-  console.log('Commission rate seeded: 8%');
+  const configs = [
+    { key: 'commission_rate',          value: { rate: 0.08 } },
+    { key: 'search_radius_km',          value: 5 },
+    { key: 'premier_priority_duration', value: 3 },
+    { key: 'premier_weekly_target',     value: 30 },
+    { key: 'silver_commission',         value: 15 },
+    { key: 'gold_commission',           value: 10 },
+    { key: 'premier_commission',        value: 8 },
+    { key: 'priority_enabled',          value: true }
+  ];
+
+  for (const item of configs) {
+    await prisma.systemSetting.upsert({
+      where: { key: item.key },
+      update: { value: item.value },
+      create: { key: item.key, value: item.value }
+    });
+    console.log('Seeded setting:', item.key, '->', item.value);
+  }
   await prisma.\$disconnect();
 }
 seed().catch(e => { console.error('Seed failed (non-fatal):', e.message); process.exit(0); });
-" 2>/dev/null && ok "Commission seed done" || warn "Commission seed skipped (non-fatal)"
+" 2>/dev/null && ok "Configuration settings seeded successfully" || warn "Configuration seed skipped (non-fatal)"
 
 echo ""
 echo -e "${YELLOW}Waiting 5s for process to stabilize...${NC}"
