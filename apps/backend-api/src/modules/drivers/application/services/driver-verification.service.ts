@@ -80,7 +80,7 @@ export class DriverVerificationService {
    * Returns the verification status and missing documents for a driver.
    */
   async getVerificationSummary(driverId: string) {
-    const verification = await this.prisma.driverVerification.findUnique({
+    let verification = await this.prisma.driverVerification.findUnique({
       where: { driverId },
       include: {
         documents: {
@@ -88,6 +88,18 @@ export class DriverVerificationService {
         },
       },
     });
+
+    if (!verification) {
+      await this.initializeVerification(driverId);
+      verification = await this.prisma.driverVerification.findUnique({
+        where: { driverId },
+        include: {
+          documents: {
+            where: { isCurrent: true },
+          },
+        },
+      });
+    }
 
     if (!verification) {
       throw new NotFoundException('Verification record not found');
@@ -127,13 +139,24 @@ export class DriverVerificationService {
    * Handles document upload, versioning, and status update.
    */
   async uploadDocument(driverId: string, type: DocumentType, file: Express.Multer.File) {
-    const verification = await this.prisma.driverVerification.findUnique({
+    let verification = await this.prisma.driverVerification.findUnique({
       where: { driverId },
       include: { 
         driver: { include: { user: { select: { fullName: true } } } },
         documents: { where: { type, isCurrent: true } } 
       }
     });
+
+    if (!verification) {
+      await this.initializeVerification(driverId);
+      verification = await this.prisma.driverVerification.findUnique({
+        where: { driverId },
+        include: { 
+          driver: { include: { user: { select: { fullName: true } } } },
+          documents: { where: { type, isCurrent: true } } 
+        }
+      });
+    }
 
     if (!verification) {
       throw new NotFoundException('Verification record not initialized');
