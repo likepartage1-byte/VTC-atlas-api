@@ -53,7 +53,7 @@ export class ProfileService {
    */
   async getDriverProfile(userId: string) {
     // 1. Fetch driver profile with user & account & verification details
-    const driver = await this.prisma.driver.findUnique({
+    const dbDriver = await this.prisma.driver.findUnique({
       where: { userId },
       include: {
         user: true,
@@ -71,6 +71,58 @@ export class ProfileService {
         },
       },
     });
+
+    let driver = dbDriver;
+
+    if (!driver) {
+      // Auto-initialize Driver profile for self-healing (robust user promotion protection)
+      driver = await this.prisma.$transaction(async (tx) => {
+        const d = await tx.driver.create({
+          data: {
+            userId,
+            status: 'OFFLINE',
+            rating: 5.0,
+            vehicleInfo: {},
+          },
+        });
+
+        // Initialize verification record
+        await tx.driverVerification.create({
+          data: {
+            driverId: d.id,
+            status: 'PENDING',
+          },
+        });
+
+        // Initialize driver account
+        await tx.driverAccount.create({
+          data: {
+            driverId: d.id,
+            balance: 0,
+            totalEarned: 0,
+          },
+        });
+
+        return tx.driver.findUnique({
+          where: { id: d.id },
+          include: {
+            user: true,
+            account: true,
+            verification: {
+              include: {
+                documents: {
+                  where: {
+                    type: 'PROFILE_PHOTO',
+                    status: 'APPROVED',
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+        });
+      }) as any;
+    }
 
     if (!driver) {
       throw new NotFoundException('Driver profile not found');
