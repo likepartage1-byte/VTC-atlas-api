@@ -470,15 +470,15 @@ export const ProfileScreen = () => {
 
               <View style={[styles.levelHeader, isRTL && styles.levelHeaderRTL]}>
                 {isPlatinum
-                  ? <Crown size={16} color={LEVEL_COLORS.PLATINUM} />
+                  ? <Crown size={16} color={LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM} />
                   : <Award  size={16} color={levelColor} />
                 }
                 <Text style={[styles.levelLabel, { color: levelColor }]} numberOfLines={1}>
                   {displayLevelLabel}
                 </Text>
                 {isPlatinum && (
-                  <View style={[styles.platinumBadgePill, { backgroundColor: LEVEL_COLORS.PLATINUM + '22' }]}>
-                    <Text style={[styles.platinumBadgeTxt, { color: LEVEL_COLORS.PLATINUM }]}>✓ Actif</Text>
+                  <View style={[styles.platinumBadgePill, { backgroundColor: (LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM) + '22' }]}>
+                    <Text style={[styles.platinumBadgeTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM }]}>✓ Premier</Text>
                   </View>
                 )}
               </View>
@@ -488,7 +488,10 @@ export const ProfileScreen = () => {
                   {challengeData.completed || 0}
                 </Text>
                 <Text style={[styles.ridesTotal, { color: colors.textSecondary }]}>
-                  {' '}/ {challengeData.target || 30} {t('weekly_rides_label')}
+                  {' '}/ {challengeData.target || 30}{' '}
+                  {currentLevel === 'SILVER'
+                    ? t('weekly_rides_label_silver', 'completed')
+                    : t('weekly_rides_label')}
                 </Text>
               </View>
 
@@ -519,15 +522,21 @@ export const ProfileScreen = () => {
               </View>
 
               {isPlatinum ? (
-                <Text style={[styles.ridesRemainingTxt, { color: LEVEL_COLORS.PLATINUM, textAlign: isRTL ? 'right' : 'left' }]}>
-                  🏆 {t('platinum_desc')}
+                <Text style={[styles.ridesRemainingTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM, textAlign: isRTL ? 'right' : 'left' }]}>
+                  💎 {t('platinum_desc')}
                 </Text>
               ) : (
                 <Text style={[styles.ridesRemainingTxt, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
-                  {isRTL
-                    ? `${t(challengeData.remaining === 1 ? 'ride_singular_label' : 'rides_remaining_label')} ${challengeData.remaining}`
-                    : `${challengeData.remaining} ${t(challengeData.remaining === 1 ? 'ride_singular_label' : 'rides_remaining_label')}`
-                  }
+                  {(() => {
+                    const isSilver = currentLevel === 'SILVER';
+                    const remaining = challengeData.remaining || 0;
+                    const labelKey = isSilver
+                      ? (remaining === 1 ? 'rides_remaining_silver_label' : 'rides_remaining_silver_label')
+                      : (remaining === 1 ? 'ride_singular_label' : 'rides_remaining_label');
+                    return isRTL
+                      ? `${t(labelKey)} ${remaining}`
+                      : `${remaining} ${t(labelKey)}`;
+                  })()}
                 </Text>
               )}
 

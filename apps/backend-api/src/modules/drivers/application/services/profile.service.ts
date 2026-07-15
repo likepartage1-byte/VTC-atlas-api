@@ -168,33 +168,46 @@ export class ProfileService {
     const docPhoto = driver.verification?.documents?.[0];
     const profilePhoto = docPhoto?.url || (docPhoto?.storageKey ? `/uploads/${docPhoto.storageKey}` : null);
 
-    // 10. Verification status & driver tier (based on total completed rides)
+    // 10. Verification status & driver tier
     const isVerified = driver.verification?.status === 'APPROVED';
 
-    // Tier thresholds:
-    //   Silver  : 0–2   total completed rides
-    //   Gold    : 3–29  total completed rides
-    //   Premier : ≥ 30  total completed rides
+    // ── Tier Logic ─────────────────────────────────────────────────────────────
+    // Gold & Silver are PERMANENT (based on total lifetime rides):
+    //   🥈 Silver  : total < 3
+    //   🥇 Gold    : total >= 3
+    //
+    // Premier is WEEKLY (based on rides completed this week Mon–Sun 23:59):
+    //   💎 Premier : weeklyCompletedRides >= premierWeeklyTarget (default 30)
+    //   Resets every Monday. Falls back to Gold/Silver baseline automatically.
+    const premierWeeklyTarget = Number(await this.getSystemSetting('premier_weekly_target', 30));
+
     let currentLevel: string;
-    let target: number;
+    let challengeTarget: number;    // rides required to reach next tier
+    let challengeCompleted: number; // relevant counter for progress bar
     let isPremier: boolean;
 
-    if (completedRides >= 30) {
-      currentLevel = 'PREMIER';
-      target       = 30;
-      isPremier    = true;
+    if (weeklyCompletedRides >= premierWeeklyTarget) {
+      // Premier: achieved this week — show weekly progress against 30
+      currentLevel       = 'PREMIER';
+      challengeTarget    = premierWeeklyTarget;
+      challengeCompleted = weeklyCompletedRides;
+      isPremier          = true;
     } else if (completedRides >= 3) {
-      currentLevel = 'GOLD';
-      target       = 30;
-      isPremier    = false;
+      // Gold: permanent. Progress bar shows weekly rides toward Premier this week
+      currentLevel       = 'GOLD';
+      challengeTarget    = premierWeeklyTarget;
+      challengeCompleted = weeklyCompletedRides;
+      isPremier          = false;
     } else {
-      currentLevel = 'SILVER';
-      target       = 3;
-      isPremier    = false;
+      // Silver: permanent. Progress bar shows total rides toward Gold (target 3)
+      currentLevel       = 'SILVER';
+      challengeTarget    = 3;
+      challengeCompleted = completedRides;
+      isPremier          = false;
     }
 
-    const remaining = Math.max(0, target - completedRides);
-    const progress  = Number(Math.min(completedRides / target, 1).toFixed(2));
+    const remaining = Math.max(0, challengeTarget - challengeCompleted);
+    const progress  = Number(Math.min(challengeCompleted / challengeTarget, 1).toFixed(2));
 
     const commission = isPremier
       ? premierCommission
@@ -224,13 +237,13 @@ export class ProfileService {
       },
       weeklyChallenge: {
         currentLevel,
-        target,
-        completed: completedRides,
+        target:    challengeTarget,
+        completed: challengeCompleted,
         remaining,
         progress,
         weekStart: startOfWeek.toISOString(),
-        weekEnd: endOfWeek.toISOString(),
-        isPlatinum: isPremier, // kept as `isPlatinum` so frontend works without changes
+        weekEnd:   endOfWeek.toISOString(),
+        isPlatinum: isPremier, // frontend uses isPlatinum to trigger Crown/confetti
       },
       benefits: {
         commission,

@@ -89,7 +89,7 @@ export class DispatchEngine {
 
     const driverIds = candidates.map(c => c.id);
 
-    // 2. Query total completed rides per driver (determines tier)
+    // 2a. Query total completed rides per driver (Gold vs Silver baseline)
     const totalRidesGroups = await this.prisma.ride.groupBy({
       by: ['driverId'],
       where: { driverId: { in: driverIds }, status: 'COMPLETED' },
@@ -101,16 +101,35 @@ export class DispatchEngine {
       if (g.driverId) totalCountsMap[g.driverId] = g._count.id;
     }
 
+    // 2b. Query WEEKLY completed rides per driver (Premier eligibility this week)
+    const startOfWeek = this.getStartOfWeek();
+    const weeklyRidesGroups = await this.prisma.ride.groupBy({
+      by: ['driverId'],
+      where: {
+        driverId: { in: driverIds },
+        status: 'COMPLETED',
+        completedAt: { gte: startOfWeek },
+      },
+      _count: { id: true },
+    });
+
+    const weeklyCountsMap: Record<string, number> = {};
+    for (const g of weeklyRidesGroups) {
+      if (g.driverId) weeklyCountsMap[g.driverId] = g._count.id;
+    }
+
+    const premierWeeklyTarget = Number(await this.getSystemSetting('premier_weekly_target', 30));
+
     // 3. Classify drivers by tier:
-    //    Premier : ≥ 30 total completed rides
-    //    Gold    :  3–29 total completed rides
-    //    Silver  :  0–2  total completed rides
+    //    💎 Premier : weekly completed rides >= premierWeeklyTarget (resets each Monday)
+    //    🥇 Gold    : total completed rides >= 3 but not Premier this week
+    //    🥈 Silver  : total completed rides < 3
     const premierIds: string[]    = [];
     const goldSilverIds: string[] = [];
 
     for (const cand of candidates) {
-      const total = totalCountsMap[cand.id] || 0;
-      if (total >= 30) {
+      const weekly = weeklyCountsMap[cand.id] || 0;
+      if (weekly >= premierWeeklyTarget) {
         premierIds.push(cand.id);
       } else {
         goldSilverIds.push(cand.id);
