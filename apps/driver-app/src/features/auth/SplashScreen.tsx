@@ -46,7 +46,7 @@ export const SplashScreen = ({ navigation }: Props) => {
   return (
     <View style={styles.container}>
       <Animated.View style={{ opacity: fadeAnim }}>
-        <Text style={styles.logo}>ATLAS</Text>
+        <Text style={styles.logo}>Yalla VTC</Text>
         <Text style={styles.tagline}>DRIVER PARTNER</Text>
       </Animated.View>
     </View>
@@ -61,10 +61,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    fontSize: 48,
+    fontSize: 44,
     fontWeight: '900',
     color: Colors.white,
-    letterSpacing: 10,
+    letterSpacing: 4,
   },
   tagline: {
     color: Colors.primary,
