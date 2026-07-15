@@ -246,8 +246,8 @@ export const CommissionScreen = () => {
                   <Info size={16} color={LIME_GREEN} />
                   <Text style={[styles.infoHintText, { color: subTextColor }, isRTL && styles.rtlText]}>
                     {isRTL
-                      ? 'هذه هي النسب الرسمية المعتمدة بعد الخصومات لشركات وشركاء أطلس.'
-                      : 'Ce sont les taux officiels approuvés après remises pour les partenaires Atlas.'}
+                      ? 'هذه هي النسب الرسمية المعتمدة بعد الخصومات لشركاء Yalla VTC.'
+                      : 'Ce sont les taux officiels approuvés après remises pour les partenaires Yalla VTC.'}
                   </Text>
                 </View>
               </View>

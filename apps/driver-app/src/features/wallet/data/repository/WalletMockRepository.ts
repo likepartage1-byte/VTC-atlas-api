@@ -33,7 +33,7 @@ let mockTransactionsArr: Transaction[] = [
     amount: -5.20,
     currency: 'MAD',
     label: 'Paiement de service',
-    description: 'Frais de service Atlas',
+    description: 'Frais de service Yalla VTC',
     createdAt: new Date(Date.now() - 30 * 60 * 1000),
   },
   {
@@ -73,7 +73,7 @@ let mockTransactionsArr: Transaction[] = [
     amount: -4.20,
     currency: 'MAD',
     label: 'Commission',
-    description: 'Commission Atlas 10,4%',
+    description: 'Commission Yalla VTC 10,4%',
     createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
   },
 ];

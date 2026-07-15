@@ -463,7 +463,7 @@ export const PaymentMethodsScreen = () => {
                 {/* Visual Premium Black Card mockup */}
                 <View style={styles.visualCardMock}>
                   <View style={styles.mockHeader}>
-                    <Text style={styles.mockPremiumTitle}>ATLAS DRIVER</Text>
+                    <Text style={styles.mockPremiumTitle}>YALLA VTC DRIVER</Text>
                     <View style={styles.greenGlowPad}>
                       <Lock size={12} color="#00ff66" />
                     </View>

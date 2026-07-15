@@ -144,8 +144,8 @@ export const TransactionsScreen = () => {
   const handleShare = async (tx: Transaction) => {
     try {
       const shareMsg = isRTL
-        ? `تفاصيل العملية المالية أطلس:\nالرقم: ${tx.id}\nالنوع: ${getTransactionTypeLabel(tx.type)}\nالمبلغ: ${formatCurrency(tx.amount, tx.currency)}\nالحالة: ${getStatusText(tx.status)}`
-        : `Atlas Transaction details:\nID: ${tx.id}\nType: ${getTransactionTypeLabel(tx.type)}\nAmount: ${formatCurrency(tx.amount, tx.currency)}\nStatus: ${getStatusText(tx.status)}`;
+        ? `تفاصيل العملية المالية Yalla VTC:\nالرقم: ${tx.id}\nالنوع: ${getTransactionTypeLabel(tx.type)}\nالمبلغ: ${formatCurrency(tx.amount, tx.currency)}\nالحالة: ${getStatusText(tx.status)}`
+        : `Yalla VTC Transaction details:\nID: ${tx.id}\nType: ${getTransactionTypeLabel(tx.type)}\nAmount: ${formatCurrency(tx.amount, tx.currency)}\nStatus: ${getStatusText(tx.status)}`;
       
       await Share.share({
         message: shareMsg,

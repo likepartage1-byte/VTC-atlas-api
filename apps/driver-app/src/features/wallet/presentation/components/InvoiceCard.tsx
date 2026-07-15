@@ -31,7 +31,7 @@ export const InvoiceCard = ({ invoice }: InvoiceCardProps) => {
           {t('invoice') || 'INVOICE'}
         </Text>
         <Text style={[styles.paperSubtitle, { color: colors.textSecondary }]}>
-          Atlas VTC Platform
+          Yalla VTC Platform
         </Text>
       </View>
 

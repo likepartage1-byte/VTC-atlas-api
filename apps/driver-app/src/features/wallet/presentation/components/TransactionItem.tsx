@@ -67,11 +67,11 @@ export const TransactionItem = memo(({ transaction, statusLabel }: TransactionIt
     const desc = transaction.description;
     if (isRTL) {
       if (desc.includes('Taxe sur la valeur ajoutée')) return 'ضريبة القيمة المضافة';
-      if (desc.includes('Frais de service Atlas')) return 'رسوم الخدمة أطلس';
+      if (desc.includes('Frais de service Atlas')) return 'رسوم الخدمة Yalla VTC';
       if (desc.includes('Ville de Marrakech')) return 'مدينة مراكش';
       if (desc.includes('Course Ménara')) return 'رحلة المنارة ← النخيل';
       if (desc.includes('Visa se terminant par')) return desc.replace('Visa se terminant par', 'بطاقة Visa تنتهي بـ');
-      if (desc.includes('Commission Atlas')) return desc.replace('Commission Atlas', 'عمولة أطلس');
+      if (desc.includes('Commission Atlas')) return desc.replace('Commission Atlas', 'عمولة Yalla VTC');
       if (desc.includes('Demande de validation')) return 'طلب مراجعة التحويل البنكي';
       if (desc.includes('Versement')) return 'إيداع نقدي بالوكالة';
       if (desc.includes('Paiement simulé')) return 'إيداع إلكتروني عبر CMI';

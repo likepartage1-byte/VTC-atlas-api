@@ -81,7 +81,7 @@ export const useLocationTracking = (isOnline: boolean) => {
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         {
           title: 'Location Permission Required',
-          message: 'Atlas Driver needs your location to receive ride requests.',
+          message: 'Yalla VTC needs your location to receive ride requests.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'Allow',

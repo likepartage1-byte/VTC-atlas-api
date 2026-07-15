@@ -55,7 +55,7 @@ const profileAr = {
   weekly_target_label: 'الهدف الأسبوعي',
   // ─── Verification modal ───
   verify_modal_title: 'سائق موثق',
-  verify_modal_desc: 'تم التحقق من هويتك ووثائقك ومركبتك والموافقة عليها من قبل Atlas VTC. هذه الشارة تدل على أن الركاب يمكنهم الوثوق بك.',
+  verify_modal_desc: 'تم التحقق من هويتك ووثائقك ومركبتك والموافقة عليها من قبل Yalla VTC. هذه الشارة تدل على أن الركاب يمكنهم الوثوق بك.',
   verify_modal_close: 'حسناً',
   // ─── Avatar ───
   change_photo: 'تغيير الصورة',
@@ -127,7 +127,7 @@ const profileFr = {
   weekly_target_label: 'Objectif hebdomadaire',
   // ─── Verification modal ───
   verify_modal_title: 'Chauffeur vérifié',
-  verify_modal_desc: "Votre identité, vos documents et votre véhicule ont été vérifiés et approuvés par Atlas VTC. Ce badge indique aux passagers qu'ils peuvent vous faire confiance.",
+  verify_modal_desc: "Votre identité, vos documents et votre véhicule ont été vérifiés et approuvés par Yalla VTC. Ce badge indique aux passagers qu'ils peuvent vous faire confiance.",
   verify_modal_close: 'Compris',
   // ─── Avatar ───
   change_photo: 'Changer la photo',
@@ -199,7 +199,7 @@ const profileEn = {
   weekly_target_label: 'Weekly target',
   // ─── Verification modal ───
   verify_modal_title: 'Verified Driver',
-  verify_modal_desc: 'Your identity, documents and vehicle have been verified and approved by Atlas VTC. This badge shows passengers they can trust you.',
+  verify_modal_desc: 'Your identity, documents and vehicle have been verified and approved by Yalla VTC. This badge shows passengers they can trust you.',
   verify_modal_close: 'Got it',
   // ─── Avatar ───
   change_photo: 'Change photo',
@@ -271,7 +271,7 @@ const profileEs = {
   weekly_target_label: 'Objetivo semanal',
   // ─── Verification modal ───
   verify_modal_title: 'Conductor verificado',
-  verify_modal_desc: 'Tu identidad, documentos y vehículo han sido verificados y aprobados por Atlas VTC. Este badge muestra a los pasajeros que pueden confiar en ti.',
+  verify_modal_desc: 'Tu identidad, documentos y vehículo han sido verificados y aprobados por Yalla VTC. Este badge muestra a los pasajeros que pueden confiar en ti.',
   verify_modal_close: 'Entendido',
   // ─── Avatar ───
   change_photo: 'Cambiar foto',
@@ -302,7 +302,7 @@ const resources = {
   ar: {
     translation: {
       // Auth & core
-      welcome: 'مرحباً بك في أطلس',
+      welcome: 'مرحباً بك في Yalla VTC',
       login: 'تسجيل الدخول',
       phone_number: 'رقم الهاتف',
       go_online: 'بدء العمل',
@@ -334,7 +334,7 @@ const resources = {
   },
   fr: {
     translation: {
-      welcome: 'Bienvenue sur Atlas',
+      welcome: 'Bienvenue sur Yalla VTC',
       login: 'Connexion',
       phone_number: 'Numéro de téléphone',
       go_online: 'Se connecter',
@@ -365,7 +365,7 @@ const resources = {
   },
   en: {
     translation: {
-      welcome: 'Welcome to Atlas',
+      welcome: 'Welcome to Yalla VTC',
       login: 'Login',
       phone_number: 'Phone Number',
       go_online: 'Go Online',
@@ -396,7 +396,7 @@ const resources = {
   },
   es: {
     translation: {
-      welcome: 'Bienvenido a Atlas',
+      welcome: 'Bienvenido a Yalla VTC',
       login: 'Iniciar sesión',
       phone_number: 'Número de teléfono',
       go_online: 'Conectarse',

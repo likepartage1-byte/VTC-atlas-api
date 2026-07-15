@@ -300,7 +300,7 @@ export const DashboardScreen = () => {
         <View style={styles.topBar} pointerEvents="box-none">
           {/* App title */}
           <View style={styles.brandBadge}>
-            <Text style={styles.brandText}>ATLAS</Text>
+            <Text style={styles.brandText}>Yalla VTC</Text>
           </View>
 
           {/* Status pills */}

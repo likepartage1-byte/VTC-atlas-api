@@ -296,7 +296,7 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
               </Text>
             </TouchableOpacity>
             <Text style={[styles.version, { color: colors.textMuted }]}>
-              Atlas Driver • v1.0.0
+              Yalla VTC Driver • v1.0.0
             </Text>
           </View>
         </ScrollView>
