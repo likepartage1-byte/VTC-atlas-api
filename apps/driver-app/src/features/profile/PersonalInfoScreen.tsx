@@ -29,6 +29,7 @@ import {
   MapPin,
   Check,
   X,
+  RefreshCw,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { api } from '../../api/axios.instance';
@@ -78,10 +79,12 @@ export const PersonalInfoScreen = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [tempCaptureUri, setTempCaptureUri] = useState<string | null>(null);
+  const [cameraType, setCameraType] = useState<'front' | 'back'>('front');
 
   // Camera reference & device selector
   const cameraRef = useRef<any>(null);
-  const device = useCameraDevice('front'); // Front facing selfie camera as required!
+  const device = useCameraDevice(cameraType);
 
   // Fetch initial profile
   const fetchData = async () => {
@@ -179,14 +182,23 @@ export const PersonalInfoScreen = () => {
   // Shutter action
   const handleCapturePhoto = async () => {
     if (!cameraRef.current) return;
-    setUploading(true);
     try {
-      // Capture selfie using front camera
       const photoFile = await cameraRef.current.takePhoto({
         flash: 'off',
       });
+      setTempCaptureUri(photoFile.path);
+    } catch (err: any) {
+      console.error('[Personal Info] Camera snap error:', err);
+      Alert.alert(t('error'), 'Failed to capture photo.');
+    }
+  };
 
-      const localPath = photoFile.path;
+  // Confirm and upload selected selfie photo
+  const handleConfirmCapturedPhoto = async () => {
+    if (!tempCaptureUri) return;
+    setUploading(true);
+    try {
+      const localPath = tempCaptureUri;
 
       // Compress and resize the image before uploading to reduce bandwidth usage
       // Target: 600x600 size, jpeg format, 80% quality
@@ -219,6 +231,7 @@ export const PersonalInfoScreen = () => {
       // Update state local view
       setPendingPhoto(resized.uri);
       setPhotoStatus('PENDING');
+      setTempCaptureUri(null);
       setShowCameraView(false);
 
       Alert.alert(
@@ -226,7 +239,7 @@ export const PersonalInfoScreen = () => {
         t('photo_pending_alert', 'Votre photo de profil a été téléchargée avec succès. Elle est en cours d’examen par l’administration.')
       );
     } catch (err: any) {
-      console.error('[Personal Info] Camera snap / upload error:', err);
+      console.error('[Personal Info] Camera upload error:', err);
       const errMsg = err.response?.data?.message || err.message || 'File upload failed.';
       Alert.alert(t('error'), errMsg);
     } finally {
@@ -513,44 +526,124 @@ export const PersonalInfoScreen = () => {
         visible={showCameraView}
         transparent={false}
         animationType="slide"
-        onRequestClose={() => setShowCameraView(false)}
+        onRequestClose={() => {
+          setTempCaptureUri(null);
+          setShowCameraView(false);
+        }}
       >
         <View style={styles.cameraContainer}>
-          {device != null ? (
-            <Camera
-              ref={cameraRef}
-              style={StyleSheet.absoluteFillObject}
-              device={device}
-              isActive={showCameraView}
-              photo={true}
-            />
-          ) : (
-            <View style={styles.cameraError}>
-              <ActivityIndicator size="large" color="#FFFFFF" style={{ marginBottom: 12 }} />
-              <Text style={{ color: '#FFFFFF', textAlign: 'center' }}>
-                Camera hardware loading or not available...
-              </Text>
+          {tempCaptureUri ? (
+            <View style={styles.previewContainer}>
+              <Image source={{ uri: 'file://' + tempCaptureUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+              
+              {/* Instructions on preview (confirm view details) */}
+              <View style={styles.previewHeader}>
+                <Text style={styles.previewTitle}>
+                  {t('preview_photo_title', 'Aperçu du Selfie')}
+                </Text>
+              </View>
+
+              {/* Action buttons at bottom */}
+              <View style={styles.previewBtnContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[styles.previewBtn, styles.btnRetake]}
+                  onPress={() => setTempCaptureUri(null)}
+                >
+                  <Text style={styles.previewBtnTextRetake}>
+                    {t('retake_photo_btn', '🔄 Réessayer')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={[styles.previewBtn, styles.btnConfirm]}
+                  onPress={handleConfirmCapturedPhoto}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.previewBtnTextConfirm}>
+                      {t('use_photo_btn', '✅ Utiliser')}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
+          ) : (
+            <>
+              {device != null ? (
+                <Camera
+                  ref={cameraRef}
+                  style={StyleSheet.absoluteFillObject}
+                  device={device}
+                  isActive={showCameraView}
+                  photo={true}
+                />
+              ) : (
+                <View style={styles.cameraError}>
+                  <ActivityIndicator size="large" color="#FFFFFF" style={{ marginBottom: 12 }} />
+                  <Text style={{ color: '#FFFFFF', textAlign: 'center' }}>
+                    Camera hardware loading or not available...
+                  </Text>
+                </View>
+              )}
+
+              {/* Face Guide Mask Overlay */}
+              <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                {/* Top mask block */}
+                <View style={[styles.maskBlock, styles.maskTop]}>
+                  <View style={styles.instructionsContainer}>
+                    <Text style={styles.instructionsText}>
+                      {t('face_guide_instruction', 'ضع وجهك بالكامل داخل الإطار')}
+                    </Text>
+                    <Text style={styles.instructionsSubText}>
+                      {t('face_guide_sub_instruction', 'تأكد من أن الوجه واضح والإضاءة جيدة')}
+                    </Text>
+                  </View>
+                </View>
+                
+                {/* Middle row containing cutout */}
+                <View style={styles.maskMiddleRow}>
+                  <View style={[styles.maskBlock, styles.maskSide]} />
+                  {/* Visual oval outline */}
+                  <View style={[styles.maskCutout, { borderColor: colors.primary }]} />
+                  <View style={[styles.maskBlock, styles.maskSide]} />
+                </View>
+
+                {/* Bottom mask block */}
+                <View style={[styles.maskBlock, styles.maskBottom]} />
+              </View>
+
+              {/* Close trigger overlay at top-left */}
+              <TouchableOpacity
+                style={styles.cameraCloseBtn}
+                onPress={() => setShowCameraView(false)}
+              >
+                <X size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Flip camera control at top-right */}
+              <TouchableOpacity
+                style={styles.cameraFlipBtn}
+                onPress={() => setCameraType(prev => prev === 'front' ? 'back' : 'front')}
+              >
+                <RefreshCw size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+
+              {/* Shutter button wrapper */}
+              <View style={styles.cameraShutterContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.shutterButton, { borderColor: colors.primary }]}
+                  onPress={handleCapturePhoto}
+                >
+                  <View style={[styles.shutterInnerCircle, { backgroundColor: colors.primary }]} />
+                </TouchableOpacity>
+              </View>
+            </>
           )}
-
-          {/* Close trigger overlay */}
-          <TouchableOpacity
-            style={styles.cameraCloseBtn}
-            onPress={() => setShowCameraView(false)}
-          >
-            <X size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Shutter button wrapper */}
-          <View style={styles.cameraShutterContainer}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.shutterButton}
-              onPress={handleCapturePhoto}
-            >
-              <View style={styles.shutterInnerCircle} />
-            </TouchableOpacity>
-          </View>
         </View>
       </Modal>
     </SafeAreaView>
@@ -812,7 +905,6 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     borderWidth: 4,
-    borderColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -820,6 +912,124 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#FFFFFF',
+  },
+  cameraFlipBtn: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  // Face guide overlays styling
+  maskBlock: {
+    backgroundColor: 'rgba(15,23,42,0.65)',
+  },
+  maskTop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 24,
+  },
+  maskMiddleRow: {
+    height: 320,
+    flexDirection: 'row',
+  },
+  maskSide: {
+    flex: 1,
+  },
+  maskCutout: {
+    width: 240,
+    height: 320,
+    borderRadius: 120,
+    borderWidth: 3.5,
+    borderStyle: 'solid',
+    backgroundColor: 'transparent',
+  },
+  maskBottom: {
+    flex: 1.6,
+  },
+  instructionsContainer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  instructionsText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  instructionsSubText: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12.5,
+    fontWeight: '500',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  // Post-capture preview structures
+  previewContainer: {
+    flex: 1,
+    backgroundColor: '#000000',
+  },
+  previewHeader: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  previewTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  previewBtnContainer: {
+    position: 'absolute',
+    bottom: 50,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    zIndex: 20,
+  },
+  previewBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  btnRetake: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+  },
+  btnConfirm: {
+    backgroundColor: '#6366F1', // Premium Indigo
+  },
+  previewBtnTextRetake: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  previewBtnTextConfirm: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
