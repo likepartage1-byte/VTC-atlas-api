@@ -632,7 +632,7 @@ export const ProfileScreen = () => {
             {t('account')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={User}       label={t('personal_info')} isRTL={isRTL} colors={colors} onPress={() => {}} />
+            <SectionRow icon={User}       label={t('personal_info')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('PersonalInfo')} />
             <SectionRow icon={Car}        label={t('vehicle_info')}  isRTL={isRTL} colors={colors} onPress={() => {}} />
             <SectionRow icon={FileText}   label={t('documents')}     isRTL={isRTL} colors={colors} onPress={() => {}} />
             <SectionRow icon={CreditCard} label={t('payment_info')}  isRTL={isRTL} colors={colors} onPress={() => {}} isLast />

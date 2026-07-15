@@ -217,6 +217,8 @@ export class ProfileService {
       driver: {
         id: `DRV-${driver.id.substring(0, 5).toUpperCase()}`,
         name: driver.user.fullName,
+        phone: driver.user.phoneNumber,
+        email: driver.user.email || '',
         avatar: profilePhoto,
         rating: (() => {
           if (completedRides === 0) return 4.8;
@@ -225,6 +227,18 @@ export class ProfileService {
         })(),
         verified: isVerified,
         badge: currentLevel,
+      },
+      personalInfo: {
+        firstName: driver.user.firstName || '',
+        lastName: driver.user.lastName || '',
+        fullName: driver.user.fullName || '',
+        phone: driver.user.phoneNumber || '',
+        email: driver.user.email || '',
+        birthDate: driver.user.birthDate || '',
+        gender: driver.user.gender || '',
+        language: driver.user.language || 'FR',
+        city: driver.user.city || '',
+        address: driver.user.address || '',
       },
       statistics: {
         completedRides,
@@ -251,4 +265,41 @@ export class ProfileService {
       },
     };
   }
+
+  async updateDriverProfile(userId: string, data: any) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId },
+      include: { user: true },
+    });
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    const updateData: any = {};
+    if (data.firstName !== undefined) updateData.firstName = data.firstName;
+    if (data.lastName !== undefined) updateData.lastName = data.lastName;
+
+    if (data.fullName !== undefined && data.fullName.trim() !== '') {
+      updateData.fullName = data.fullName;
+    } else if (data.firstName !== undefined || data.lastName !== undefined) {
+      const first = data.firstName !== undefined ? data.firstName : (driver.user?.firstName || '');
+      const last = data.lastName !== undefined ? data.lastName : (driver.user?.lastName || '');
+      updateData.fullName = `${first} ${last}`.trim() || 'New User';
+    }
+
+    if (data.email !== undefined) updateData.email = data.email || null;
+    if (data.birthDate !== undefined) updateData.birthDate = data.birthDate;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.language !== undefined) updateData.language = data.language;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.address !== undefined) updateData.address = data.address;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: updateData,
+    });
+
+    return this.getDriverProfile(userId);
+  }
 }
+

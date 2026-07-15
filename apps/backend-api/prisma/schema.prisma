@@ -24,6 +24,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  firstName     String?
+  lastName      String?
+  birthDate     String?
+  gender        String?
+  language      String?
+  city          String?
+  address       String?
+
   customerRides Ride[]    @relation("PassengerRides")
   driverProfile Driver?
   

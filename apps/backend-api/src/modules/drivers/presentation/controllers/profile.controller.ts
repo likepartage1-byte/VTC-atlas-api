@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Version } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Version } from '@nestjs/common';
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
 import { Roles } from '../../../identity/presentation/decorators/roles.decorator';
@@ -15,5 +15,14 @@ export class ProfileController {
   @Version('1')
   async getProfile(@CurrentUser('userId') userId: string) {
     return this.profileService.getDriverProfile(userId);
+  }
+
+  @Patch()
+  @Version('1')
+  async updateProfile(
+    @CurrentUser('userId') userId: string,
+    @Body() data: any,
+  ) {
+    return this.profileService.updateDriverProfile(userId, data);
   }
 }
