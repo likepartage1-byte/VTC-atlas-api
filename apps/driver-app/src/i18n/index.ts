@@ -89,6 +89,11 @@ const profileAr = {
   premier_title: 'سائق Premier',
   premier_expired_title: 'انتهاء مستوى Premier',
   premier_expired_desc: 'انتهت صلاحية مستوى Premier لهذا الأسبوع. أكمل 30 رحلة ناجحة خلال هذا الأسبوع لاستعادة المستوى.',
+  commission_label: 'العمولة',
+  commission_sub_tax: '(غير شامل للضريبة)',
+  priority_matching_label: 'أولوية الطلبات',
+  priority_enabled: 'مفعلة',
+  priority_disabled: 'غير نشط',
 };
 
 const profileFr = {
@@ -170,6 +175,11 @@ const profileFr = {
   premier_title: 'Chauffeur Premier',
   premier_expired_title: 'Niveau Premier expiré',
   premier_expired_desc: 'Votre niveau Premier n’est plus actif cette semaine. Complétez 30 courses cette semaine pour le retrouver.',
+  commission_label: 'Commission',
+  commission_sub_tax: '(Hors Taxe)',
+  priority_matching_label: 'Priorité',
+  priority_enabled: 'Activée',
+  priority_disabled: 'Désactivée',
 };
 
 const profileEn = {
@@ -251,6 +261,11 @@ const profileEn = {
   premier_title: 'Premier Driver',
   premier_expired_title: 'Premier Level Expired',
   premier_expired_desc: 'Your Premier status is not active this week. Complete 30 rides this week to earn it again.',
+  commission_label: 'Commission',
+  commission_sub_tax: '(Excl. Tax)',
+  priority_matching_label: 'Priority Matching',
+  priority_enabled: 'Enabled',
+  priority_disabled: 'Disabled',
 };
 
 const profileEs = {
@@ -323,6 +338,11 @@ const profileEs = {
   badge_verified_title: 'Conductor verificado',
   badge_rides_title: '1000+ Viajes',
   badge_excellent_title: 'Servicio Excelente',
+  commission_label: 'Comisión',
+  commission_sub_tax: '(Sin Impuestos)',
+  priority_matching_label: 'Prioridad',
+  priority_enabled: 'Activado',
+  priority_disabled: 'Desactivado',
 };
 
 const resources = {

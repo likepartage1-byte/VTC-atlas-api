@@ -510,13 +510,24 @@ export const ProfileScreen = () => {
               {/* Commission section inside challenge card */}
               <View style={[styles.commissionDisplay, isRTL && styles.commissionDisplayRTL]}>
                 <View style={styles.commissionPill}>
-                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>Commission</Text>
-                  <Text style={[styles.commissionVal, { color: levelColor }]}>{benefitsData.commission}%</Text>
+                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
+                    {t('commission_label', 'Commission')}
+                  </Text>
+                  <Text style={[styles.commissionVal, { color: levelColor }]}>
+                    {benefitsData.commission}%{' '}
+                    <Text style={[styles.taxSubText, { color: colors.textMuted }]}>
+                      {t('commission_sub_tax', '(Excl. Tax)')}
+                    </Text>
+                  </Text>
                 </View>
                 <View style={styles.priorityPill}>
-                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>Priority Matching</Text>
+                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
+                    {t('priority_matching_label', 'Priority Matching')}
+                  </Text>
                   <Text style={[styles.priorityVal, { color: benefitsData.priorityMatching ? colors.online : colors.textMuted }]}>
-                    {benefitsData.priorityMatching ? 'Enabled' : 'Disabled'}
+                    {benefitsData.priorityMatching 
+                      ? t('priority_enabled', 'Enabled') 
+                      : t('priority_disabled', 'Disabled')}
                   </Text>
                 </View>
               </View>
@@ -1234,6 +1245,11 @@ const styles = StyleSheet.create({
   commissionVal: {
     fontSize: 14,
     fontWeight: '800',
+  },
+  taxSubText: {
+    fontSize: 8.5,
+    fontWeight: 'normal',
+    textTransform: 'none',
   },
   priorityVal: {
     fontSize: 12,
