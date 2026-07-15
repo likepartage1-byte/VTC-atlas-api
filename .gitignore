@@ -12,3 +12,10 @@ node_modules/
 
 # Managed by Prisma
 /generated/prisma
+
+# Android / iOS build artifacts
+**/*.apk
+**/*.aab
+**/build/
+**/bin/
+android.backup/

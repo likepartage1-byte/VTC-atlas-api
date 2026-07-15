@@ -16,6 +16,7 @@ import { LoginScreen } from './src/features/auth/LoginScreen';
 import { OTPVerifyScreen } from './src/features/auth/OTPVerifyScreen';
 import { OrdersListScreen } from './src/features/orders/screens/OrdersListScreen';
 import { WalletNavigator } from './src/features/wallet/navigation/WalletNavigator';
+import { ProfileScreen } from './src/features/profile/ProfileScreen';
 
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import i18n, { initI18n } from './src/i18n';
@@ -27,6 +28,7 @@ export type RootStackParamList = {
   OTPVerify: { phoneNumber: string };
   Dashboard: undefined;
   Wallet: undefined;
+  Profile: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -54,6 +56,7 @@ const AppContent = () => {
             <Stack.Screen name="OTPVerify" component={OTPVerifyScreen} />
             <Stack.Screen name="Dashboard" component={OrdersListScreen} />
             <Stack.Screen name="Wallet"    component={WalletNavigator} />
+            <Stack.Screen name="Profile"   component={ProfileScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>

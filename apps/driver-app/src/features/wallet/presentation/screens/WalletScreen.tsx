@@ -32,13 +32,14 @@ import {
   Percent,
   ChevronRight,
   ChevronLeft,
+  TrendingUp,
 } from 'lucide-react-native';
 
 const ICON_SIZE = 20;
 
 // ─── Quick Actions Config ───────────────────────────────────────────────────
 const QUICK_ACTIONS = [
-  { key: 'payment_methods', route: WALLET_ROUTES.PAYMENT_METHODS, icon: CreditCard },
+  { key: 'income',          route: WALLET_ROUTES.INCOME,          icon: TrendingUp },
   { key: 'pending',         route: WALLET_ROUTES.PENDING,         icon: AlertTriangle },
   { key: 'bonus',           route: WALLET_ROUTES.BONUS,           icon: Award },
   { key: 'invoices',        route: WALLET_ROUTES.INVOICES,        icon: FileText },
@@ -57,13 +58,27 @@ export const WalletScreen = () => {
 
   const [lastUpdatedText, setLastUpdatedText] = useState<string>('');
 
+  // ── PERF PROBE ────────────────────────────────────────────────────────────
+  console.log(`[WALLET PERF] [3] WalletScreen first render — t=+${Date.now() - ((global as any).walletNavStartTime || Date.now())}ms`);
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  const onLayout = React.useCallback(() => {
+    console.log(`[WALLET PERF] [8] First frame displayed — t=+${Date.now() - ((global as any).walletNavStartTime || Date.now())}ms`);
+  }, []);
+
   useEffect(() => {
+    // ── PERF PROBE ──────────────────────────────────────────────────────────
+    console.log(`[WALLET PERF] [4] useEffect start — t=+${Date.now() - ((global as any).walletNavStartTime || Date.now())}ms`);
+    // ────────────────────────────────────────────────────────────────────────
     load();
   }, [load]);
 
   useEffect(() => {
     if (status === 'loaded' && balance) {
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const time = new Date().toLocaleTimeString(
+        i18n.language === 'ar' ? 'ar-u-nu-latn' : (i18n.language || 'en'),
+        { hour: '2-digit', minute: '2-digit' }
+      );
       setLastUpdatedText(t('last_updated_at', { time }));
     }
   }, [status, balance, t]);
@@ -95,7 +110,7 @@ export const WalletScreen = () => {
 
   // ─── Main render ────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
+    <SafeAreaView onLayout={onLayout} style={[styles.safe, { backgroundColor: colors.bg }]}>
       <WalletHeader title={t('wallet')} />
 
       {status === 'loading' ? (
@@ -121,6 +136,7 @@ export const WalletScreen = () => {
                 amount={balance.amount}
                 currency={balance.currency}
                 lastUpdated={lastUpdatedText}
+                pendingAmount={balance.pending}
               />
               <PendingCard
                 amount={balance.pending}

@@ -3,8 +3,10 @@ export type WalletStackParamList = {
   Recharge:          undefined;
   Pending:           undefined;
   Transactions:      undefined;
-  PaymentMethods:    undefined;
+  PaymentMethods:    { amount: number } | undefined;
   Commission:        undefined;
   Bonus:             undefined;
   Invoices:          undefined;
+  InvoicePreview:    { invoiceId: string };
+  Income:            undefined;
 };

@@ -1,0 +1,2611 @@
+> Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:shared:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:shared:compileJava NO-SOURCE
+> Task :gradle-plugin:shared:processResources NO-SOURCE
+> Task :gradle-plugin:shared:classes UP-TO-DATE
+> Task :gradle-plugin:shared:jar UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:settings-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:settings-plugin:jar UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle-plugin:react-native-gradle-plugin:compileKotlin UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+> Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:processResources UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:classes UP-TO-DATE
+> Task :gradle-plugin:react-native-gradle-plugin:jar UP-TO-DATE
+
+> Configure project :react-native-reanimated
+Android gradle plugin: 8.7.2
+Gradle: 8.10.2
+
+> Task :tasks
+
+------------------------------------------------------------
+Tasks runnable from root project 'AtlasDriverShell'
+------------------------------------------------------------
+
+Android tasks
+-------------
+app:androidDependencies - Displays the Android dependencies of the project.
+react-native-async-storage_async-storage:androidDependencies - Displays the Android dependencies of the project.
+react-native-community_geolocation:androidDependencies - Displays the Android dependencies of the project.
+react-native-gesture-handler:androidDependencies - Displays the Android dependencies of the project.
+react-native-maps:androidDependencies - Displays the Android dependencies of the project.
+react-native-reanimated:androidDependencies - Displays the Android dependencies of the project.
+react-native-safe-area-context:androidDependencies - Displays the Android dependencies of the project.
+react-native-screens:androidDependencies - Displays the Android dependencies of the project.
+react-native-svg:androidDependencies - Displays the Android dependencies of the project.
+react-native-vector-icons:androidDependencies - Displays the Android dependencies of the project.
+app:signingReport - Displays the signing info for the base and test modules
+react-native-async-storage_async-storage:signingReport - Displays the signing info for the base and test modules
+react-native-community_geolocation:signingReport - Displays the signing info for the base and test modules
+react-native-gesture-handler:signingReport - Displays the signing info for the base and test modules
+react-native-maps:signingReport - Displays the signing info for the base and test modules
+react-native-reanimated:signingReport - Displays the signing info for the base and test modules
+react-native-safe-area-context:signingReport - Displays the signing info for the base and test modules
+react-native-screens:signingReport - Displays the signing info for the base and test modules
+react-native-svg:signingReport - Displays the signing info for the base and test modules
+react-native-vector-icons:signingReport - Displays the signing info for the base and test modules
+app:sourceSets - Prints out all the source sets defined in this project.
+react-native-async-storage_async-storage:sourceSets - Prints out all the source sets defined in this project.
+react-native-community_geolocation:sourceSets - Prints out all the source sets defined in this project.
+react-native-gesture-handler:sourceSets - Prints out all the source sets defined in this project.
+react-native-maps:sourceSets - Prints out all the source sets defined in this project.
+react-native-reanimated:sourceSets - Prints out all the source sets defined in this project.
+react-native-safe-area-context:sourceSets - Prints out all the source sets defined in this project.
+react-native-screens:sourceSets - Prints out all the source sets defined in this project.
+react-native-svg:sourceSets - Prints out all the source sets defined in this project.
+react-native-vector-icons:sourceSets - Prints out all the source sets defined in this project.
+
+Build tasks
+-----------
+app:assemble - Assemble main outputs for all the variants.
+react-native-async-storage_async-storage:assemble - Assemble main outputs for all the variants.
+react-native-community_geolocation:assemble - Assemble main outputs for all the variants.
+react-native-gesture-handler:assemble - Assemble main outputs for all the variants.
+react-native-maps:assemble - Assemble main outputs for all the variants.
+react-native-reanimated:assemble - Assemble main outputs for all the variants.
+react-native-safe-area-context:assemble - Assemble main outputs for all the variants.
+react-native-screens:assemble - Assemble main outputs for all the variants.
+react-native-svg:assemble - Assemble main outputs for all the variants.
+react-native-vector-icons:assemble - Assemble main outputs for all the variants.
+app:assembleAndroidTest - Assembles all the Test applications.
+react-native-async-storage_async-storage:assembleAndroidTest - Assembles all the Test applications.
+react-native-community_geolocation:assembleAndroidTest - Assembles all the Test applications.
+react-native-gesture-handler:assembleAndroidTest - Assembles all the Test applications.
+react-native-maps:assembleAndroidTest - Assembles all the Test applications.
+react-native-reanimated:assembleAndroidTest - Assembles all the Test applications.
+react-native-safe-area-context:assembleAndroidTest - Assembles all the Test applications.
+react-native-screens:assembleAndroidTest - Assembles all the Test applications.
+react-native-svg:assembleAndroidTest - Assembles all the Test applications.
+react-native-vector-icons:assembleAndroidTest - Assembles all the Test applications.
+app:assembleUnitTest - Assembles all the unit test applications.
+react-native-async-storage_async-storage:assembleUnitTest - Assembles all the unit test applications.
+react-native-community_geolocation:assembleUnitTest - Assembles all the unit test applications.
+react-native-gesture-handler:assembleUnitTest - Assembles all the unit test applications.
+react-native-maps:assembleUnitTest - Assembles all the unit test applications.
+react-native-reanimated:assembleUnitTest - Assembles all the unit test applications.
+react-native-safe-area-context:assembleUnitTest - Assembles all the unit test applications.
+react-native-screens:assembleUnitTest - Assembles all the unit test applications.
+react-native-svg:assembleUnitTest - Assembles all the unit test applications.
+react-native-vector-icons:assembleUnitTest - Assembles all the unit test applications.
+app:build - Assembles and tests this project.
+react-native-async-storage_async-storage:build - Assembles and tests this project.
+react-native-community_geolocation:build - Assembles and tests this project.
+react-native-gesture-handler:build - Assembles and tests this project.
+react-native-maps:build - Assembles and tests this project.
+react-native-reanimated:build - Assembles and tests this project.
+react-native-safe-area-context:build - Assembles and tests this project.
+react-native-screens:build - Assembles and tests this project.
+react-native-svg:build - Assembles and tests this project.
+react-native-vector-icons:build - Assembles and tests this project.
+app:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-async-storage_async-storage:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-community_geolocation:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-gesture-handler:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-maps:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-reanimated:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-safe-area-context:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-screens:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-svg:buildDependents - Assembles and tests this project and all projects that depend on it.
+react-native-vector-icons:buildDependents - Assembles and tests this project and all projects that depend on it.
+app:buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+react-native-gesture-handler:buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+react-native-safe-area-context:buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+react-native-screens:buildKotlinToolingMetadata - Build metadata json file containing information about the used Kotlin tooling
+app:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-async-storage_async-storage:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-community_geolocation:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-gesture-handler:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-maps:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-reanimated:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-safe-area-context:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-screens:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-svg:buildNeeded - Assembles and tests this project and all projects it depends on.
+react-native-vector-icons:buildNeeded - Assembles and tests this project and all projects it depends on.
+app:bundle - Assemble bundles for all the variants.
+app:clean - Deletes the build directory.
+react-native-async-storage_async-storage:clean - Deletes the build directory.
+react-native-community_geolocation:clean - Deletes the build directory.
+react-native-gesture-handler:clean - Deletes the build directory.
+react-native-maps:clean - Deletes the build directory.
+react-native-reanimated:clean - Deletes the build directory.
+react-native-safe-area-context:clean - Deletes the build directory.
+react-native-screens:clean - Deletes the build directory.
+react-native-svg:clean - Deletes the build directory.
+react-native-vector-icons:clean - Deletes the build directory.
+app:compileDebugAndroidTestSources
+react-native-async-storage_async-storage:compileDebugAndroidTestSources
+react-native-community_geolocation:compileDebugAndroidTestSources
+react-native-gesture-handler:compileDebugAndroidTestSources
+react-native-maps:compileDebugAndroidTestSources
+react-native-reanimated:compileDebugAndroidTestSources
+react-native-safe-area-context:compileDebugAndroidTestSources
+react-native-screens:compileDebugAndroidTestSources
+react-native-svg:compileDebugAndroidTestSources
+react-native-vector-icons:compileDebugAndroidTestSources
+app:compileDebugSources
+react-native-async-storage_async-storage:compileDebugSources
+react-native-community_geolocation:compileDebugSources
+react-native-gesture-handler:compileDebugSources
+react-native-maps:compileDebugSources
+react-native-reanimated:compileDebugSources
+react-native-safe-area-context:compileDebugSources
+react-native-screens:compileDebugSources
+react-native-svg:compileDebugSources
+react-native-vector-icons:compileDebugSources
+app:compileDebugUnitTestSources
+react-native-async-storage_async-storage:compileDebugUnitTestSources
+react-native-community_geolocation:compileDebugUnitTestSources
+react-native-gesture-handler:compileDebugUnitTestSources
+react-native-maps:compileDebugUnitTestSources
+react-native-reanimated:compileDebugUnitTestSources
+react-native-safe-area-context:compileDebugUnitTestSources
+react-native-screens:compileDebugUnitTestSources
+react-native-svg:compileDebugUnitTestSources
+react-native-vector-icons:compileDebugUnitTestSources
+app:compileReleaseSources
+react-native-async-storage_async-storage:compileReleaseSources
+react-native-community_geolocation:compileReleaseSources
+react-native-gesture-handler:compileReleaseSources
+react-native-maps:compileReleaseSources
+react-native-reanimated:compileReleaseSources
+react-native-safe-area-context:compileReleaseSources
+react-native-screens:compileReleaseSources
+react-native-svg:compileReleaseSources
+react-native-vector-icons:compileReleaseSources
+app:compileReleaseUnitTestSources
+react-native-async-storage_async-storage:compileReleaseUnitTestSources
+react-native-community_geolocation:compileReleaseUnitTestSources
+react-native-gesture-handler:compileReleaseUnitTestSources
+react-native-maps:compileReleaseUnitTestSources
+react-native-reanimated:compileReleaseUnitTestSources
+react-native-safe-area-context:compileReleaseUnitTestSources
+react-native-screens:compileReleaseUnitTestSources
+react-native-svg:compileReleaseUnitTestSources
+react-native-vector-icons:compileReleaseUnitTestSources
+react-native-gesture-handler:debugSourcesJar - Assembles a jar archive containing the sources of target 'debug'.
+react-native-safe-area-context:debugSourcesJar - Assembles a jar archive containing the sources of target 'debug'.
+react-native-screens:debugSourcesJar - Assembles a jar archive containing the sources of target 'debug'.
+react-native-async-storage_async-storage:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-community_geolocation:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-gesture-handler:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-maps:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-reanimated:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-safe-area-context:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-screens:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-svg:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-vector-icons:extractDebugAnnotations - Extracts Android annotations for the debug variant into the archive file
+react-native-async-storage_async-storage:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-community_geolocation:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-gesture-handler:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-maps:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-reanimated:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-safe-area-context:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-screens:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-svg:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-vector-icons:extractReleaseAnnotations - Extracts Android annotations for the release variant into the archive file
+react-native-gesture-handler:releaseSourcesJar - Assembles a jar archive containing the sources of target 'release'.
+react-native-safe-area-context:releaseSourcesJar - Assembles a jar archive containing the sources of target 'release'.
+react-native-screens:releaseSourcesJar - Assembles a jar archive containing the sources of target 'release'.
+
+Build Setup tasks
+-----------------
+init - Initializes a new Gradle build.
+updateDaemonJvm - Generates or updates the Gradle Daemon JVM criteria.
+wrapper - Generates Gradle wrapper files.
+
+Help tasks
+----------
+buildEnvironment - Displays all buildscript dependencies declared in root project 'AtlasDriverShell'.
+app:buildEnvironment - Displays all buildscript dependencies declared in project ':app'.
+react-native-async-storage_async-storage:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-community_geolocation'.
+react-native-gesture-handler:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-gesture-handler'.
+react-native-maps:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-maps'.
+react-native-reanimated:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-reanimated'.
+react-native-safe-area-context:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-safe-area-context'.
+react-native-screens:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-screens'.
+react-native-svg:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-svg'.
+react-native-vector-icons:buildEnvironment - Displays all buildscript dependencies declared in project ':react-native-vector-icons'.
+dependencies - Displays all dependencies declared in root project 'AtlasDriverShell'.
+app:dependencies - Displays all dependencies declared in project ':app'.
+react-native-async-storage_async-storage:dependencies - Displays all dependencies declared in project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:dependencies - Displays all dependencies declared in project ':react-native-community_geolocation'.
+react-native-gesture-handler:dependencies - Displays all dependencies declared in project ':react-native-gesture-handler'.
+react-native-maps:dependencies - Displays all dependencies declared in project ':react-native-maps'.
+react-native-reanimated:dependencies - Displays all dependencies declared in project ':react-native-reanimated'.
+react-native-safe-area-context:dependencies - Displays all dependencies declared in project ':react-native-safe-area-context'.
+react-native-screens:dependencies - Displays all dependencies declared in project ':react-native-screens'.
+react-native-svg:dependencies - Displays all dependencies declared in project ':react-native-svg'.
+react-native-vector-icons:dependencies - Displays all dependencies declared in project ':react-native-vector-icons'.
+dependencyInsight - Displays the insight into a specific dependency in root project 'AtlasDriverShell'.
+app:dependencyInsight - Displays the insight into a specific dependency in project ':app'.
+react-native-async-storage_async-storage:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-community_geolocation'.
+react-native-gesture-handler:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-gesture-handler'.
+react-native-maps:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-maps'.
+react-native-reanimated:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-reanimated'.
+react-native-safe-area-context:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-safe-area-context'.
+react-native-screens:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-screens'.
+react-native-svg:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-svg'.
+react-native-vector-icons:dependencyInsight - Displays the insight into a specific dependency in project ':react-native-vector-icons'.
+help - Displays a help message.
+app:help - Displays a help message.
+react-native-async-storage_async-storage:help - Displays a help message.
+react-native-community_geolocation:help - Displays a help message.
+react-native-gesture-handler:help - Displays a help message.
+react-native-maps:help - Displays a help message.
+react-native-reanimated:help - Displays a help message.
+react-native-safe-area-context:help - Displays a help message.
+react-native-screens:help - Displays a help message.
+react-native-svg:help - Displays a help message.
+react-native-vector-icons:help - Displays a help message.
+javaToolchains - Displays the detected java toolchains.
+app:javaToolchains - Displays the detected java toolchains.
+react-native-async-storage_async-storage:javaToolchains - Displays the detected java toolchains.
+react-native-community_geolocation:javaToolchains - Displays the detected java toolchains.
+react-native-gesture-handler:javaToolchains - Displays the detected java toolchains.
+react-native-maps:javaToolchains - Displays the detected java toolchains.
+react-native-reanimated:javaToolchains - Displays the detected java toolchains.
+react-native-safe-area-context:javaToolchains - Displays the detected java toolchains.
+react-native-screens:javaToolchains - Displays the detected java toolchains.
+react-native-svg:javaToolchains - Displays the detected java toolchains.
+react-native-vector-icons:javaToolchains - Displays the detected java toolchains.
+outgoingVariants - Displays the outgoing variants of root project 'AtlasDriverShell'.
+app:outgoingVariants - Displays the outgoing variants of project ':app'.
+react-native-async-storage_async-storage:outgoingVariants - Displays the outgoing variants of project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:outgoingVariants - Displays the outgoing variants of project ':react-native-community_geolocation'.
+react-native-gesture-handler:outgoingVariants - Displays the outgoing variants of project ':react-native-gesture-handler'.
+react-native-maps:outgoingVariants - Displays the outgoing variants of project ':react-native-maps'.
+react-native-reanimated:outgoingVariants - Displays the outgoing variants of project ':react-native-reanimated'.
+react-native-safe-area-context:outgoingVariants - Displays the outgoing variants of project ':react-native-safe-area-context'.
+react-native-screens:outgoingVariants - Displays the outgoing variants of project ':react-native-screens'.
+react-native-svg:outgoingVariants - Displays the outgoing variants of project ':react-native-svg'.
+react-native-vector-icons:outgoingVariants - Displays the outgoing variants of project ':react-native-vector-icons'.
+projects - Displays the sub-projects of root project 'AtlasDriverShell'.
+app:projects - Displays the sub-projects of project ':app'.
+react-native-async-storage_async-storage:projects - Displays the sub-projects of project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:projects - Displays the sub-projects of project ':react-native-community_geolocation'.
+react-native-gesture-handler:projects - Displays the sub-projects of project ':react-native-gesture-handler'.
+react-native-maps:projects - Displays the sub-projects of project ':react-native-maps'.
+react-native-reanimated:projects - Displays the sub-projects of project ':react-native-reanimated'.
+react-native-safe-area-context:projects - Displays the sub-projects of project ':react-native-safe-area-context'.
+react-native-screens:projects - Displays the sub-projects of project ':react-native-screens'.
+react-native-svg:projects - Displays the sub-projects of project ':react-native-svg'.
+react-native-vector-icons:projects - Displays the sub-projects of project ':react-native-vector-icons'.
+properties - Displays the properties of root project 'AtlasDriverShell'.
+app:properties - Displays the properties of project ':app'.
+react-native-async-storage_async-storage:properties - Displays the properties of project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:properties - Displays the properties of project ':react-native-community_geolocation'.
+react-native-gesture-handler:properties - Displays the properties of project ':react-native-gesture-handler'.
+react-native-maps:properties - Displays the properties of project ':react-native-maps'.
+react-native-reanimated:properties - Displays the properties of project ':react-native-reanimated'.
+react-native-safe-area-context:properties - Displays the properties of project ':react-native-safe-area-context'.
+react-native-screens:properties - Displays the properties of project ':react-native-screens'.
+react-native-svg:properties - Displays the properties of project ':react-native-svg'.
+react-native-vector-icons:properties - Displays the properties of project ':react-native-vector-icons'.
+resolvableConfigurations - Displays the configurations that can be resolved in root project 'AtlasDriverShell'.
+app:resolvableConfigurations - Displays the configurations that can be resolved in project ':app'.
+react-native-async-storage_async-storage:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-community_geolocation'.
+react-native-gesture-handler:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-gesture-handler'.
+react-native-maps:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-maps'.
+react-native-reanimated:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-reanimated'.
+react-native-safe-area-context:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-safe-area-context'.
+react-native-screens:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-screens'.
+react-native-svg:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-svg'.
+react-native-vector-icons:resolvableConfigurations - Displays the configurations that can be resolved in project ':react-native-vector-icons'.
+tasks - Displays the tasks runnable from root project 'AtlasDriverShell' (some of the displayed tasks may belong to subprojects).
+app:tasks - Displays the tasks runnable from project ':app'.
+react-native-async-storage_async-storage:tasks - Displays the tasks runnable from project ':react-native-async-storage_async-storage'.
+react-native-community_geolocation:tasks - Displays the tasks runnable from project ':react-native-community_geolocation'.
+react-native-gesture-handler:tasks - Displays the tasks runnable from project ':react-native-gesture-handler'.
+react-native-maps:tasks - Displays the tasks runnable from project ':react-native-maps'.
+react-native-reanimated:tasks - Displays the tasks runnable from project ':react-native-reanimated'.
+react-native-safe-area-context:tasks - Displays the tasks runnable from project ':react-native-safe-area-context'.
+react-native-screens:tasks - Displays the tasks runnable from project ':react-native-screens'.
+react-native-svg:tasks - Displays the tasks runnable from project ':react-native-svg'.
+react-native-vector-icons:tasks - Displays the tasks runnable from project ':react-native-vector-icons'.
+
+Install tasks
+-------------
+app:installDebug - Installs the Debug build.
+app:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-async-storage_async-storage:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-community_geolocation:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-gesture-handler:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-maps:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-reanimated:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-safe-area-context:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-screens:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-svg:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+react-native-vector-icons:installDebugAndroidTest - Installs the android (on device) tests for the Debug build.
+app:installRelease - Installs the Release build.
+app:uninstallAll - Uninstall all applications.
+react-native-async-storage_async-storage:uninstallAll - Uninstall all applications.
+react-native-community_geolocation:uninstallAll - Uninstall all applications.
+react-native-gesture-handler:uninstallAll - Uninstall all applications.
+react-native-maps:uninstallAll - Uninstall all applications.
+react-native-reanimated:uninstallAll - Uninstall all applications.
+react-native-safe-area-context:uninstallAll - Uninstall all applications.
+react-native-screens:uninstallAll - Uninstall all applications.
+react-native-svg:uninstallAll - Uninstall all applications.
+react-native-vector-icons:uninstallAll - Uninstall all applications.
+app:uninstallDebug - Uninstalls the Debug build.
+app:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-async-storage_async-storage:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-community_geolocation:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-gesture-handler:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-maps:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-reanimated:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-safe-area-context:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-screens:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-svg:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+react-native-vector-icons:uninstallDebugAndroidTest - Uninstalls the android (on device) tests for the Debug build.
+app:uninstallRelease - Uninstalls the Release build.
+
+Publishing tasks
+----------------
+react-native-reanimated:publish - Publishes all publications produced by this project.
+react-native-reanimated:publishToMavenLocal - Publishes all Maven publications produced by this project to the local Maven cache.
+
+React tasks
+-----------
+app:createBundleReleaseJsAndAssets
+app:generateAutolinkingNewArchitectureFiles
+app:generateAutolinkingPackageList
+
+Verification tasks
+------------------
+app:check - Runs all checks.
+react-native-async-storage_async-storage:check - Runs all checks.
+react-native-community_geolocation:check - Runs all checks.
+react-native-gesture-handler:check - Runs all checks.
+react-native-maps:check - Runs all checks.
+react-native-reanimated:check - Runs all checks.
+react-native-safe-area-context:check - Runs all checks.
+react-native-screens:check - Runs all checks.
+react-native-svg:check - Runs all checks.
+react-native-vector-icons:check - Runs all checks.
+app:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-async-storage_async-storage:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-community_geolocation:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-gesture-handler:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-maps:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-reanimated:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-safe-area-context:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-screens:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-svg:checkJetifier - Checks whether Jetifier is needed for the current project
+react-native-vector-icons:checkJetifier - Checks whether Jetifier is needed for the current project
+app:checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+react-native-gesture-handler:checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+react-native-safe-area-context:checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+react-native-screens:checkKotlinGradlePluginConfigurationErrors - Checks that Kotlin Gradle Plugin hasn't reported project configuration errors, failing otherwise. This task always runs before compileKotlin* or similar tasks.
+app:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-async-storage_async-storage:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-community_geolocation:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-gesture-handler:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-maps:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-reanimated:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-safe-area-context:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-screens:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-svg:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+react-native-vector-icons:connectedAndroidTest - Installs and runs instrumentation tests for all flavors on connected devices.
+app:connectedCheck - Runs all device checks on currently connected devices.
+react-native-async-storage_async-storage:connectedCheck - Runs all device checks on currently connected devices.
+react-native-community_geolocation:connectedCheck - Runs all device checks on currently connected devices.
+react-native-gesture-handler:connectedCheck - Runs all device checks on currently connected devices.
+react-native-maps:connectedCheck - Runs all device checks on currently connected devices.
+react-native-reanimated:connectedCheck - Runs all device checks on currently connected devices.
+react-native-safe-area-context:connectedCheck - Runs all device checks on currently connected devices.
+react-native-screens:connectedCheck - Runs all device checks on currently connected devices.
+react-native-svg:connectedCheck - Runs all device checks on currently connected devices.
+react-native-vector-icons:connectedCheck - Runs all device checks on currently connected devices.
+app:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-async-storage_async-storage:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-community_geolocation:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-gesture-handler:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-maps:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-reanimated:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-safe-area-context:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-screens:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-svg:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+react-native-vector-icons:connectedDebugAndroidTest - Installs and runs the tests for debug on connected devices.
+app:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-async-storage_async-storage:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-community_geolocation:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-gesture-handler:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-maps:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-reanimated:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-safe-area-context:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-screens:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-svg:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+react-native-vector-icons:deviceAndroidTest - Installs and runs instrumentation tests using all Device Providers.
+app:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-async-storage_async-storage:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-community_geolocation:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-gesture-handler:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-maps:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-reanimated:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-safe-area-context:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-screens:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-svg:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+react-native-vector-icons:deviceCheck - Runs all device checks using Device Providers and Test Servers.
+app:lint - Runs lint on the default variant.
+react-native-async-storage_async-storage:lint - Runs lint on the default variant.
+react-native-community_geolocation:lint - Runs lint on the default variant.
+react-native-gesture-handler:lint - Runs lint on the default variant.
+react-native-maps:lint - Runs lint on the default variant.
+react-native-reanimated:lint - Runs lint on the default variant.
+react-native-safe-area-context:lint - Runs lint on the default variant.
+react-native-screens:lint - Runs lint on the default variant.
+react-native-svg:lint - Runs lint on the default variant.
+react-native-vector-icons:lint - Runs lint on the default variant.
+app:lintDebug - Print text output from the corresponding lint report task
+react-native-async-storage_async-storage:lintDebug - Print text output from the corresponding lint report task
+react-native-community_geolocation:lintDebug - Print text output from the corresponding lint report task
+react-native-gesture-handler:lintDebug - Print text output from the corresponding lint report task
+react-native-maps:lintDebug - Print text output from the corresponding lint report task
+react-native-reanimated:lintDebug - Print text output from the corresponding lint report task
+react-native-safe-area-context:lintDebug - Print text output from the corresponding lint report task
+react-native-screens:lintDebug - Print text output from the corresponding lint report task
+react-native-svg:lintDebug - Print text output from the corresponding lint report task
+react-native-vector-icons:lintDebug - Print text output from the corresponding lint report task
+app:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-async-storage_async-storage:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-community_geolocation:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-gesture-handler:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-maps:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-reanimated:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-safe-area-context:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-screens:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-svg:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+react-native-vector-icons:lintFix - Runs lint on the default variant and applies any safe suggestions to the source code.
+app:lintRelease - Print text output from the corresponding lint report task
+react-native-async-storage_async-storage:lintRelease - Print text output from the corresponding lint report task
+react-native-community_geolocation:lintRelease - Print text output from the corresponding lint report task
+react-native-gesture-handler:lintRelease - Print text output from the corresponding lint report task
+react-native-maps:lintRelease - Print text output from the corresponding lint report task
+react-native-reanimated:lintRelease - Print text output from the corresponding lint report task
+react-native-safe-area-context:lintRelease - Print text output from the corresponding lint report task
+react-native-screens:lintRelease - Print text output from the corresponding lint report task
+react-native-svg:lintRelease - Print text output from the corresponding lint report task
+react-native-vector-icons:lintRelease - Print text output from the corresponding lint report task
+app:lintVitalRelease - Print text output from the corresponding lint report task
+app:test - Run unit tests for all variants.
+react-native-async-storage_async-storage:test - Run unit tests for all variants.
+react-native-community_geolocation:test - Run unit tests for all variants.
+react-native-gesture-handler:test - Run unit tests for all variants.
+react-native-maps:test - Run unit tests for all variants.
+react-native-reanimated:test - Run unit tests for all variants.
+react-native-safe-area-context:test - Run unit tests for all variants.
+react-native-screens:test - Run unit tests for all variants.
+react-native-svg:test - Run unit tests for all variants.
+react-native-vector-icons:test - Run unit tests for all variants.
+app:testDebugUnitTest - Run unit tests for the debug build.
+react-native-async-storage_async-storage:testDebugUnitTest - Run unit tests for the debug build.
+react-native-community_geolocation:testDebugUnitTest - Run unit tests for the debug build.
+react-native-gesture-handler:testDebugUnitTest - Run unit tests for the debug build.
+react-native-maps:testDebugUnitTest - Run unit tests for the debug build.
+react-native-reanimated:testDebugUnitTest - Run unit tests for the debug build.
+react-native-safe-area-context:testDebugUnitTest - Run unit tests for the debug build.
+react-native-screens:testDebugUnitTest - Run unit tests for the debug build.
+react-native-svg:testDebugUnitTest - Run unit tests for the debug build.
+react-native-vector-icons:testDebugUnitTest - Run unit tests for the debug build.
+app:testReleaseUnitTest - Run unit tests for the release build.
+react-native-async-storage_async-storage:testReleaseUnitTest - Run unit tests for the release build.
+react-native-community_geolocation:testReleaseUnitTest - Run unit tests for the release build.
+react-native-gesture-handler:testReleaseUnitTest - Run unit tests for the release build.
+react-native-maps:testReleaseUnitTest - Run unit tests for the release build.
+react-native-reanimated:testReleaseUnitTest - Run unit tests for the release build.
+react-native-safe-area-context:testReleaseUnitTest - Run unit tests for the release build.
+react-native-screens:testReleaseUnitTest - Run unit tests for the release build.
+react-native-svg:testReleaseUnitTest - Run unit tests for the release build.
+react-native-vector-icons:testReleaseUnitTest - Run unit tests for the release build.
+app:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-async-storage_async-storage:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-community_geolocation:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-gesture-handler:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-maps:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-reanimated:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-safe-area-context:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-screens:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-svg:updateLintBaseline - Updates the lint baseline using the default variant.
+react-native-vector-icons:updateLintBaseline - Updates the lint baseline using the default variant.
+
+Other tasks
+-----------
+app:analyzeDebugAndroidTestDependencies
+react-native-async-storage_async-storage:analyzeDebugAndroidTestDependencies
+react-native-community_geolocation:analyzeDebugAndroidTestDependencies
+react-native-gesture-handler:analyzeDebugAndroidTestDependencies
+react-native-maps:analyzeDebugAndroidTestDependencies
+react-native-reanimated:analyzeDebugAndroidTestDependencies
+react-native-safe-area-context:analyzeDebugAndroidTestDependencies
+react-native-screens:analyzeDebugAndroidTestDependencies
+react-native-svg:analyzeDebugAndroidTestDependencies
+react-native-vector-icons:analyzeDebugAndroidTestDependencies
+app:analyzeDebugDependencies
+react-native-async-storage_async-storage:analyzeDebugDependencies
+react-native-community_geolocation:analyzeDebugDependencies
+react-native-gesture-handler:analyzeDebugDependencies
+react-native-maps:analyzeDebugDependencies
+react-native-reanimated:analyzeDebugDependencies
+react-native-safe-area-context:analyzeDebugDependencies
+react-native-screens:analyzeDebugDependencies
+react-native-svg:analyzeDebugDependencies
+react-native-vector-icons:analyzeDebugDependencies
+app:analyzeDebugUnitTestDependencies
+react-native-async-storage_async-storage:analyzeDebugUnitTestDependencies
+react-native-community_geolocation:analyzeDebugUnitTestDependencies
+react-native-gesture-handler:analyzeDebugUnitTestDependencies
+react-native-maps:analyzeDebugUnitTestDependencies
+react-native-reanimated:analyzeDebugUnitTestDependencies
+react-native-safe-area-context:analyzeDebugUnitTestDependencies
+react-native-screens:analyzeDebugUnitTestDependencies
+react-native-svg:analyzeDebugUnitTestDependencies
+react-native-vector-icons:analyzeDebugUnitTestDependencies
+app:analyzeReleaseDependencies
+react-native-async-storage_async-storage:analyzeReleaseDependencies
+react-native-community_geolocation:analyzeReleaseDependencies
+react-native-gesture-handler:analyzeReleaseDependencies
+react-native-maps:analyzeReleaseDependencies
+react-native-reanimated:analyzeReleaseDependencies
+react-native-safe-area-context:analyzeReleaseDependencies
+react-native-screens:analyzeReleaseDependencies
+react-native-svg:analyzeReleaseDependencies
+react-native-vector-icons:analyzeReleaseDependencies
+app:analyzeReleaseUnitTestDependencies
+react-native-async-storage_async-storage:analyzeReleaseUnitTestDependencies
+react-native-community_geolocation:analyzeReleaseUnitTestDependencies
+react-native-gesture-handler:analyzeReleaseUnitTestDependencies
+react-native-maps:analyzeReleaseUnitTestDependencies
+react-native-reanimated:analyzeReleaseUnitTestDependencies
+react-native-safe-area-context:analyzeReleaseUnitTestDependencies
+react-native-screens:analyzeReleaseUnitTestDependencies
+react-native-svg:analyzeReleaseUnitTestDependencies
+react-native-vector-icons:analyzeReleaseUnitTestDependencies
+app:asarToCompatSplitsForDebug
+app:asarToCompatSplitsForRelease
+app:assembleDebug - Assembles main output for variant debug
+react-native-async-storage_async-storage:assembleDebug - Assembles main output for variant debug
+react-native-community_geolocation:assembleDebug - Assembles main output for variant debug
+react-native-gesture-handler:assembleDebug - Assembles main output for variant debug
+react-native-maps:assembleDebug - Assembles main output for variant debug
+react-native-reanimated:assembleDebug - Assembles main output for variant debug
+react-native-safe-area-context:assembleDebug - Assembles main output for variant debug
+react-native-screens:assembleDebug - Assembles main output for variant debug
+react-native-svg:assembleDebug - Assembles main output for variant debug
+react-native-vector-icons:assembleDebug - Assembles main output for variant debug
+app:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-async-storage_async-storage:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-community_geolocation:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-gesture-handler:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-maps:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-reanimated:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-safe-area-context:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-screens:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-svg:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+react-native-vector-icons:assembleDebugAndroidTest - Assembles main output for variant debugAndroidTest
+app:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-async-storage_async-storage:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-community_geolocation:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-gesture-handler:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-maps:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-reanimated:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-safe-area-context:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-screens:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-svg:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+react-native-vector-icons:assembleDebugUnitTest - Assembles main output for variant debugUnitTest
+app:assembleRelease - Assembles main output for variant release
+react-native-async-storage_async-storage:assembleRelease - Assembles main output for variant release
+react-native-community_geolocation:assembleRelease - Assembles main output for variant release
+react-native-gesture-handler:assembleRelease - Assembles main output for variant release
+react-native-maps:assembleRelease - Assembles main output for variant release
+react-native-reanimated:assembleRelease - Assembles main output for variant release
+react-native-safe-area-context:assembleRelease - Assembles main output for variant release
+react-native-screens:assembleRelease - Assembles main output for variant release
+react-native-svg:assembleRelease - Assembles main output for variant release
+react-native-vector-icons:assembleRelease - Assembles main output for variant release
+app:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-async-storage_async-storage:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-community_geolocation:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-gesture-handler:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-maps:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-reanimated:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-safe-area-context:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-screens:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-svg:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-vector-icons:assembleReleaseUnitTest - Assembles main output for variant releaseUnitTest
+react-native-reanimated:assertMinimalReactNativeVersionTask
+app:buildCMakeDebug
+react-native-gesture-handler:buildCMakeDebug
+react-native-reanimated:buildCMakeDebug
+react-native-screens:buildCMakeDebug
+app:buildCMakeDebug[arm64-v8a]
+react-native-gesture-handler:buildCMakeDebug[arm64-v8a]
+react-native-screens:buildCMakeDebug[arm64-v8a]
+react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated,worklets]
+app:buildCMakeDebug[armeabi-v7a]
+react-native-gesture-handler:buildCMakeDebug[armeabi-v7a]
+react-native-screens:buildCMakeDebug[armeabi-v7a]
+react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated,worklets]
+app:buildCMakeDebug[x86]
+react-native-gesture-handler:buildCMakeDebug[x86]
+react-native-screens:buildCMakeDebug[x86]
+react-native-reanimated:buildCMakeDebug[x86][reanimated,worklets]
+app:buildCMakeDebug[x86_64]
+react-native-gesture-handler:buildCMakeDebug[x86_64]
+react-native-screens:buildCMakeDebug[x86_64]
+react-native-reanimated:buildCMakeDebug[x86_64][reanimated,worklets]
+app:buildCMakeRelWithDebInfo
+react-native-gesture-handler:buildCMakeRelWithDebInfo
+react-native-reanimated:buildCMakeRelWithDebInfo
+react-native-screens:buildCMakeRelWithDebInfo
+app:buildCMakeRelWithDebInfo[arm64-v8a]
+react-native-gesture-handler:buildCMakeRelWithDebInfo[arm64-v8a]
+react-native-screens:buildCMakeRelWithDebInfo[arm64-v8a]
+react-native-reanimated:buildCMakeRelWithDebInfo[arm64-v8a][reanimated,worklets]
+app:buildCMakeRelWithDebInfo[armeabi-v7a]
+react-native-gesture-handler:buildCMakeRelWithDebInfo[armeabi-v7a]
+react-native-screens:buildCMakeRelWithDebInfo[armeabi-v7a]
+react-native-reanimated:buildCMakeRelWithDebInfo[armeabi-v7a][reanimated,worklets]
+app:buildCMakeRelWithDebInfo[x86]
+react-native-gesture-handler:buildCMakeRelWithDebInfo[x86]
+react-native-screens:buildCMakeRelWithDebInfo[x86]
+react-native-reanimated:buildCMakeRelWithDebInfo[x86][reanimated,worklets]
+app:buildCMakeRelWithDebInfo[x86_64]
+react-native-gesture-handler:buildCMakeRelWithDebInfo[x86_64]
+react-native-screens:buildCMakeRelWithDebInfo[x86_64]
+react-native-reanimated:buildCMakeRelWithDebInfo[x86_64][reanimated,worklets]
+app:buildDebugPreBundle
+app:buildReleasePreBundle
+app:bundleDebug - Assembles bundle for variant debug
+react-native-async-storage_async-storage:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-community_geolocation:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-gesture-handler:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-maps:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-reanimated:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-safe-area-context:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-screens:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-svg:bundleDebugAar - Assembles a bundle containing the library in debug.
+react-native-vector-icons:bundleDebugAar - Assembles a bundle containing the library in debug.
+app:bundleDebugClassesToCompileJar
+app:bundleDebugClassesToRuntimeJar
+react-native-async-storage_async-storage:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-community_geolocation:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-gesture-handler:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-maps:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-reanimated:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-safe-area-context:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-screens:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-svg:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+react-native-vector-icons:bundleDebugLocalLintAar - Assembles a bundle containing the library in debug.
+app:bundleDebugResources
+react-native-async-storage_async-storage:bundleLibCompileToJarDebug
+react-native-community_geolocation:bundleLibCompileToJarDebug
+react-native-gesture-handler:bundleLibCompileToJarDebug
+react-native-maps:bundleLibCompileToJarDebug
+react-native-reanimated:bundleLibCompileToJarDebug
+react-native-safe-area-context:bundleLibCompileToJarDebug
+react-native-screens:bundleLibCompileToJarDebug
+react-native-svg:bundleLibCompileToJarDebug
+react-native-vector-icons:bundleLibCompileToJarDebug
+react-native-async-storage_async-storage:bundleLibCompileToJarRelease
+react-native-community_geolocation:bundleLibCompileToJarRelease
+react-native-gesture-handler:bundleLibCompileToJarRelease
+react-native-maps:bundleLibCompileToJarRelease
+react-native-reanimated:bundleLibCompileToJarRelease
+react-native-safe-area-context:bundleLibCompileToJarRelease
+react-native-screens:bundleLibCompileToJarRelease
+react-native-svg:bundleLibCompileToJarRelease
+react-native-vector-icons:bundleLibCompileToJarRelease
+react-native-async-storage_async-storage:bundleLibRuntimeToDirDebug
+react-native-community_geolocation:bundleLibRuntimeToDirDebug
+react-native-gesture-handler:bundleLibRuntimeToDirDebug
+react-native-maps:bundleLibRuntimeToDirDebug
+react-native-reanimated:bundleLibRuntimeToDirDebug
+react-native-safe-area-context:bundleLibRuntimeToDirDebug
+react-native-screens:bundleLibRuntimeToDirDebug
+react-native-svg:bundleLibRuntimeToDirDebug
+react-native-vector-icons:bundleLibRuntimeToDirDebug
+react-native-async-storage_async-storage:bundleLibRuntimeToDirRelease
+react-native-community_geolocation:bundleLibRuntimeToDirRelease
+react-native-gesture-handler:bundleLibRuntimeToDirRelease
+react-native-maps:bundleLibRuntimeToDirRelease
+react-native-reanimated:bundleLibRuntimeToDirRelease
+react-native-safe-area-context:bundleLibRuntimeToDirRelease
+react-native-screens:bundleLibRuntimeToDirRelease
+react-native-svg:bundleLibRuntimeToDirRelease
+react-native-vector-icons:bundleLibRuntimeToDirRelease
+react-native-async-storage_async-storage:bundleLibRuntimeToJarDebug
+react-native-community_geolocation:bundleLibRuntimeToJarDebug
+react-native-gesture-handler:bundleLibRuntimeToJarDebug
+react-native-maps:bundleLibRuntimeToJarDebug
+react-native-reanimated:bundleLibRuntimeToJarDebug
+react-native-safe-area-context:bundleLibRuntimeToJarDebug
+react-native-screens:bundleLibRuntimeToJarDebug
+react-native-svg:bundleLibRuntimeToJarDebug
+react-native-vector-icons:bundleLibRuntimeToJarDebug
+react-native-async-storage_async-storage:bundleLibRuntimeToJarRelease
+react-native-community_geolocation:bundleLibRuntimeToJarRelease
+react-native-gesture-handler:bundleLibRuntimeToJarRelease
+react-native-maps:bundleLibRuntimeToJarRelease
+react-native-reanimated:bundleLibRuntimeToJarRelease
+react-native-safe-area-context:bundleLibRuntimeToJarRelease
+react-native-screens:bundleLibRuntimeToJarRelease
+react-native-svg:bundleLibRuntimeToJarRelease
+react-native-vector-icons:bundleLibRuntimeToJarRelease
+app:bundleRelease - Assembles bundle for variant release
+react-native-async-storage_async-storage:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-community_geolocation:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-gesture-handler:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-maps:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-reanimated:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-safe-area-context:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-screens:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-svg:bundleReleaseAar - Assembles a bundle containing the library in release.
+react-native-vector-icons:bundleReleaseAar - Assembles a bundle containing the library in release.
+app:bundleReleaseClassesToCompileJar
+app:bundleReleaseClassesToRuntimeJar
+react-native-async-storage_async-storage:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-community_geolocation:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-gesture-handler:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-maps:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-reanimated:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-safe-area-context:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-screens:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-svg:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+react-native-vector-icons:bundleReleaseLocalLintAar - Assembles a bundle containing the library in release.
+app:bundleReleaseResources
+app:checkDebugAarMetadata
+app:checkDebugAndroidTestAarMetadata
+react-native-async-storage_async-storage:checkDebugAndroidTestAarMetadata
+react-native-community_geolocation:checkDebugAndroidTestAarMetadata
+react-native-gesture-handler:checkDebugAndroidTestAarMetadata
+react-native-maps:checkDebugAndroidTestAarMetadata
+react-native-reanimated:checkDebugAndroidTestAarMetadata
+react-native-safe-area-context:checkDebugAndroidTestAarMetadata
+react-native-screens:checkDebugAndroidTestAarMetadata
+react-native-svg:checkDebugAndroidTestAarMetadata
+react-native-vector-icons:checkDebugAndroidTestAarMetadata
+app:checkDebugAndroidTestDuplicateClasses
+react-native-async-storage_async-storage:checkDebugAndroidTestDuplicateClasses
+react-native-community_geolocation:checkDebugAndroidTestDuplicateClasses
+react-native-gesture-handler:checkDebugAndroidTestDuplicateClasses
+react-native-maps:checkDebugAndroidTestDuplicateClasses
+react-native-reanimated:checkDebugAndroidTestDuplicateClasses
+react-native-safe-area-context:checkDebugAndroidTestDuplicateClasses
+react-native-screens:checkDebugAndroidTestDuplicateClasses
+react-native-svg:checkDebugAndroidTestDuplicateClasses
+react-native-vector-icons:checkDebugAndroidTestDuplicateClasses
+app:checkDebugDuplicateClasses
+app:checkDebugManifest
+react-native-async-storage_async-storage:checkDebugManifest
+react-native-community_geolocation:checkDebugManifest
+react-native-gesture-handler:checkDebugManifest
+react-native-maps:checkDebugManifest
+react-native-reanimated:checkDebugManifest
+react-native-safe-area-context:checkDebugManifest
+react-native-screens:checkDebugManifest
+react-native-svg:checkDebugManifest
+react-native-vector-icons:checkDebugManifest
+app:checkReleaseAarMetadata
+app:checkReleaseDuplicateClasses
+app:checkReleaseManifest
+react-native-async-storage_async-storage:checkReleaseManifest
+react-native-community_geolocation:checkReleaseManifest
+react-native-gesture-handler:checkReleaseManifest
+react-native-maps:checkReleaseManifest
+react-native-reanimated:checkReleaseManifest
+react-native-safe-area-context:checkReleaseManifest
+react-native-screens:checkReleaseManifest
+react-native-svg:checkReleaseManifest
+react-native-vector-icons:checkReleaseManifest
+react-native-reanimated:cleanCmakeCache
+app:collectReleaseDependencies
+app:compileDebugAndroidTestJavaWithJavac
+react-native-async-storage_async-storage:compileDebugAndroidTestJavaWithJavac
+react-native-community_geolocation:compileDebugAndroidTestJavaWithJavac
+react-native-gesture-handler:compileDebugAndroidTestJavaWithJavac
+react-native-maps:compileDebugAndroidTestJavaWithJavac
+react-native-reanimated:compileDebugAndroidTestJavaWithJavac
+react-native-safe-area-context:compileDebugAndroidTestJavaWithJavac
+react-native-screens:compileDebugAndroidTestJavaWithJavac
+react-native-svg:compileDebugAndroidTestJavaWithJavac
+react-native-vector-icons:compileDebugAndroidTestJavaWithJavac
+app:compileDebugAndroidTestKotlin - Compiles the debugAndroidTest kotlin.
+react-native-gesture-handler:compileDebugAndroidTestKotlin - Compiles the debugAndroidTest kotlin.
+react-native-safe-area-context:compileDebugAndroidTestKotlin - Compiles the debugAndroidTest kotlin.
+react-native-screens:compileDebugAndroidTestKotlin - Compiles the debugAndroidTest kotlin.
+app:compileDebugAndroidTestShaders
+react-native-async-storage_async-storage:compileDebugAndroidTestShaders
+react-native-community_geolocation:compileDebugAndroidTestShaders
+react-native-gesture-handler:compileDebugAndroidTestShaders
+react-native-maps:compileDebugAndroidTestShaders
+react-native-reanimated:compileDebugAndroidTestShaders
+react-native-safe-area-context:compileDebugAndroidTestShaders
+react-native-screens:compileDebugAndroidTestShaders
+react-native-svg:compileDebugAndroidTestShaders
+react-native-vector-icons:compileDebugAndroidTestShaders
+app:compileDebugArtProfile
+app:compileDebugJavaWithJavac
+react-native-async-storage_async-storage:compileDebugJavaWithJavac
+react-native-community_geolocation:compileDebugJavaWithJavac
+react-native-gesture-handler:compileDebugJavaWithJavac
+react-native-maps:compileDebugJavaWithJavac
+react-native-reanimated:compileDebugJavaWithJavac
+react-native-safe-area-context:compileDebugJavaWithJavac
+react-native-screens:compileDebugJavaWithJavac
+react-native-svg:compileDebugJavaWithJavac
+react-native-vector-icons:compileDebugJavaWithJavac
+app:compileDebugKotlin - Compiles the debug kotlin.
+react-native-gesture-handler:compileDebugKotlin - Compiles the debug kotlin.
+react-native-safe-area-context:compileDebugKotlin - Compiles the debug kotlin.
+react-native-screens:compileDebugKotlin - Compiles the debug kotlin.
+react-native-async-storage_async-storage:compileDebugLibraryResources
+react-native-community_geolocation:compileDebugLibraryResources
+react-native-gesture-handler:compileDebugLibraryResources
+react-native-maps:compileDebugLibraryResources
+react-native-reanimated:compileDebugLibraryResources
+react-native-safe-area-context:compileDebugLibraryResources
+react-native-screens:compileDebugLibraryResources
+react-native-svg:compileDebugLibraryResources
+react-native-vector-icons:compileDebugLibraryResources
+app:compileDebugShaders
+react-native-async-storage_async-storage:compileDebugShaders
+react-native-community_geolocation:compileDebugShaders
+react-native-gesture-handler:compileDebugShaders
+react-native-maps:compileDebugShaders
+react-native-reanimated:compileDebugShaders
+react-native-safe-area-context:compileDebugShaders
+react-native-screens:compileDebugShaders
+react-native-svg:compileDebugShaders
+react-native-vector-icons:compileDebugShaders
+app:compileDebugUnitTestJavaWithJavac
+react-native-async-storage_async-storage:compileDebugUnitTestJavaWithJavac
+react-native-community_geolocation:compileDebugUnitTestJavaWithJavac
+react-native-gesture-handler:compileDebugUnitTestJavaWithJavac
+react-native-maps:compileDebugUnitTestJavaWithJavac
+react-native-reanimated:compileDebugUnitTestJavaWithJavac
+react-native-safe-area-context:compileDebugUnitTestJavaWithJavac
+react-native-screens:compileDebugUnitTestJavaWithJavac
+react-native-svg:compileDebugUnitTestJavaWithJavac
+react-native-vector-icons:compileDebugUnitTestJavaWithJavac
+app:compileDebugUnitTestKotlin - Compiles the debugUnitTest kotlin.
+react-native-gesture-handler:compileDebugUnitTestKotlin - Compiles the debugUnitTest kotlin.
+react-native-safe-area-context:compileDebugUnitTestKotlin - Compiles the debugUnitTest kotlin.
+react-native-screens:compileDebugUnitTestKotlin - Compiles the debugUnitTest kotlin.
+app:compileLint
+react-native-async-storage_async-storage:compileLint
+react-native-community_geolocation:compileLint
+react-native-gesture-handler:compileLint
+react-native-maps:compileLint
+react-native-reanimated:compileLint
+react-native-safe-area-context:compileLint
+react-native-screens:compileLint
+react-native-svg:compileLint
+react-native-vector-icons:compileLint
+app:compileLintChecks
+react-native-async-storage_async-storage:compileLintChecks
+react-native-community_geolocation:compileLintChecks
+react-native-gesture-handler:compileLintChecks
+react-native-maps:compileLintChecks
+react-native-reanimated:compileLintChecks
+react-native-safe-area-context:compileLintChecks
+react-native-screens:compileLintChecks
+react-native-svg:compileLintChecks
+react-native-vector-icons:compileLintChecks
+app:compileReleaseArtProfile
+app:compileReleaseJavaWithJavac
+react-native-async-storage_async-storage:compileReleaseJavaWithJavac
+react-native-community_geolocation:compileReleaseJavaWithJavac
+react-native-gesture-handler:compileReleaseJavaWithJavac
+react-native-maps:compileReleaseJavaWithJavac
+react-native-reanimated:compileReleaseJavaWithJavac
+react-native-safe-area-context:compileReleaseJavaWithJavac
+react-native-screens:compileReleaseJavaWithJavac
+react-native-svg:compileReleaseJavaWithJavac
+react-native-vector-icons:compileReleaseJavaWithJavac
+app:compileReleaseKotlin - Compiles the release kotlin.
+react-native-gesture-handler:compileReleaseKotlin - Compiles the release kotlin.
+react-native-safe-area-context:compileReleaseKotlin - Compiles the release kotlin.
+react-native-screens:compileReleaseKotlin - Compiles the release kotlin.
+react-native-async-storage_async-storage:compileReleaseLibraryResources
+react-native-community_geolocation:compileReleaseLibraryResources
+react-native-gesture-handler:compileReleaseLibraryResources
+react-native-maps:compileReleaseLibraryResources
+react-native-reanimated:compileReleaseLibraryResources
+react-native-safe-area-context:compileReleaseLibraryResources
+react-native-screens:compileReleaseLibraryResources
+react-native-svg:compileReleaseLibraryResources
+react-native-vector-icons:compileReleaseLibraryResources
+app:compileReleaseShaders
+react-native-async-storage_async-storage:compileReleaseShaders
+react-native-community_geolocation:compileReleaseShaders
+react-native-gesture-handler:compileReleaseShaders
+react-native-maps:compileReleaseShaders
+react-native-reanimated:compileReleaseShaders
+react-native-safe-area-context:compileReleaseShaders
+react-native-screens:compileReleaseShaders
+react-native-svg:compileReleaseShaders
+react-native-vector-icons:compileReleaseShaders
+app:compileReleaseUnitTestJavaWithJavac
+react-native-async-storage_async-storage:compileReleaseUnitTestJavaWithJavac
+react-native-community_geolocation:compileReleaseUnitTestJavaWithJavac
+react-native-gesture-handler:compileReleaseUnitTestJavaWithJavac
+react-native-maps:compileReleaseUnitTestJavaWithJavac
+react-native-reanimated:compileReleaseUnitTestJavaWithJavac
+react-native-safe-area-context:compileReleaseUnitTestJavaWithJavac
+react-native-screens:compileReleaseUnitTestJavaWithJavac
+react-native-svg:compileReleaseUnitTestJavaWithJavac
+react-native-vector-icons:compileReleaseUnitTestJavaWithJavac
+app:compileReleaseUnitTestKotlin - Compiles the releaseUnitTest kotlin.
+react-native-gesture-handler:compileReleaseUnitTestKotlin - Compiles the releaseUnitTest kotlin.
+react-native-safe-area-context:compileReleaseUnitTestKotlin - Compiles the releaseUnitTest kotlin.
+react-native-screens:compileReleaseUnitTestKotlin - Compiles the releaseUnitTest kotlin.
+components - Displays the components produced by root project 'AtlasDriverShell'. [deprecated]
+app:components - Displays the components produced by project ':app'. [deprecated]
+react-native-async-storage_async-storage:components - Displays the components produced by project ':react-native-async-storage_async-storage'. [deprecated]
+react-native-community_geolocation:components - Displays the components produced by project ':react-native-community_geolocation'. [deprecated]
+react-native-gesture-handler:components - Displays the components produced by project ':react-native-gesture-handler'. [deprecated]
+react-native-maps:components - Displays the components produced by project ':react-native-maps'. [deprecated]
+react-native-reanimated:components - Displays the components produced by project ':react-native-reanimated'. [deprecated]
+react-native-safe-area-context:components - Displays the components produced by project ':react-native-safe-area-context'. [deprecated]
+react-native-screens:components - Displays the components produced by project ':react-native-screens'. [deprecated]
+react-native-svg:components - Displays the components produced by project ':react-native-svg'. [deprecated]
+react-native-vector-icons:components - Displays the components produced by project ':react-native-vector-icons'. [deprecated]
+app:compressDebugAndroidTestAssets
+react-native-async-storage_async-storage:compressDebugAndroidTestAssets
+react-native-community_geolocation:compressDebugAndroidTestAssets
+react-native-gesture-handler:compressDebugAndroidTestAssets
+react-native-maps:compressDebugAndroidTestAssets
+react-native-reanimated:compressDebugAndroidTestAssets
+react-native-safe-area-context:compressDebugAndroidTestAssets
+react-native-screens:compressDebugAndroidTestAssets
+react-native-svg:compressDebugAndroidTestAssets
+react-native-vector-icons:compressDebugAndroidTestAssets
+app:compressDebugAssets
+app:compressReleaseAssets
+app:configureCMakeDebug
+react-native-gesture-handler:configureCMakeDebug
+react-native-reanimated:configureCMakeDebug
+react-native-screens:configureCMakeDebug
+app:configureCMakeDebug[arm64-v8a]
+react-native-gesture-handler:configureCMakeDebug[arm64-v8a]
+react-native-reanimated:configureCMakeDebug[arm64-v8a]
+react-native-screens:configureCMakeDebug[arm64-v8a]
+app:configureCMakeDebug[armeabi-v7a]
+react-native-gesture-handler:configureCMakeDebug[armeabi-v7a]
+react-native-reanimated:configureCMakeDebug[armeabi-v7a]
+react-native-screens:configureCMakeDebug[armeabi-v7a]
+app:configureCMakeDebug[x86]
+react-native-gesture-handler:configureCMakeDebug[x86]
+react-native-reanimated:configureCMakeDebug[x86]
+react-native-screens:configureCMakeDebug[x86]
+app:configureCMakeDebug[x86_64]
+react-native-gesture-handler:configureCMakeDebug[x86_64]
+react-native-reanimated:configureCMakeDebug[x86_64]
+react-native-screens:configureCMakeDebug[x86_64]
+app:configureCMakeRelWithDebInfo
+react-native-gesture-handler:configureCMakeRelWithDebInfo
+react-native-reanimated:configureCMakeRelWithDebInfo
+react-native-screens:configureCMakeRelWithDebInfo
+app:configureCMakeRelWithDebInfo[arm64-v8a]
+react-native-gesture-handler:configureCMakeRelWithDebInfo[arm64-v8a]
+react-native-reanimated:configureCMakeRelWithDebInfo[arm64-v8a]
+react-native-screens:configureCMakeRelWithDebInfo[arm64-v8a]
+app:configureCMakeRelWithDebInfo[armeabi-v7a]
+react-native-gesture-handler:configureCMakeRelWithDebInfo[armeabi-v7a]
+react-native-reanimated:configureCMakeRelWithDebInfo[armeabi-v7a]
+react-native-screens:configureCMakeRelWithDebInfo[armeabi-v7a]
+app:configureCMakeRelWithDebInfo[x86]
+react-native-gesture-handler:configureCMakeRelWithDebInfo[x86]
+react-native-reanimated:configureCMakeRelWithDebInfo[x86]
+react-native-screens:configureCMakeRelWithDebInfo[x86]
+app:configureCMakeRelWithDebInfo[x86_64]
+react-native-gesture-handler:configureCMakeRelWithDebInfo[x86_64]
+react-native-reanimated:configureCMakeRelWithDebInfo[x86_64]
+react-native-screens:configureCMakeRelWithDebInfo[x86_64]
+app:configureReleaseDependencies
+app:consumeConfigAttr
+react-native-async-storage_async-storage:consumeConfigAttr
+react-native-community_geolocation:consumeConfigAttr
+react-native-gesture-handler:consumeConfigAttr
+react-native-maps:consumeConfigAttr
+react-native-reanimated:consumeConfigAttr
+react-native-safe-area-context:consumeConfigAttr
+react-native-screens:consumeConfigAttr
+react-native-svg:consumeConfigAttr
+react-native-vector-icons:consumeConfigAttr
+react-native-async-storage_async-storage:copyDebugJniLibsProjectAndLocalJars
+react-native-community_geolocation:copyDebugJniLibsProjectAndLocalJars
+react-native-gesture-handler:copyDebugJniLibsProjectAndLocalJars
+react-native-maps:copyDebugJniLibsProjectAndLocalJars
+react-native-reanimated:copyDebugJniLibsProjectAndLocalJars
+react-native-safe-area-context:copyDebugJniLibsProjectAndLocalJars
+react-native-screens:copyDebugJniLibsProjectAndLocalJars
+react-native-svg:copyDebugJniLibsProjectAndLocalJars
+react-native-vector-icons:copyDebugJniLibsProjectAndLocalJars
+react-native-async-storage_async-storage:copyDebugJniLibsProjectOnly
+react-native-community_geolocation:copyDebugJniLibsProjectOnly
+react-native-gesture-handler:copyDebugJniLibsProjectOnly
+react-native-maps:copyDebugJniLibsProjectOnly
+react-native-reanimated:copyDebugJniLibsProjectOnly
+react-native-safe-area-context:copyDebugJniLibsProjectOnly
+react-native-screens:copyDebugJniLibsProjectOnly
+react-native-svg:copyDebugJniLibsProjectOnly
+react-native-vector-icons:copyDebugJniLibsProjectOnly
+react-native-async-storage_async-storage:copyReleaseJniLibsProjectAndLocalJars
+react-native-community_geolocation:copyReleaseJniLibsProjectAndLocalJars
+react-native-gesture-handler:copyReleaseJniLibsProjectAndLocalJars
+react-native-maps:copyReleaseJniLibsProjectAndLocalJars
+react-native-reanimated:copyReleaseJniLibsProjectAndLocalJars
+react-native-safe-area-context:copyReleaseJniLibsProjectAndLocalJars
+react-native-screens:copyReleaseJniLibsProjectAndLocalJars
+react-native-svg:copyReleaseJniLibsProjectAndLocalJars
+react-native-vector-icons:copyReleaseJniLibsProjectAndLocalJars
+react-native-async-storage_async-storage:copyReleaseJniLibsProjectOnly
+react-native-community_geolocation:copyReleaseJniLibsProjectOnly
+react-native-gesture-handler:copyReleaseJniLibsProjectOnly
+react-native-maps:copyReleaseJniLibsProjectOnly
+react-native-reanimated:copyReleaseJniLibsProjectOnly
+react-native-safe-area-context:copyReleaseJniLibsProjectOnly
+react-native-screens:copyReleaseJniLibsProjectOnly
+react-native-svg:copyReleaseJniLibsProjectOnly
+react-native-vector-icons:copyReleaseJniLibsProjectOnly
+app:createDebugAndroidTestApkListingFileRedirect
+react-native-async-storage_async-storage:createDebugAndroidTestApkListingFileRedirect
+react-native-community_geolocation:createDebugAndroidTestApkListingFileRedirect
+react-native-gesture-handler:createDebugAndroidTestApkListingFileRedirect
+react-native-maps:createDebugAndroidTestApkListingFileRedirect
+react-native-reanimated:createDebugAndroidTestApkListingFileRedirect
+react-native-safe-area-context:createDebugAndroidTestApkListingFileRedirect
+react-native-screens:createDebugAndroidTestApkListingFileRedirect
+react-native-svg:createDebugAndroidTestApkListingFileRedirect
+react-native-vector-icons:createDebugAndroidTestApkListingFileRedirect
+app:createDebugApkListingFileRedirect
+app:createDebugApksFromBundleListingFileRedirect
+app:createDebugBundleListingFileRedirect
+app:createDebugCompatibleScreenManifests
+react-native-async-storage_async-storage:createFullJarDebug
+react-native-community_geolocation:createFullJarDebug
+react-native-gesture-handler:createFullJarDebug
+react-native-maps:createFullJarDebug
+react-native-reanimated:createFullJarDebug
+react-native-safe-area-context:createFullJarDebug
+react-native-screens:createFullJarDebug
+react-native-svg:createFullJarDebug
+react-native-vector-icons:createFullJarDebug
+react-native-async-storage_async-storage:createFullJarRelease
+react-native-community_geolocation:createFullJarRelease
+react-native-gesture-handler:createFullJarRelease
+react-native-maps:createFullJarRelease
+react-native-reanimated:createFullJarRelease
+react-native-safe-area-context:createFullJarRelease
+react-native-screens:createFullJarRelease
+react-native-svg:createFullJarRelease
+react-native-vector-icons:createFullJarRelease
+app:createMockableJar
+react-native-async-storage_async-storage:createMockableJar
+react-native-community_geolocation:createMockableJar
+react-native-gesture-handler:createMockableJar
+react-native-maps:createMockableJar
+react-native-reanimated:createMockableJar
+react-native-safe-area-context:createMockableJar
+react-native-screens:createMockableJar
+react-native-svg:createMockableJar
+react-native-vector-icons:createMockableJar
+react-native-reanimated:createNativeDepsDirectories
+app:createReleaseApkListingFileRedirect
+app:createReleaseApksFromBundleListingFileRedirect
+app:createReleaseBundleListingFileRedirect
+app:createReleaseCompatibleScreenManifests
+dependentComponents - Displays the dependent components of components in root project 'AtlasDriverShell'. [deprecated]
+app:dependentComponents - Displays the dependent components of components in project ':app'. [deprecated]
+react-native-async-storage_async-storage:dependentComponents - Displays the dependent components of components in project ':react-native-async-storage_async-storage'. [deprecated]
+react-native-community_geolocation:dependentComponents - Displays the dependent components of components in project ':react-native-community_geolocation'. [deprecated]
+react-native-gesture-handler:dependentComponents - Displays the dependent components of components in project ':react-native-gesture-handler'. [deprecated]
+react-native-maps:dependentComponents - Displays the dependent components of components in project ':react-native-maps'. [deprecated]
+react-native-reanimated:dependentComponents - Displays the dependent components of components in project ':react-native-reanimated'. [deprecated]
+react-native-safe-area-context:dependentComponents - Displays the dependent components of components in project ':react-native-safe-area-context'. [deprecated]
+react-native-screens:dependentComponents - Displays the dependent components of components in project ':react-native-screens'. [deprecated]
+react-native-svg:dependentComponents - Displays the dependent components of components in project ':react-native-svg'. [deprecated]
+react-native-vector-icons:dependentComponents - Displays the dependent components of components in project ':react-native-vector-icons'. [deprecated]
+app:desugarDebugAndroidTestFileDependencies
+react-native-async-storage_async-storage:desugarDebugAndroidTestFileDependencies
+react-native-community_geolocation:desugarDebugAndroidTestFileDependencies
+react-native-gesture-handler:desugarDebugAndroidTestFileDependencies
+react-native-maps:desugarDebugAndroidTestFileDependencies
+react-native-reanimated:desugarDebugAndroidTestFileDependencies
+react-native-safe-area-context:desugarDebugAndroidTestFileDependencies
+react-native-screens:desugarDebugAndroidTestFileDependencies
+react-native-svg:desugarDebugAndroidTestFileDependencies
+react-native-vector-icons:desugarDebugAndroidTestFileDependencies
+app:desugarDebugFileDependencies
+app:desugarReleaseFileDependencies
+app:dexBuilderDebug
+app:dexBuilderDebugAndroidTest
+react-native-async-storage_async-storage:dexBuilderDebugAndroidTest
+react-native-community_geolocation:dexBuilderDebugAndroidTest
+react-native-gesture-handler:dexBuilderDebugAndroidTest
+react-native-maps:dexBuilderDebugAndroidTest
+react-native-reanimated:dexBuilderDebugAndroidTest
+react-native-safe-area-context:dexBuilderDebugAndroidTest
+react-native-screens:dexBuilderDebugAndroidTest
+react-native-svg:dexBuilderDebugAndroidTest
+react-native-vector-icons:dexBuilderDebugAndroidTest
+app:dexBuilderRelease
+react-native-async-storage_async-storage:exportDebugConsumerProguardFiles
+react-native-community_geolocation:exportDebugConsumerProguardFiles
+react-native-gesture-handler:exportDebugConsumerProguardFiles
+react-native-maps:exportDebugConsumerProguardFiles
+react-native-reanimated:exportDebugConsumerProguardFiles
+react-native-safe-area-context:exportDebugConsumerProguardFiles
+react-native-screens:exportDebugConsumerProguardFiles
+react-native-svg:exportDebugConsumerProguardFiles
+react-native-vector-icons:exportDebugConsumerProguardFiles
+react-native-async-storage_async-storage:exportReleaseConsumerProguardFiles
+react-native-community_geolocation:exportReleaseConsumerProguardFiles
+react-native-gesture-handler:exportReleaseConsumerProguardFiles
+react-native-maps:exportReleaseConsumerProguardFiles
+react-native-reanimated:exportReleaseConsumerProguardFiles
+react-native-safe-area-context:exportReleaseConsumerProguardFiles
+react-native-screens:exportReleaseConsumerProguardFiles
+react-native-svg:exportReleaseConsumerProguardFiles
+react-native-vector-icons:exportReleaseConsumerProguardFiles
+app:externalNativeBuildCleanDebug
+react-native-gesture-handler:externalNativeBuildCleanDebug
+react-native-reanimated:externalNativeBuildCleanDebug
+react-native-screens:externalNativeBuildCleanDebug
+app:externalNativeBuildCleanRelease
+react-native-gesture-handler:externalNativeBuildCleanRelease
+react-native-reanimated:externalNativeBuildCleanRelease
+react-native-screens:externalNativeBuildCleanRelease
+app:externalNativeBuildDebug
+react-native-gesture-handler:externalNativeBuildDebug
+react-native-reanimated:externalNativeBuildDebug
+react-native-screens:externalNativeBuildDebug
+app:externalNativeBuildRelease
+react-native-gesture-handler:externalNativeBuildRelease
+react-native-reanimated:externalNativeBuildRelease
+react-native-screens:externalNativeBuildRelease
+app:extractApksForDebug
+app:extractApksForRelease
+app:extractApksFromBundleForDebug
+app:extractApksFromBundleForRelease
+app:extractDebugNativeDebugMetadata
+app:extractDebugNativeSymbolTables
+react-native-async-storage_async-storage:extractDebugSupportedLocales
+react-native-community_geolocation:extractDebugSupportedLocales
+react-native-gesture-handler:extractDebugSupportedLocales
+react-native-maps:extractDebugSupportedLocales
+react-native-reanimated:extractDebugSupportedLocales
+react-native-safe-area-context:extractDebugSupportedLocales
+react-native-screens:extractDebugSupportedLocales
+react-native-svg:extractDebugSupportedLocales
+react-native-vector-icons:extractDebugSupportedLocales
+app:extractDeepLinksDebug
+react-native-async-storage_async-storage:extractDeepLinksDebug
+react-native-community_geolocation:extractDeepLinksDebug
+react-native-gesture-handler:extractDeepLinksDebug
+react-native-maps:extractDeepLinksDebug
+react-native-reanimated:extractDeepLinksDebug
+react-native-safe-area-context:extractDeepLinksDebug
+react-native-screens:extractDeepLinksDebug
+react-native-svg:extractDeepLinksDebug
+react-native-vector-icons:extractDeepLinksDebug
+react-native-async-storage_async-storage:extractDeepLinksForAarDebug
+react-native-community_geolocation:extractDeepLinksForAarDebug
+react-native-gesture-handler:extractDeepLinksForAarDebug
+react-native-maps:extractDeepLinksForAarDebug
+react-native-reanimated:extractDeepLinksForAarDebug
+react-native-safe-area-context:extractDeepLinksForAarDebug
+react-native-screens:extractDeepLinksForAarDebug
+react-native-svg:extractDeepLinksForAarDebug
+react-native-vector-icons:extractDeepLinksForAarDebug
+react-native-async-storage_async-storage:extractDeepLinksForAarRelease
+react-native-community_geolocation:extractDeepLinksForAarRelease
+react-native-gesture-handler:extractDeepLinksForAarRelease
+react-native-maps:extractDeepLinksForAarRelease
+react-native-reanimated:extractDeepLinksForAarRelease
+react-native-safe-area-context:extractDeepLinksForAarRelease
+react-native-screens:extractDeepLinksForAarRelease
+react-native-svg:extractDeepLinksForAarRelease
+react-native-vector-icons:extractDeepLinksForAarRelease
+app:extractDeepLinksRelease
+react-native-async-storage_async-storage:extractDeepLinksRelease
+react-native-community_geolocation:extractDeepLinksRelease
+react-native-gesture-handler:extractDeepLinksRelease
+react-native-maps:extractDeepLinksRelease
+react-native-reanimated:extractDeepLinksRelease
+react-native-safe-area-context:extractDeepLinksRelease
+react-native-screens:extractDeepLinksRelease
+react-native-svg:extractDeepLinksRelease
+react-native-vector-icons:extractDeepLinksRelease
+app:extractProguardFiles
+react-native-async-storage_async-storage:extractProguardFiles
+react-native-community_geolocation:extractProguardFiles
+react-native-gesture-handler:extractProguardFiles
+react-native-maps:extractProguardFiles
+react-native-reanimated:extractProguardFiles
+react-native-safe-area-context:extractProguardFiles
+react-native-screens:extractProguardFiles
+react-native-svg:extractProguardFiles
+react-native-vector-icons:extractProguardFiles
+app:extractReleaseNativeDebugMetadata
+app:extractReleaseNativeSymbolTables
+react-native-async-storage_async-storage:extractReleaseSupportedLocales
+react-native-community_geolocation:extractReleaseSupportedLocales
+react-native-gesture-handler:extractReleaseSupportedLocales
+react-native-maps:extractReleaseSupportedLocales
+react-native-reanimated:extractReleaseSupportedLocales
+react-native-safe-area-context:extractReleaseSupportedLocales
+react-native-screens:extractReleaseSupportedLocales
+react-native-svg:extractReleaseSupportedLocales
+react-native-vector-icons:extractReleaseSupportedLocales
+app:extractReleaseVersionControlInfo
+app:generateCodegenArtifactsFromSchema
+react-native-async-storage_async-storage:generateCodegenArtifactsFromSchema
+react-native-community_geolocation:generateCodegenArtifactsFromSchema
+react-native-gesture-handler:generateCodegenArtifactsFromSchema
+react-native-reanimated:generateCodegenArtifactsFromSchema
+react-native-safe-area-context:generateCodegenArtifactsFromSchema
+react-native-screens:generateCodegenArtifactsFromSchema
+react-native-svg:generateCodegenArtifactsFromSchema
+react-native-vector-icons:generateCodegenArtifactsFromSchema
+app:generateCodegenSchemaFromJavaScript
+react-native-async-storage_async-storage:generateCodegenSchemaFromJavaScript
+react-native-community_geolocation:generateCodegenSchemaFromJavaScript
+react-native-gesture-handler:generateCodegenSchemaFromJavaScript
+react-native-reanimated:generateCodegenSchemaFromJavaScript
+react-native-safe-area-context:generateCodegenSchemaFromJavaScript
+react-native-screens:generateCodegenSchemaFromJavaScript
+react-native-svg:generateCodegenSchemaFromJavaScript
+react-native-vector-icons:generateCodegenSchemaFromJavaScript
+app:generateDebugAndroidTestAssets
+react-native-async-storage_async-storage:generateDebugAndroidTestAssets
+react-native-community_geolocation:generateDebugAndroidTestAssets
+react-native-gesture-handler:generateDebugAndroidTestAssets
+react-native-maps:generateDebugAndroidTestAssets
+react-native-reanimated:generateDebugAndroidTestAssets
+react-native-safe-area-context:generateDebugAndroidTestAssets
+react-native-screens:generateDebugAndroidTestAssets
+react-native-svg:generateDebugAndroidTestAssets
+react-native-vector-icons:generateDebugAndroidTestAssets
+app:generateDebugAndroidTestBuildConfig
+react-native-async-storage_async-storage:generateDebugAndroidTestBuildConfig
+react-native-community_geolocation:generateDebugAndroidTestBuildConfig
+react-native-gesture-handler:generateDebugAndroidTestBuildConfig
+react-native-maps:generateDebugAndroidTestBuildConfig
+react-native-reanimated:generateDebugAndroidTestBuildConfig
+react-native-safe-area-context:generateDebugAndroidTestBuildConfig
+react-native-screens:generateDebugAndroidTestBuildConfig
+react-native-svg:generateDebugAndroidTestBuildConfig
+react-native-vector-icons:generateDebugAndroidTestBuildConfig
+app:generateDebugAndroidTestLintModel
+react-native-async-storage_async-storage:generateDebugAndroidTestLintModel
+react-native-community_geolocation:generateDebugAndroidTestLintModel
+react-native-gesture-handler:generateDebugAndroidTestLintModel
+react-native-maps:generateDebugAndroidTestLintModel
+react-native-reanimated:generateDebugAndroidTestLintModel
+react-native-safe-area-context:generateDebugAndroidTestLintModel
+react-native-screens:generateDebugAndroidTestLintModel
+react-native-svg:generateDebugAndroidTestLintModel
+react-native-vector-icons:generateDebugAndroidTestLintModel
+app:generateDebugAndroidTestResources
+react-native-async-storage_async-storage:generateDebugAndroidTestResources
+react-native-community_geolocation:generateDebugAndroidTestResources
+react-native-gesture-handler:generateDebugAndroidTestResources
+react-native-maps:generateDebugAndroidTestResources
+react-native-reanimated:generateDebugAndroidTestResources
+react-native-safe-area-context:generateDebugAndroidTestResources
+react-native-screens:generateDebugAndroidTestResources
+react-native-svg:generateDebugAndroidTestResources
+react-native-vector-icons:generateDebugAndroidTestResources
+app:generateDebugAndroidTestResValues
+react-native-async-storage_async-storage:generateDebugAndroidTestResValues
+react-native-community_geolocation:generateDebugAndroidTestResValues
+react-native-gesture-handler:generateDebugAndroidTestResValues
+react-native-maps:generateDebugAndroidTestResValues
+react-native-reanimated:generateDebugAndroidTestResValues
+react-native-safe-area-context:generateDebugAndroidTestResValues
+react-native-screens:generateDebugAndroidTestResValues
+react-native-svg:generateDebugAndroidTestResValues
+react-native-vector-icons:generateDebugAndroidTestResValues
+app:generateDebugAndroidTestSources
+react-native-async-storage_async-storage:generateDebugAndroidTestSources
+react-native-community_geolocation:generateDebugAndroidTestSources
+react-native-gesture-handler:generateDebugAndroidTestSources
+react-native-maps:generateDebugAndroidTestSources
+react-native-reanimated:generateDebugAndroidTestSources
+react-native-safe-area-context:generateDebugAndroidTestSources
+react-native-screens:generateDebugAndroidTestSources
+react-native-svg:generateDebugAndroidTestSources
+react-native-vector-icons:generateDebugAndroidTestSources
+app:generateDebugAssets
+react-native-async-storage_async-storage:generateDebugAssets
+react-native-community_geolocation:generateDebugAssets
+react-native-gesture-handler:generateDebugAssets
+react-native-maps:generateDebugAssets
+react-native-reanimated:generateDebugAssets
+react-native-safe-area-context:generateDebugAssets
+react-native-screens:generateDebugAssets
+react-native-svg:generateDebugAssets
+react-native-vector-icons:generateDebugAssets
+app:generateDebugBuildConfig
+react-native-async-storage_async-storage:generateDebugBuildConfig
+react-native-community_geolocation:generateDebugBuildConfig
+react-native-gesture-handler:generateDebugBuildConfig
+react-native-maps:generateDebugBuildConfig
+react-native-reanimated:generateDebugBuildConfig
+react-native-safe-area-context:generateDebugBuildConfig
+react-native-screens:generateDebugBuildConfig
+react-native-svg:generateDebugBuildConfig
+react-native-vector-icons:generateDebugBuildConfig
+react-native-async-storage_async-storage:generateDebugExternalPublicTxt
+react-native-community_geolocation:generateDebugExternalPublicTxt
+react-native-gesture-handler:generateDebugExternalPublicTxt
+react-native-maps:generateDebugExternalPublicTxt
+react-native-reanimated:generateDebugExternalPublicTxt
+react-native-safe-area-context:generateDebugExternalPublicTxt
+react-native-screens:generateDebugExternalPublicTxt
+react-native-svg:generateDebugExternalPublicTxt
+react-native-vector-icons:generateDebugExternalPublicTxt
+app:generateDebugFeatureMetadata
+app:generateDebugFeatureTransitiveDeps
+app:generateDebugLintModel
+react-native-async-storage_async-storage:generateDebugLintModel
+react-native-community_geolocation:generateDebugLintModel
+react-native-gesture-handler:generateDebugLintModel
+react-native-maps:generateDebugLintModel
+react-native-reanimated:generateDebugLintModel
+react-native-safe-area-context:generateDebugLintModel
+react-native-screens:generateDebugLintModel
+react-native-svg:generateDebugLintModel
+react-native-vector-icons:generateDebugLintModel
+app:generateDebugLintReportModel
+react-native-async-storage_async-storage:generateDebugLintReportModel
+react-native-community_geolocation:generateDebugLintReportModel
+react-native-gesture-handler:generateDebugLintReportModel
+react-native-maps:generateDebugLintReportModel
+react-native-reanimated:generateDebugLintReportModel
+react-native-safe-area-context:generateDebugLintReportModel
+react-native-screens:generateDebugLintReportModel
+react-native-svg:generateDebugLintReportModel
+react-native-vector-icons:generateDebugLintReportModel
+react-native-async-storage_async-storage:generateDebugLintVitalModel
+react-native-community_geolocation:generateDebugLintVitalModel
+react-native-gesture-handler:generateDebugLintVitalModel
+react-native-maps:generateDebugLintVitalModel
+react-native-reanimated:generateDebugLintVitalModel
+react-native-safe-area-context:generateDebugLintVitalModel
+react-native-screens:generateDebugLintVitalModel
+react-native-svg:generateDebugLintVitalModel
+react-native-vector-icons:generateDebugLintVitalModel
+app:generateDebugManifestClass
+app:generateDebugResources
+react-native-async-storage_async-storage:generateDebugResources
+react-native-community_geolocation:generateDebugResources
+react-native-gesture-handler:generateDebugResources
+react-native-maps:generateDebugResources
+react-native-reanimated:generateDebugResources
+react-native-safe-area-context:generateDebugResources
+react-native-screens:generateDebugResources
+react-native-svg:generateDebugResources
+react-native-vector-icons:generateDebugResources
+app:generateDebugResValues
+react-native-async-storage_async-storage:generateDebugResValues
+react-native-community_geolocation:generateDebugResValues
+react-native-gesture-handler:generateDebugResValues
+react-native-maps:generateDebugResValues
+react-native-reanimated:generateDebugResValues
+react-native-safe-area-context:generateDebugResValues
+react-native-screens:generateDebugResValues
+react-native-svg:generateDebugResValues
+react-native-vector-icons:generateDebugResValues
+react-native-async-storage_async-storage:generateDebugRFile
+react-native-community_geolocation:generateDebugRFile
+react-native-gesture-handler:generateDebugRFile
+react-native-maps:generateDebugRFile
+react-native-reanimated:generateDebugRFile
+react-native-safe-area-context:generateDebugRFile
+react-native-screens:generateDebugRFile
+react-native-svg:generateDebugRFile
+react-native-vector-icons:generateDebugRFile
+app:generateDebugSources
+react-native-async-storage_async-storage:generateDebugSources
+react-native-community_geolocation:generateDebugSources
+react-native-gesture-handler:generateDebugSources
+react-native-maps:generateDebugSources
+react-native-reanimated:generateDebugSources
+react-native-safe-area-context:generateDebugSources
+react-native-screens:generateDebugSources
+react-native-svg:generateDebugSources
+react-native-vector-icons:generateDebugSources
+app:generateDebugUnitTestAssets
+react-native-async-storage_async-storage:generateDebugUnitTestAssets
+react-native-community_geolocation:generateDebugUnitTestAssets
+react-native-gesture-handler:generateDebugUnitTestAssets
+react-native-maps:generateDebugUnitTestAssets
+react-native-reanimated:generateDebugUnitTestAssets
+react-native-safe-area-context:generateDebugUnitTestAssets
+react-native-screens:generateDebugUnitTestAssets
+react-native-svg:generateDebugUnitTestAssets
+react-native-vector-icons:generateDebugUnitTestAssets
+app:generateDebugUnitTestLintModel
+react-native-async-storage_async-storage:generateDebugUnitTestLintModel
+react-native-community_geolocation:generateDebugUnitTestLintModel
+react-native-gesture-handler:generateDebugUnitTestLintModel
+react-native-maps:generateDebugUnitTestLintModel
+react-native-reanimated:generateDebugUnitTestLintModel
+react-native-safe-area-context:generateDebugUnitTestLintModel
+react-native-screens:generateDebugUnitTestLintModel
+react-native-svg:generateDebugUnitTestLintModel
+react-native-vector-icons:generateDebugUnitTestLintModel
+app:generateDebugUnitTestResources
+react-native-async-storage_async-storage:generateDebugUnitTestResources
+react-native-community_geolocation:generateDebugUnitTestResources
+react-native-gesture-handler:generateDebugUnitTestResources
+react-native-maps:generateDebugUnitTestResources
+react-native-reanimated:generateDebugUnitTestResources
+react-native-safe-area-context:generateDebugUnitTestResources
+react-native-screens:generateDebugUnitTestResources
+react-native-svg:generateDebugUnitTestResources
+react-native-vector-icons:generateDebugUnitTestResources
+app:generateDebugUnitTestSources
+react-native-async-storage_async-storage:generateDebugUnitTestSources
+react-native-community_geolocation:generateDebugUnitTestSources
+react-native-gesture-handler:generateDebugUnitTestSources
+react-native-maps:generateDebugUnitTestSources
+react-native-reanimated:generateDebugUnitTestSources
+react-native-safe-area-context:generateDebugUnitTestSources
+react-native-screens:generateDebugUnitTestSources
+react-native-svg:generateDebugUnitTestSources
+react-native-vector-icons:generateDebugUnitTestSources
+react-native-async-storage_async-storage:generateDebugUnitTestStubRFile
+react-native-community_geolocation:generateDebugUnitTestStubRFile
+react-native-gesture-handler:generateDebugUnitTestStubRFile
+react-native-maps:generateDebugUnitTestStubRFile
+react-native-reanimated:generateDebugUnitTestStubRFile
+react-native-safe-area-context:generateDebugUnitTestStubRFile
+react-native-screens:generateDebugUnitTestStubRFile
+react-native-svg:generateDebugUnitTestStubRFile
+react-native-vector-icons:generateDebugUnitTestStubRFile
+app:generateJsonModelDebug
+react-native-gesture-handler:generateJsonModelDebug
+react-native-reanimated:generateJsonModelDebug
+react-native-screens:generateJsonModelDebug
+app:generateJsonModelRelease
+react-native-gesture-handler:generateJsonModelRelease
+react-native-reanimated:generateJsonModelRelease
+react-native-screens:generateJsonModelRelease
+app:generateReleaseAssets
+react-native-async-storage_async-storage:generateReleaseAssets
+react-native-community_geolocation:generateReleaseAssets
+react-native-gesture-handler:generateReleaseAssets
+react-native-maps:generateReleaseAssets
+react-native-reanimated:generateReleaseAssets
+react-native-safe-area-context:generateReleaseAssets
+react-native-screens:generateReleaseAssets
+react-native-svg:generateReleaseAssets
+react-native-vector-icons:generateReleaseAssets
+app:generateReleaseBuildConfig
+react-native-async-storage_async-storage:generateReleaseBuildConfig
+react-native-community_geolocation:generateReleaseBuildConfig
+react-native-gesture-handler:generateReleaseBuildConfig
+react-native-maps:generateReleaseBuildConfig
+react-native-reanimated:generateReleaseBuildConfig
+react-native-safe-area-context:generateReleaseBuildConfig
+react-native-screens:generateReleaseBuildConfig
+react-native-svg:generateReleaseBuildConfig
+react-native-vector-icons:generateReleaseBuildConfig
+react-native-async-storage_async-storage:generateReleaseExternalPublicTxt
+react-native-community_geolocation:generateReleaseExternalPublicTxt
+react-native-gesture-handler:generateReleaseExternalPublicTxt
+react-native-maps:generateReleaseExternalPublicTxt
+react-native-reanimated:generateReleaseExternalPublicTxt
+react-native-safe-area-context:generateReleaseExternalPublicTxt
+react-native-screens:generateReleaseExternalPublicTxt
+react-native-svg:generateReleaseExternalPublicTxt
+react-native-vector-icons:generateReleaseExternalPublicTxt
+app:generateReleaseFeatureMetadata
+app:generateReleaseFeatureTransitiveDeps
+app:generateReleaseLintModel
+react-native-async-storage_async-storage:generateReleaseLintModel
+react-native-community_geolocation:generateReleaseLintModel
+react-native-gesture-handler:generateReleaseLintModel
+react-native-maps:generateReleaseLintModel
+react-native-reanimated:generateReleaseLintModel
+react-native-safe-area-context:generateReleaseLintModel
+react-native-screens:generateReleaseLintModel
+react-native-svg:generateReleaseLintModel
+react-native-vector-icons:generateReleaseLintModel
+app:generateReleaseLintReportModel
+react-native-async-storage_async-storage:generateReleaseLintReportModel
+react-native-community_geolocation:generateReleaseLintReportModel
+react-native-gesture-handler:generateReleaseLintReportModel
+react-native-maps:generateReleaseLintReportModel
+react-native-reanimated:generateReleaseLintReportModel
+react-native-safe-area-context:generateReleaseLintReportModel
+react-native-screens:generateReleaseLintReportModel
+react-native-svg:generateReleaseLintReportModel
+react-native-vector-icons:generateReleaseLintReportModel
+react-native-async-storage_async-storage:generateReleaseLintVitalModel
+react-native-community_geolocation:generateReleaseLintVitalModel
+react-native-gesture-handler:generateReleaseLintVitalModel
+react-native-maps:generateReleaseLintVitalModel
+react-native-reanimated:generateReleaseLintVitalModel
+react-native-safe-area-context:generateReleaseLintVitalModel
+react-native-screens:generateReleaseLintVitalModel
+react-native-svg:generateReleaseLintVitalModel
+react-native-vector-icons:generateReleaseLintVitalModel
+app:generateReleaseLintVitalReportModel
+app:generateReleaseManifestClass
+app:generateReleaseResources
+react-native-async-storage_async-storage:generateReleaseResources
+react-native-community_geolocation:generateReleaseResources
+react-native-gesture-handler:generateReleaseResources
+react-native-maps:generateReleaseResources
+react-native-reanimated:generateReleaseResources
+react-native-safe-area-context:generateReleaseResources
+react-native-screens:generateReleaseResources
+react-native-svg:generateReleaseResources
+react-native-vector-icons:generateReleaseResources
+app:generateReleaseResValues
+react-native-async-storage_async-storage:generateReleaseResValues
+react-native-community_geolocation:generateReleaseResValues
+react-native-gesture-handler:generateReleaseResValues
+react-native-maps:generateReleaseResValues
+react-native-reanimated:generateReleaseResValues
+react-native-safe-area-context:generateReleaseResValues
+react-native-screens:generateReleaseResValues
+react-native-svg:generateReleaseResValues
+react-native-vector-icons:generateReleaseResValues
+react-native-async-storage_async-storage:generateReleaseRFile
+react-native-community_geolocation:generateReleaseRFile
+react-native-gesture-handler:generateReleaseRFile
+react-native-maps:generateReleaseRFile
+react-native-reanimated:generateReleaseRFile
+react-native-safe-area-context:generateReleaseRFile
+react-native-screens:generateReleaseRFile
+react-native-svg:generateReleaseRFile
+react-native-vector-icons:generateReleaseRFile
+app:generateReleaseSources
+react-native-async-storage_async-storage:generateReleaseSources
+react-native-community_geolocation:generateReleaseSources
+react-native-gesture-handler:generateReleaseSources
+react-native-maps:generateReleaseSources
+react-native-reanimated:generateReleaseSources
+react-native-safe-area-context:generateReleaseSources
+react-native-screens:generateReleaseSources
+react-native-svg:generateReleaseSources
+react-native-vector-icons:generateReleaseSources
+app:generateReleaseUnitTestAssets
+react-native-async-storage_async-storage:generateReleaseUnitTestAssets
+react-native-community_geolocation:generateReleaseUnitTestAssets
+react-native-gesture-handler:generateReleaseUnitTestAssets
+react-native-maps:generateReleaseUnitTestAssets
+react-native-reanimated:generateReleaseUnitTestAssets
+react-native-safe-area-context:generateReleaseUnitTestAssets
+react-native-screens:generateReleaseUnitTestAssets
+react-native-svg:generateReleaseUnitTestAssets
+react-native-vector-icons:generateReleaseUnitTestAssets
+app:generateReleaseUnitTestLintModel
+react-native-async-storage_async-storage:generateReleaseUnitTestLintModel
+react-native-community_geolocation:generateReleaseUnitTestLintModel
+react-native-gesture-handler:generateReleaseUnitTestLintModel
+react-native-maps:generateReleaseUnitTestLintModel
+react-native-reanimated:generateReleaseUnitTestLintModel
+react-native-safe-area-context:generateReleaseUnitTestLintModel
+react-native-screens:generateReleaseUnitTestLintModel
+react-native-svg:generateReleaseUnitTestLintModel
+react-native-vector-icons:generateReleaseUnitTestLintModel
+app:generateReleaseUnitTestResources
+react-native-async-storage_async-storage:generateReleaseUnitTestResources
+react-native-community_geolocation:generateReleaseUnitTestResources
+react-native-gesture-handler:generateReleaseUnitTestResources
+react-native-maps:generateReleaseUnitTestResources
+react-native-reanimated:generateReleaseUnitTestResources
+react-native-safe-area-context:generateReleaseUnitTestResources
+react-native-screens:generateReleaseUnitTestResources
+react-native-svg:generateReleaseUnitTestResources
+react-native-vector-icons:generateReleaseUnitTestResources
+app:generateReleaseUnitTestSources
+react-native-async-storage_async-storage:generateReleaseUnitTestSources
+react-native-community_geolocation:generateReleaseUnitTestSources
+react-native-gesture-handler:generateReleaseUnitTestSources
+react-native-maps:generateReleaseUnitTestSources
+react-native-reanimated:generateReleaseUnitTestSources
+react-native-safe-area-context:generateReleaseUnitTestSources
+react-native-screens:generateReleaseUnitTestSources
+react-native-svg:generateReleaseUnitTestSources
+react-native-vector-icons:generateReleaseUnitTestSources
+react-native-async-storage_async-storage:generateReleaseUnitTestStubRFile
+react-native-community_geolocation:generateReleaseUnitTestStubRFile
+react-native-gesture-handler:generateReleaseUnitTestStubRFile
+react-native-maps:generateReleaseUnitTestStubRFile
+react-native-reanimated:generateReleaseUnitTestStubRFile
+react-native-safe-area-context:generateReleaseUnitTestStubRFile
+react-native-screens:generateReleaseUnitTestStubRFile
+react-native-svg:generateReleaseUnitTestStubRFile
+react-native-vector-icons:generateReleaseUnitTestStubRFile
+app:javaPreCompileDebug
+react-native-async-storage_async-storage:javaPreCompileDebug
+react-native-community_geolocation:javaPreCompileDebug
+react-native-gesture-handler:javaPreCompileDebug
+react-native-maps:javaPreCompileDebug
+react-native-reanimated:javaPreCompileDebug
+react-native-safe-area-context:javaPreCompileDebug
+react-native-screens:javaPreCompileDebug
+react-native-svg:javaPreCompileDebug
+react-native-vector-icons:javaPreCompileDebug
+app:javaPreCompileDebugAndroidTest
+react-native-async-storage_async-storage:javaPreCompileDebugAndroidTest
+react-native-community_geolocation:javaPreCompileDebugAndroidTest
+react-native-gesture-handler:javaPreCompileDebugAndroidTest
+react-native-maps:javaPreCompileDebugAndroidTest
+react-native-reanimated:javaPreCompileDebugAndroidTest
+react-native-safe-area-context:javaPreCompileDebugAndroidTest
+react-native-screens:javaPreCompileDebugAndroidTest
+react-native-svg:javaPreCompileDebugAndroidTest
+react-native-vector-icons:javaPreCompileDebugAndroidTest
+app:javaPreCompileDebugUnitTest
+react-native-async-storage_async-storage:javaPreCompileDebugUnitTest
+react-native-community_geolocation:javaPreCompileDebugUnitTest
+react-native-gesture-handler:javaPreCompileDebugUnitTest
+react-native-maps:javaPreCompileDebugUnitTest
+react-native-reanimated:javaPreCompileDebugUnitTest
+react-native-safe-area-context:javaPreCompileDebugUnitTest
+react-native-screens:javaPreCompileDebugUnitTest
+react-native-svg:javaPreCompileDebugUnitTest
+react-native-vector-icons:javaPreCompileDebugUnitTest
+app:javaPreCompileRelease
+react-native-async-storage_async-storage:javaPreCompileRelease
+react-native-community_geolocation:javaPreCompileRelease
+react-native-gesture-handler:javaPreCompileRelease
+react-native-maps:javaPreCompileRelease
+react-native-reanimated:javaPreCompileRelease
+react-native-safe-area-context:javaPreCompileRelease
+react-native-screens:javaPreCompileRelease
+react-native-svg:javaPreCompileRelease
+react-native-vector-icons:javaPreCompileRelease
+app:javaPreCompileReleaseUnitTest
+react-native-async-storage_async-storage:javaPreCompileReleaseUnitTest
+react-native-community_geolocation:javaPreCompileReleaseUnitTest
+react-native-gesture-handler:javaPreCompileReleaseUnitTest
+react-native-maps:javaPreCompileReleaseUnitTest
+react-native-reanimated:javaPreCompileReleaseUnitTest
+react-native-safe-area-context:javaPreCompileReleaseUnitTest
+react-native-screens:javaPreCompileReleaseUnitTest
+react-native-svg:javaPreCompileReleaseUnitTest
+react-native-vector-icons:javaPreCompileReleaseUnitTest
+app:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-async-storage_async-storage:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-community_geolocation:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-gesture-handler:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-maps:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-reanimated:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-safe-area-context:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-screens:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-svg:lintAnalyzeDebug - Run lint analysis on the debug component
+react-native-vector-icons:lintAnalyzeDebug - Run lint analysis on the debug component
+app:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-async-storage_async-storage:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-community_geolocation:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-gesture-handler:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-maps:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-reanimated:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-safe-area-context:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-screens:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-svg:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+react-native-vector-icons:lintAnalyzeDebugAndroidTest - Run lint analysis on the debugAndroidTest component
+app:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-async-storage_async-storage:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-community_geolocation:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-gesture-handler:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-maps:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-reanimated:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-safe-area-context:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-screens:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-svg:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+react-native-vector-icons:lintAnalyzeDebugUnitTest - Run lint analysis on the debugUnitTest component
+app:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-async-storage_async-storage:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-community_geolocation:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-gesture-handler:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-maps:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-reanimated:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-safe-area-context:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-screens:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-svg:lintAnalyzeRelease - Run lint analysis on the release component
+react-native-vector-icons:lintAnalyzeRelease - Run lint analysis on the release component
+app:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-async-storage_async-storage:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-community_geolocation:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-gesture-handler:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-maps:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-reanimated:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-safe-area-context:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-screens:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-svg:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+react-native-vector-icons:lintAnalyzeReleaseUnitTest - Run lint analysis on the releaseUnitTest component
+app:lintFixDebug - Fix lint on the debug variant
+react-native-async-storage_async-storage:lintFixDebug - Fix lint on the debug variant
+react-native-community_geolocation:lintFixDebug - Fix lint on the debug variant
+react-native-gesture-handler:lintFixDebug - Fix lint on the debug variant
+react-native-maps:lintFixDebug - Fix lint on the debug variant
+react-native-reanimated:lintFixDebug - Fix lint on the debug variant
+react-native-safe-area-context:lintFixDebug - Fix lint on the debug variant
+react-native-screens:lintFixDebug - Fix lint on the debug variant
+react-native-svg:lintFixDebug - Fix lint on the debug variant
+react-native-vector-icons:lintFixDebug - Fix lint on the debug variant
+app:lintFixRelease - Fix lint on the release variant
+react-native-async-storage_async-storage:lintFixRelease - Fix lint on the release variant
+react-native-community_geolocation:lintFixRelease - Fix lint on the release variant
+react-native-gesture-handler:lintFixRelease - Fix lint on the release variant
+react-native-maps:lintFixRelease - Fix lint on the release variant
+react-native-reanimated:lintFixRelease - Fix lint on the release variant
+react-native-safe-area-context:lintFixRelease - Fix lint on the release variant
+react-native-screens:lintFixRelease - Fix lint on the release variant
+react-native-svg:lintFixRelease - Fix lint on the release variant
+react-native-vector-icons:lintFixRelease - Fix lint on the release variant
+app:lintReportDebug - Run lint on the debug variant
+react-native-async-storage_async-storage:lintReportDebug - Run lint on the debug variant
+react-native-community_geolocation:lintReportDebug - Run lint on the debug variant
+react-native-gesture-handler:lintReportDebug - Run lint on the debug variant
+react-native-maps:lintReportDebug - Run lint on the debug variant
+react-native-reanimated:lintReportDebug - Run lint on the debug variant
+react-native-safe-area-context:lintReportDebug - Run lint on the debug variant
+react-native-screens:lintReportDebug - Run lint on the debug variant
+react-native-svg:lintReportDebug - Run lint on the debug variant
+react-native-vector-icons:lintReportDebug - Run lint on the debug variant
+app:lintReportRelease - Run lint on the release variant
+react-native-async-storage_async-storage:lintReportRelease - Run lint on the release variant
+react-native-community_geolocation:lintReportRelease - Run lint on the release variant
+react-native-gesture-handler:lintReportRelease - Run lint on the release variant
+react-native-maps:lintReportRelease - Run lint on the release variant
+react-native-reanimated:lintReportRelease - Run lint on the release variant
+react-native-safe-area-context:lintReportRelease - Run lint on the release variant
+react-native-screens:lintReportRelease - Run lint on the release variant
+react-native-svg:lintReportRelease - Run lint on the release variant
+react-native-vector-icons:lintReportRelease - Run lint on the release variant
+react-native-async-storage_async-storage:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-community_geolocation:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-gesture-handler:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-maps:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-reanimated:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-safe-area-context:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-screens:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-svg:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+react-native-vector-icons:lintVitalAnalyzeDebug - Run lint analysis with only the fatal issues enabled on the debug variant
+app:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled 
+react-native-async-storage_async-storage:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-community_geolocation:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-gesture-handler:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-maps:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-reanimated:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-safe-area-context:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-screens:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-svg:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+react-native-vector-icons:lintVitalAnalyzeRelease - Run lint analysis with only the fatal issues enabled on the release variant
+app:lintVitalReportRelease - Run lint with only the fatal issues enabled on the release variant
+app:makeApkFromBundleForDebug
+app:makeApkFromBundleForRelease
+app:mapDebugAndroidTestSourceSetPaths
+react-native-async-storage_async-storage:mapDebugAndroidTestSourceSetPaths
+react-native-community_geolocation:mapDebugAndroidTestSourceSetPaths
+react-native-gesture-handler:mapDebugAndroidTestSourceSetPaths
+react-native-maps:mapDebugAndroidTestSourceSetPaths
+react-native-reanimated:mapDebugAndroidTestSourceSetPaths
+react-native-safe-area-context:mapDebugAndroidTestSourceSetPaths
+react-native-screens:mapDebugAndroidTestSourceSetPaths
+react-native-svg:mapDebugAndroidTestSourceSetPaths
+react-native-vector-icons:mapDebugAndroidTestSourceSetPaths
+app:mapDebugSourceSetPaths
+react-native-async-storage_async-storage:mapDebugSourceSetPaths
+react-native-community_geolocation:mapDebugSourceSetPaths
+react-native-gesture-handler:mapDebugSourceSetPaths
+react-native-maps:mapDebugSourceSetPaths
+react-native-reanimated:mapDebugSourceSetPaths
+react-native-safe-area-context:mapDebugSourceSetPaths
+react-native-screens:mapDebugSourceSetPaths
+react-native-svg:mapDebugSourceSetPaths
+react-native-vector-icons:mapDebugSourceSetPaths
+app:mapReleaseSourceSetPaths
+react-native-async-storage_async-storage:mapReleaseSourceSetPaths
+react-native-community_geolocation:mapReleaseSourceSetPaths
+react-native-gesture-handler:mapReleaseSourceSetPaths
+react-native-maps:mapReleaseSourceSetPaths
+react-native-reanimated:mapReleaseSourceSetPaths
+react-native-safe-area-context:mapReleaseSourceSetPaths
+react-native-screens:mapReleaseSourceSetPaths
+react-native-svg:mapReleaseSourceSetPaths
+react-native-vector-icons:mapReleaseSourceSetPaths
+app:mergeDebugAndroidTestAssets
+react-native-async-storage_async-storage:mergeDebugAndroidTestAssets
+react-native-community_geolocation:mergeDebugAndroidTestAssets
+react-native-gesture-handler:mergeDebugAndroidTestAssets
+react-native-maps:mergeDebugAndroidTestAssets
+react-native-reanimated:mergeDebugAndroidTestAssets
+react-native-safe-area-context:mergeDebugAndroidTestAssets
+react-native-screens:mergeDebugAndroidTestAssets
+react-native-svg:mergeDebugAndroidTestAssets
+react-native-vector-icons:mergeDebugAndroidTestAssets
+app:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-async-storage_async-storage:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-community_geolocation:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-gesture-handler:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-maps:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-reanimated:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-safe-area-context:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-screens:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-svg:mergeDebugAndroidTestGeneratedProguardFiles
+react-native-vector-icons:mergeDebugAndroidTestGeneratedProguardFiles
+app:mergeDebugAndroidTestGlobalSynthetics
+react-native-async-storage_async-storage:mergeDebugAndroidTestGlobalSynthetics
+react-native-community_geolocation:mergeDebugAndroidTestGlobalSynthetics
+react-native-gesture-handler:mergeDebugAndroidTestGlobalSynthetics
+react-native-maps:mergeDebugAndroidTestGlobalSynthetics
+react-native-reanimated:mergeDebugAndroidTestGlobalSynthetics
+react-native-safe-area-context:mergeDebugAndroidTestGlobalSynthetics
+react-native-screens:mergeDebugAndroidTestGlobalSynthetics
+react-native-svg:mergeDebugAndroidTestGlobalSynthetics
+react-native-vector-icons:mergeDebugAndroidTestGlobalSynthetics
+app:mergeDebugAndroidTestJavaResource
+react-native-async-storage_async-storage:mergeDebugAndroidTestJavaResource
+react-native-community_geolocation:mergeDebugAndroidTestJavaResource
+react-native-gesture-handler:mergeDebugAndroidTestJavaResource
+react-native-maps:mergeDebugAndroidTestJavaResource
+react-native-reanimated:mergeDebugAndroidTestJavaResource
+react-native-safe-area-context:mergeDebugAndroidTestJavaResource
+react-native-screens:mergeDebugAndroidTestJavaResource
+react-native-svg:mergeDebugAndroidTestJavaResource
+react-native-vector-icons:mergeDebugAndroidTestJavaResource
+app:mergeDebugAndroidTestJniLibFolders
+react-native-async-storage_async-storage:mergeDebugAndroidTestJniLibFolders
+react-native-community_geolocation:mergeDebugAndroidTestJniLibFolders
+react-native-gesture-handler:mergeDebugAndroidTestJniLibFolders
+react-native-maps:mergeDebugAndroidTestJniLibFolders
+react-native-reanimated:mergeDebugAndroidTestJniLibFolders
+react-native-safe-area-context:mergeDebugAndroidTestJniLibFolders
+react-native-screens:mergeDebugAndroidTestJniLibFolders
+react-native-svg:mergeDebugAndroidTestJniLibFolders
+react-native-vector-icons:mergeDebugAndroidTestJniLibFolders
+app:mergeDebugAndroidTestNativeLibs
+react-native-async-storage_async-storage:mergeDebugAndroidTestNativeLibs
+react-native-community_geolocation:mergeDebugAndroidTestNativeLibs
+react-native-gesture-handler:mergeDebugAndroidTestNativeLibs
+react-native-maps:mergeDebugAndroidTestNativeLibs
+react-native-reanimated:mergeDebugAndroidTestNativeLibs
+react-native-safe-area-context:mergeDebugAndroidTestNativeLibs
+react-native-screens:mergeDebugAndroidTestNativeLibs
+react-native-svg:mergeDebugAndroidTestNativeLibs
+react-native-vector-icons:mergeDebugAndroidTestNativeLibs
+app:mergeDebugAndroidTestResources
+react-native-async-storage_async-storage:mergeDebugAndroidTestResources
+react-native-community_geolocation:mergeDebugAndroidTestResources
+react-native-gesture-handler:mergeDebugAndroidTestResources
+react-native-maps:mergeDebugAndroidTestResources
+react-native-reanimated:mergeDebugAndroidTestResources
+react-native-safe-area-context:mergeDebugAndroidTestResources
+react-native-screens:mergeDebugAndroidTestResources
+react-native-svg:mergeDebugAndroidTestResources
+react-native-vector-icons:mergeDebugAndroidTestResources
+app:mergeDebugAndroidTestShaders
+react-native-async-storage_async-storage:mergeDebugAndroidTestShaders
+react-native-community_geolocation:mergeDebugAndroidTestShaders
+react-native-gesture-handler:mergeDebugAndroidTestShaders
+react-native-maps:mergeDebugAndroidTestShaders
+react-native-reanimated:mergeDebugAndroidTestShaders
+react-native-safe-area-context:mergeDebugAndroidTestShaders
+react-native-screens:mergeDebugAndroidTestShaders
+react-native-svg:mergeDebugAndroidTestShaders
+react-native-vector-icons:mergeDebugAndroidTestShaders
+app:mergeDebugArtProfile
+app:mergeDebugAssets
+react-native-async-storage_async-storage:mergeDebugAssets
+react-native-community_geolocation:mergeDebugAssets
+react-native-gesture-handler:mergeDebugAssets
+react-native-maps:mergeDebugAssets
+react-native-reanimated:mergeDebugAssets
+react-native-safe-area-context:mergeDebugAssets
+react-native-screens:mergeDebugAssets
+react-native-svg:mergeDebugAssets
+react-native-vector-icons:mergeDebugAssets
+react-native-async-storage_async-storage:mergeDebugConsumerProguardFiles
+react-native-community_geolocation:mergeDebugConsumerProguardFiles
+react-native-gesture-handler:mergeDebugConsumerProguardFiles
+react-native-maps:mergeDebugConsumerProguardFiles
+react-native-reanimated:mergeDebugConsumerProguardFiles
+react-native-safe-area-context:mergeDebugConsumerProguardFiles
+react-native-screens:mergeDebugConsumerProguardFiles
+react-native-svg:mergeDebugConsumerProguardFiles
+react-native-vector-icons:mergeDebugConsumerProguardFiles
+app:mergeDebugGeneratedProguardFiles
+react-native-async-storage_async-storage:mergeDebugGeneratedProguardFiles
+react-native-community_geolocation:mergeDebugGeneratedProguardFiles
+react-native-gesture-handler:mergeDebugGeneratedProguardFiles
+react-native-maps:mergeDebugGeneratedProguardFiles
+react-native-reanimated:mergeDebugGeneratedProguardFiles
+react-native-safe-area-context:mergeDebugGeneratedProguardFiles
+react-native-screens:mergeDebugGeneratedProguardFiles
+react-native-svg:mergeDebugGeneratedProguardFiles
+react-native-vector-icons:mergeDebugGeneratedProguardFiles
+app:mergeDebugGlobalSynthetics
+app:mergeDebugJavaResource
+react-native-async-storage_async-storage:mergeDebugJavaResource
+react-native-community_geolocation:mergeDebugJavaResource
+react-native-gesture-handler:mergeDebugJavaResource
+react-native-maps:mergeDebugJavaResource
+react-native-reanimated:mergeDebugJavaResource
+react-native-safe-area-context:mergeDebugJavaResource
+react-native-screens:mergeDebugJavaResource
+react-native-svg:mergeDebugJavaResource
+react-native-vector-icons:mergeDebugJavaResource
+app:mergeDebugJniLibFolders
+react-native-async-storage_async-storage:mergeDebugJniLibFolders
+react-native-community_geolocation:mergeDebugJniLibFolders
+react-native-gesture-handler:mergeDebugJniLibFolders
+react-native-maps:mergeDebugJniLibFolders
+react-native-reanimated:mergeDebugJniLibFolders
+react-native-safe-area-context:mergeDebugJniLibFolders
+react-native-screens:mergeDebugJniLibFolders
+react-native-svg:mergeDebugJniLibFolders
+react-native-vector-icons:mergeDebugJniLibFolders
+app:mergeDebugNativeDebugMetadata
+app:mergeDebugNativeLibs
+react-native-async-storage_async-storage:mergeDebugNativeLibs
+react-native-community_geolocation:mergeDebugNativeLibs
+react-native-gesture-handler:mergeDebugNativeLibs
+react-native-maps:mergeDebugNativeLibs
+react-native-reanimated:mergeDebugNativeLibs
+react-native-safe-area-context:mergeDebugNativeLibs
+react-native-screens:mergeDebugNativeLibs
+react-native-svg:mergeDebugNativeLibs
+react-native-vector-icons:mergeDebugNativeLibs
+app:mergeDebugResources
+react-native-async-storage_async-storage:mergeDebugResources
+react-native-community_geolocation:mergeDebugResources
+react-native-gesture-handler:mergeDebugResources
+react-native-maps:mergeDebugResources
+react-native-reanimated:mergeDebugResources
+react-native-safe-area-context:mergeDebugResources
+react-native-screens:mergeDebugResources
+react-native-svg:mergeDebugResources
+react-native-vector-icons:mergeDebugResources
+app:mergeDebugShaders
+react-native-async-storage_async-storage:mergeDebugShaders
+react-native-community_geolocation:mergeDebugShaders
+react-native-gesture-handler:mergeDebugShaders
+react-native-maps:mergeDebugShaders
+react-native-reanimated:mergeDebugShaders
+react-native-safe-area-context:mergeDebugShaders
+react-native-screens:mergeDebugShaders
+react-native-svg:mergeDebugShaders
+react-native-vector-icons:mergeDebugShaders
+app:mergeDebugStartupProfile
+app:mergeDexRelease
+app:mergeExtDexDebug
+app:mergeExtDexDebugAndroidTest
+react-native-async-storage_async-storage:mergeExtDexDebugAndroidTest
+react-native-community_geolocation:mergeExtDexDebugAndroidTest
+react-native-gesture-handler:mergeExtDexDebugAndroidTest
+react-native-maps:mergeExtDexDebugAndroidTest
+react-native-reanimated:mergeExtDexDebugAndroidTest
+react-native-safe-area-context:mergeExtDexDebugAndroidTest
+react-native-screens:mergeExtDexDebugAndroidTest
+react-native-svg:mergeExtDexDebugAndroidTest
+react-native-vector-icons:mergeExtDexDebugAndroidTest
+app:mergeExtDexRelease
+app:mergeLibDexDebug
+app:mergeLibDexDebugAndroidTest
+react-native-async-storage_async-storage:mergeLibDexDebugAndroidTest
+react-native-community_geolocation:mergeLibDexDebugAndroidTest
+react-native-gesture-handler:mergeLibDexDebugAndroidTest
+react-native-maps:mergeLibDexDebugAndroidTest
+react-native-reanimated:mergeLibDexDebugAndroidTest
+react-native-safe-area-context:mergeLibDexDebugAndroidTest
+react-native-screens:mergeLibDexDebugAndroidTest
+react-native-svg:mergeLibDexDebugAndroidTest
+react-native-vector-icons:mergeLibDexDebugAndroidTest
+app:mergeProjectDexDebug
+app:mergeProjectDexDebugAndroidTest
+react-native-async-storage_async-storage:mergeProjectDexDebugAndroidTest
+react-native-community_geolocation:mergeProjectDexDebugAndroidTest
+react-native-gesture-handler:mergeProjectDexDebugAndroidTest
+react-native-maps:mergeProjectDexDebugAndroidTest
+react-native-reanimated:mergeProjectDexDebugAndroidTest
+react-native-safe-area-context:mergeProjectDexDebugAndroidTest
+react-native-screens:mergeProjectDexDebugAndroidTest
+react-native-svg:mergeProjectDexDebugAndroidTest
+react-native-vector-icons:mergeProjectDexDebugAndroidTest
+app:mergeReleaseArtProfile
+app:mergeReleaseAssets
+react-native-async-storage_async-storage:mergeReleaseAssets
+react-native-community_geolocation:mergeReleaseAssets
+react-native-gesture-handler:mergeReleaseAssets
+react-native-maps:mergeReleaseAssets
+react-native-reanimated:mergeReleaseAssets
+react-native-safe-area-context:mergeReleaseAssets
+react-native-screens:mergeReleaseAssets
+react-native-svg:mergeReleaseAssets
+react-native-vector-icons:mergeReleaseAssets
+react-native-async-storage_async-storage:mergeReleaseConsumerProguardFiles
+react-native-community_geolocation:mergeReleaseConsumerProguardFiles
+react-native-gesture-handler:mergeReleaseConsumerProguardFiles
+react-native-maps:mergeReleaseConsumerProguardFiles
+react-native-reanimated:mergeReleaseConsumerProguardFiles
+react-native-safe-area-context:mergeReleaseConsumerProguardFiles
+react-native-screens:mergeReleaseConsumerProguardFiles
+react-native-svg:mergeReleaseConsumerProguardFiles
+react-native-vector-icons:mergeReleaseConsumerProguardFiles
+app:mergeReleaseGeneratedProguardFiles
+react-native-async-storage_async-storage:mergeReleaseGeneratedProguardFiles
+react-native-community_geolocation:mergeReleaseGeneratedProguardFiles
+react-native-gesture-handler:mergeReleaseGeneratedProguardFiles
+react-native-maps:mergeReleaseGeneratedProguardFiles
+react-native-reanimated:mergeReleaseGeneratedProguardFiles
+react-native-safe-area-context:mergeReleaseGeneratedProguardFiles
+react-native-screens:mergeReleaseGeneratedProguardFiles
+react-native-svg:mergeReleaseGeneratedProguardFiles
+react-native-vector-icons:mergeReleaseGeneratedProguardFiles
+app:mergeReleaseGlobalSynthetics
+app:mergeReleaseJavaResource
+react-native-async-storage_async-storage:mergeReleaseJavaResource
+react-native-community_geolocation:mergeReleaseJavaResource
+react-native-gesture-handler:mergeReleaseJavaResource
+react-native-maps:mergeReleaseJavaResource
+react-native-reanimated:mergeReleaseJavaResource
+react-native-safe-area-context:mergeReleaseJavaResource
+react-native-screens:mergeReleaseJavaResource
+react-native-svg:mergeReleaseJavaResource
+react-native-vector-icons:mergeReleaseJavaResource
+app:mergeReleaseJniLibFolders
+react-native-async-storage_async-storage:mergeReleaseJniLibFolders
+react-native-community_geolocation:mergeReleaseJniLibFolders
+react-native-gesture-handler:mergeReleaseJniLibFolders
+react-native-maps:mergeReleaseJniLibFolders
+react-native-reanimated:mergeReleaseJniLibFolders
+react-native-safe-area-context:mergeReleaseJniLibFolders
+react-native-screens:mergeReleaseJniLibFolders
+react-native-svg:mergeReleaseJniLibFolders
+react-native-vector-icons:mergeReleaseJniLibFolders
+app:mergeReleaseNativeDebugMetadata
+app:mergeReleaseNativeLibs
+react-native-async-storage_async-storage:mergeReleaseNativeLibs
+react-native-community_geolocation:mergeReleaseNativeLibs
+react-native-gesture-handler:mergeReleaseNativeLibs
+react-native-maps:mergeReleaseNativeLibs
+react-native-reanimated:mergeReleaseNativeLibs
+react-native-safe-area-context:mergeReleaseNativeLibs
+react-native-screens:mergeReleaseNativeLibs
+react-native-svg:mergeReleaseNativeLibs
+react-native-vector-icons:mergeReleaseNativeLibs
+app:mergeReleaseResources
+react-native-async-storage_async-storage:mergeReleaseResources
+react-native-community_geolocation:mergeReleaseResources
+react-native-gesture-handler:mergeReleaseResources
+react-native-maps:mergeReleaseResources
+react-native-reanimated:mergeReleaseResources
+react-native-safe-area-context:mergeReleaseResources
+react-native-screens:mergeReleaseResources
+react-native-svg:mergeReleaseResources
+react-native-vector-icons:mergeReleaseResources
+app:mergeReleaseShaders
+react-native-async-storage_async-storage:mergeReleaseShaders
+react-native-community_geolocation:mergeReleaseShaders
+react-native-gesture-handler:mergeReleaseShaders
+react-native-maps:mergeReleaseShaders
+react-native-reanimated:mergeReleaseShaders
+react-native-safe-area-context:mergeReleaseShaders
+react-native-screens:mergeReleaseShaders
+react-native-svg:mergeReleaseShaders
+react-native-vector-icons:mergeReleaseShaders
+app:mergeReleaseStartupProfile
+model - Displays the configuration model of root project 'AtlasDriverShell'. [deprecated]
+app:model - Displays the configuration model of project ':app'. [deprecated]
+react-native-async-storage_async-storage:model - Displays the configuration model of project ':react-native-async-storage_async-storage'. [deprecated]
+react-native-community_geolocation:model - Displays the configuration model of project ':react-native-community_geolocation'. [deprecated]
+react-native-gesture-handler:model - Displays the configuration model of project ':react-native-gesture-handler'. [deprecated]
+react-native-maps:model - Displays the configuration model of project ':react-native-maps'. [deprecated]
+react-native-reanimated:model - Displays the configuration model of project ':react-native-reanimated'. [deprecated]
+react-native-safe-area-context:model - Displays the configuration model of project ':react-native-safe-area-context'. [deprecated]
+react-native-screens:model - Displays the configuration model of project ':react-native-screens'. [deprecated]
+react-native-svg:model - Displays the configuration model of project ':react-native-svg'. [deprecated]
+react-native-vector-icons:model - Displays the configuration model of project ':react-native-vector-icons'. [deprecated]
+app:optimizeReleaseResources
+app:packageDebug
+app:packageDebugAndroidTest
+react-native-async-storage_async-storage:packageDebugAndroidTest
+react-native-community_geolocation:packageDebugAndroidTest
+react-native-gesture-handler:packageDebugAndroidTest
+react-native-maps:packageDebugAndroidTest
+react-native-reanimated:packageDebugAndroidTest
+react-native-safe-area-context:packageDebugAndroidTest
+react-native-screens:packageDebugAndroidTest
+react-native-svg:packageDebugAndroidTest
+react-native-vector-icons:packageDebugAndroidTest
+react-native-async-storage_async-storage:packageDebugAssets
+react-native-community_geolocation:packageDebugAssets
+react-native-gesture-handler:packageDebugAssets
+react-native-maps:packageDebugAssets
+react-native-reanimated:packageDebugAssets
+react-native-safe-area-context:packageDebugAssets
+react-native-screens:packageDebugAssets
+react-native-svg:packageDebugAssets
+react-native-vector-icons:packageDebugAssets
+app:packageDebugBundle
+react-native-async-storage_async-storage:packageDebugRenderscript
+react-native-community_geolocation:packageDebugRenderscript
+react-native-gesture-handler:packageDebugRenderscript
+react-native-maps:packageDebugRenderscript
+react-native-reanimated:packageDebugRenderscript
+react-native-safe-area-context:packageDebugRenderscript
+react-native-screens:packageDebugRenderscript
+react-native-svg:packageDebugRenderscript
+react-native-vector-icons:packageDebugRenderscript
+app:packageDebugResources
+react-native-async-storage_async-storage:packageDebugResources
+react-native-community_geolocation:packageDebugResources
+react-native-gesture-handler:packageDebugResources
+react-native-maps:packageDebugResources
+react-native-reanimated:packageDebugResources
+react-native-safe-area-context:packageDebugResources
+react-native-screens:packageDebugResources
+react-native-svg:packageDebugResources
+react-native-vector-icons:packageDebugResources
+app:packageDebugUniversalApk
+react-native-reanimated:packageNdkLibs
+app:packageRelease
+react-native-async-storage_async-storage:packageReleaseAssets
+react-native-community_geolocation:packageReleaseAssets
+react-native-gesture-handler:packageReleaseAssets
+react-native-maps:packageReleaseAssets
+react-native-reanimated:packageReleaseAssets
+react-native-safe-area-context:packageReleaseAssets
+react-native-screens:packageReleaseAssets
+react-native-svg:packageReleaseAssets
+react-native-vector-icons:packageReleaseAssets
+app:packageReleaseBundle
+react-native-async-storage_async-storage:packageReleaseRenderscript
+react-native-community_geolocation:packageReleaseRenderscript
+react-native-gesture-handler:packageReleaseRenderscript
+react-native-maps:packageReleaseRenderscript
+react-native-reanimated:packageReleaseRenderscript
+react-native-safe-area-context:packageReleaseRenderscript
+react-native-screens:packageReleaseRenderscript
+react-native-svg:packageReleaseRenderscript
+react-native-vector-icons:packageReleaseRenderscript
+app:packageReleaseResources
+react-native-async-storage_async-storage:packageReleaseResources
+react-native-community_geolocation:packageReleaseResources
+react-native-gesture-handler:packageReleaseResources
+react-native-maps:packageReleaseResources
+react-native-reanimated:packageReleaseResources
+react-native-safe-area-context:packageReleaseResources
+react-native-screens:packageReleaseResources
+react-native-svg:packageReleaseResources
+react-native-vector-icons:packageReleaseResources
+app:packageReleaseUniversalApk
+app:parseDebugIntegrityConfig
+app:parseDebugLocalResources
+react-native-async-storage_async-storage:parseDebugLocalResources
+react-native-community_geolocation:parseDebugLocalResources
+react-native-gesture-handler:parseDebugLocalResources
+react-native-maps:parseDebugLocalResources
+react-native-reanimated:parseDebugLocalResources
+react-native-safe-area-context:parseDebugLocalResources
+react-native-screens:parseDebugLocalResources
+react-native-svg:parseDebugLocalResources
+react-native-vector-icons:parseDebugLocalResources
+app:parseReleaseIntegrityConfig
+app:parseReleaseLocalResources
+react-native-async-storage_async-storage:parseReleaseLocalResources
+react-native-community_geolocation:parseReleaseLocalResources
+react-native-gesture-handler:parseReleaseLocalResources
+react-native-maps:parseReleaseLocalResources
+react-native-reanimated:parseReleaseLocalResources
+react-native-safe-area-context:parseReleaseLocalResources
+react-native-screens:parseReleaseLocalResources
+react-native-svg:parseReleaseLocalResources
+react-native-vector-icons:parseReleaseLocalResources
+app:preBuild
+react-native-async-storage_async-storage:preBuild
+react-native-community_geolocation:preBuild
+react-native-gesture-handler:preBuild
+react-native-maps:preBuild
+react-native-reanimated:preBuild
+react-native-safe-area-context:preBuild
+react-native-screens:preBuild
+react-native-svg:preBuild
+react-native-vector-icons:preBuild
+app:preDebugAndroidTestBuild
+react-native-async-storage_async-storage:preDebugAndroidTestBuild
+react-native-community_geolocation:preDebugAndroidTestBuild
+react-native-gesture-handler:preDebugAndroidTestBuild
+react-native-maps:preDebugAndroidTestBuild
+react-native-reanimated:preDebugAndroidTestBuild
+react-native-safe-area-context:preDebugAndroidTestBuild
+react-native-screens:preDebugAndroidTestBuild
+react-native-svg:preDebugAndroidTestBuild
+react-native-vector-icons:preDebugAndroidTestBuild
+app:preDebugBuild
+react-native-async-storage_async-storage:preDebugBuild
+react-native-community_geolocation:preDebugBuild
+react-native-gesture-handler:preDebugBuild
+react-native-maps:preDebugBuild
+react-native-reanimated:preDebugBuild
+react-native-safe-area-context:preDebugBuild
+react-native-screens:preDebugBuild
+react-native-svg:preDebugBuild
+react-native-vector-icons:preDebugBuild
+app:preDebugUnitTestBuild
+react-native-async-storage_async-storage:preDebugUnitTestBuild
+react-native-community_geolocation:preDebugUnitTestBuild
+react-native-gesture-handler:preDebugUnitTestBuild
+react-native-maps:preDebugUnitTestBuild
+react-native-reanimated:preDebugUnitTestBuild
+react-native-safe-area-context:preDebugUnitTestBuild
+react-native-screens:preDebugUnitTestBuild
+react-native-svg:preDebugUnitTestBuild
+react-native-vector-icons:preDebugUnitTestBuild
+react-native-reanimated:prefabDebugConfigurePackage - Creates a configuration for Prefab package
+react-native-reanimated:prefabDebugPackage - Creates a Prefab package for inclusion in an AAR
+react-native-reanimated:prefabReleaseConfigurePackage - Creates a configuration for Prefab package
+react-native-reanimated:prefabReleasePackage - Creates a Prefab package for inclusion in an AAR
+react-native-async-storage_async-storage:prepareDebugArtProfile
+react-native-community_geolocation:prepareDebugArtProfile
+react-native-gesture-handler:prepareDebugArtProfile
+react-native-maps:prepareDebugArtProfile
+react-native-reanimated:prepareDebugArtProfile
+react-native-safe-area-context:prepareDebugArtProfile
+react-native-screens:prepareDebugArtProfile
+react-native-svg:prepareDebugArtProfile
+react-native-vector-icons:prepareDebugArtProfile
+prepareKotlinBuildScriptModel
+app:prepareLintJarForPublish
+react-native-async-storage_async-storage:prepareLintJarForPublish
+react-native-community_geolocation:prepareLintJarForPublish
+react-native-gesture-handler:prepareLintJarForPublish
+react-native-maps:prepareLintJarForPublish
+react-native-reanimated:prepareLintJarForPublish
+react-native-safe-area-context:prepareLintJarForPublish
+react-native-screens:prepareLintJarForPublish
+react-native-svg:prepareLintJarForPublish
+react-native-vector-icons:prepareLintJarForPublish
+react-native-reanimated:prepareReanimatedHeadersForPrefabs
+react-native-async-storage_async-storage:prepareReleaseArtProfile
+react-native-community_geolocation:prepareReleaseArtProfile
+react-native-gesture-handler:prepareReleaseArtProfile
+react-native-maps:prepareReleaseArtProfile
+react-native-reanimated:prepareReleaseArtProfile
+react-native-safe-area-context:prepareReleaseArtProfile
+react-native-screens:prepareReleaseArtProfile
+react-native-svg:prepareReleaseArtProfile
+react-native-vector-icons:prepareReleaseArtProfile
+react-native-reanimated:prepareWorkletsHeadersForPrefabs
+app:preReleaseBuild
+react-native-async-storage_async-storage:preReleaseBuild
+react-native-community_geolocation:preReleaseBuild
+react-native-gesture-handler:preReleaseBuild
+react-native-maps:preReleaseBuild
+react-native-reanimated:preReleaseBuild
+react-native-safe-area-context:preReleaseBuild
+react-native-screens:preReleaseBuild
+react-native-svg:preReleaseBuild
+react-native-vector-icons:preReleaseBuild
+app:preReleaseUnitTestBuild
+react-native-async-storage_async-storage:preReleaseUnitTestBuild
+react-native-community_geolocation:preReleaseUnitTestBuild
+react-native-gesture-handler:preReleaseUnitTestBuild
+react-native-maps:preReleaseUnitTestBuild
+react-native-reanimated:preReleaseUnitTestBuild
+react-native-safe-area-context:preReleaseUnitTestBuild
+react-native-screens:preReleaseUnitTestBuild
+react-native-svg:preReleaseUnitTestBuild
+react-native-vector-icons:preReleaseUnitTestBuild
+react-native-reanimated:printVersions
+app:processApplicationManifestDebugForBundle
+app:processApplicationManifestReleaseForBundle
+app:processDebugAndroidTestJavaRes
+react-native-async-storage_async-storage:processDebugAndroidTestJavaRes
+react-native-community_geolocation:processDebugAndroidTestJavaRes
+react-native-gesture-handler:processDebugAndroidTestJavaRes
+react-native-maps:processDebugAndroidTestJavaRes
+react-native-reanimated:processDebugAndroidTestJavaRes
+react-native-safe-area-context:processDebugAndroidTestJavaRes
+react-native-screens:processDebugAndroidTestJavaRes
+react-native-svg:processDebugAndroidTestJavaRes
+react-native-vector-icons:processDebugAndroidTestJavaRes
+app:processDebugAndroidTestManifest
+react-native-async-storage_async-storage:processDebugAndroidTestManifest
+react-native-community_geolocation:processDebugAndroidTestManifest
+react-native-gesture-handler:processDebugAndroidTestManifest
+react-native-maps:processDebugAndroidTestManifest
+react-native-reanimated:processDebugAndroidTestManifest
+react-native-safe-area-context:processDebugAndroidTestManifest
+react-native-screens:processDebugAndroidTestManifest
+react-native-svg:processDebugAndroidTestManifest
+react-native-vector-icons:processDebugAndroidTestManifest
+app:processDebugAndroidTestResources
+react-native-async-storage_async-storage:processDebugAndroidTestResources
+react-native-community_geolocation:processDebugAndroidTestResources
+react-native-gesture-handler:processDebugAndroidTestResources
+react-native-maps:processDebugAndroidTestResources
+react-native-reanimated:processDebugAndroidTestResources
+react-native-safe-area-context:processDebugAndroidTestResources
+react-native-screens:processDebugAndroidTestResources
+react-native-svg:processDebugAndroidTestResources
+react-native-vector-icons:processDebugAndroidTestResources
+app:processDebugJavaRes
+react-native-async-storage_async-storage:processDebugJavaRes
+react-native-community_geolocation:processDebugJavaRes
+react-native-gesture-handler:processDebugJavaRes
+react-native-maps:processDebugJavaRes
+react-native-reanimated:processDebugJavaRes
+react-native-safe-area-context:processDebugJavaRes
+react-native-screens:processDebugJavaRes
+react-native-svg:processDebugJavaRes
+react-native-vector-icons:processDebugJavaRes
+app:processDebugMainManifest
+app:processDebugManifest
+react-native-async-storage_async-storage:processDebugManifest
+react-native-community_geolocation:processDebugManifest
+react-native-gesture-handler:processDebugManifest
+react-native-maps:processDebugManifest
+react-native-reanimated:processDebugManifest
+react-native-safe-area-context:processDebugManifest
+react-native-screens:processDebugManifest
+react-native-svg:processDebugManifest
+react-native-vector-icons:processDebugManifest
+app:processDebugManifestForInstantApp
+app:processDebugManifestForPackage
+app:processDebugResources
+app:processDebugUnitTestJavaRes
+react-native-async-storage_async-storage:processDebugUnitTestJavaRes
+react-native-community_geolocation:processDebugUnitTestJavaRes
+react-native-gesture-handler:processDebugUnitTestJavaRes
+react-native-maps:processDebugUnitTestJavaRes
+react-native-reanimated:processDebugUnitTestJavaRes
+react-native-safe-area-context:processDebugUnitTestJavaRes
+react-native-screens:processDebugUnitTestJavaRes
+react-native-svg:processDebugUnitTestJavaRes
+react-native-vector-icons:processDebugUnitTestJavaRes
+app:processManifestDebugForFeature
+app:processManifestReleaseForFeature
+app:processReleaseJavaRes
+react-native-async-storage_async-storage:processReleaseJavaRes
+react-native-community_geolocation:processReleaseJavaRes
+react-native-gesture-handler:processReleaseJavaRes
+react-native-maps:processReleaseJavaRes
+react-native-reanimated:processReleaseJavaRes
+react-native-safe-area-context:processReleaseJavaRes
+react-native-screens:processReleaseJavaRes
+react-native-svg:processReleaseJavaRes
+react-native-vector-icons:processReleaseJavaRes
+app:processReleaseMainManifest
+app:processReleaseManifest
+react-native-async-storage_async-storage:processReleaseManifest
+react-native-community_geolocation:processReleaseManifest
+react-native-gesture-handler:processReleaseManifest
+react-native-maps:processReleaseManifest
+react-native-reanimated:processReleaseManifest
+react-native-safe-area-context:processReleaseManifest
+react-native-screens:processReleaseManifest
+react-native-svg:processReleaseManifest
+react-native-vector-icons:processReleaseManifest
+app:processReleaseManifestForInstantApp
+app:processReleaseManifestForPackage
+app:processReleaseResources
+app:processReleaseUnitTestJavaRes
+react-native-async-storage_async-storage:processReleaseUnitTestJavaRes
+react-native-community_geolocation:processReleaseUnitTestJavaRes
+react-native-gesture-handler:processReleaseUnitTestJavaRes
+react-native-maps:processReleaseUnitTestJavaRes
+react-native-reanimated:processReleaseUnitTestJavaRes
+react-native-safe-area-context:processReleaseUnitTestJavaRes
+react-native-screens:processReleaseUnitTestJavaRes
+react-native-svg:processReleaseUnitTestJavaRes
+react-native-vector-icons:processReleaseUnitTestJavaRes
+app:produceDebugBundleIdeListingFile
+app:produceReleaseBundleIdeListingFile
+app:resolveConfigAttr
+react-native-async-storage_async-storage:resolveConfigAttr
+react-native-community_geolocation:resolveConfigAttr
+react-native-gesture-handler:resolveConfigAttr
+react-native-maps:resolveConfigAttr
+react-native-reanimated:resolveConfigAttr
+react-native-safe-area-context:resolveConfigAttr
+react-native-screens:resolveConfigAttr
+react-native-svg:resolveConfigAttr
+react-native-vector-icons:resolveConfigAttr
+app:sdkReleaseDependencyData
+app:signDebugBundle
+app:signingConfigWriterDebug
+app:signingConfigWriterDebugAndroidTest
+react-native-async-storage_async-storage:signingConfigWriterDebugAndroidTest
+react-native-community_geolocation:signingConfigWriterDebugAndroidTest
+react-native-gesture-handler:signingConfigWriterDebugAndroidTest
+react-native-maps:signingConfigWriterDebugAndroidTest
+react-native-reanimated:signingConfigWriterDebugAndroidTest
+react-native-safe-area-context:signingConfigWriterDebugAndroidTest
+react-native-screens:signingConfigWriterDebugAndroidTest
+react-native-svg:signingConfigWriterDebugAndroidTest
+react-native-vector-icons:signingConfigWriterDebugAndroidTest
+app:signingConfigWriterRelease
+app:signReleaseBundle
+app:stripDebugAndroidTestDebugSymbols
+react-native-async-storage_async-storage:stripDebugAndroidTestDebugSymbols
+react-native-community_geolocation:stripDebugAndroidTestDebugSymbols
+react-native-gesture-handler:stripDebugAndroidTestDebugSymbols
+react-native-maps:stripDebugAndroidTestDebugSymbols
+react-native-reanimated:stripDebugAndroidTestDebugSymbols
+react-native-safe-area-context:stripDebugAndroidTestDebugSymbols
+react-native-screens:stripDebugAndroidTestDebugSymbols
+react-native-svg:stripDebugAndroidTestDebugSymbols
+react-native-vector-icons:stripDebugAndroidTestDebugSymbols
+app:stripDebugDebugSymbols
+react-native-async-storage_async-storage:stripDebugDebugSymbols
+react-native-community_geolocation:stripDebugDebugSymbols
+react-native-gesture-handler:stripDebugDebugSymbols
+react-native-maps:stripDebugDebugSymbols
+react-native-reanimated:stripDebugDebugSymbols
+react-native-safe-area-context:stripDebugDebugSymbols
+react-native-screens:stripDebugDebugSymbols
+react-native-svg:stripDebugDebugSymbols
+react-native-vector-icons:stripDebugDebugSymbols
+app:stripReleaseDebugSymbols
+react-native-async-storage_async-storage:stripReleaseDebugSymbols
+react-native-community_geolocation:stripReleaseDebugSymbols
+react-native-gesture-handler:stripReleaseDebugSymbols
+react-native-maps:stripReleaseDebugSymbols
+react-native-reanimated:stripReleaseDebugSymbols
+react-native-safe-area-context:stripReleaseDebugSymbols
+react-native-screens:stripReleaseDebugSymbols
+react-native-svg:stripReleaseDebugSymbols
+react-native-vector-icons:stripReleaseDebugSymbols
+react-native-async-storage_async-storage:syncDebugLibJars
+react-native-community_geolocation:syncDebugLibJars
+react-native-gesture-handler:syncDebugLibJars
+react-native-maps:syncDebugLibJars
+react-native-reanimated:syncDebugLibJars
+react-native-safe-area-context:syncDebugLibJars
+react-native-screens:syncDebugLibJars
+react-native-svg:syncDebugLibJars
+react-native-vector-icons:syncDebugLibJars
+react-native-async-storage_async-storage:syncReleaseLibJars
+react-native-community_geolocation:syncReleaseLibJars
+react-native-gesture-handler:syncReleaseLibJars
+react-native-maps:syncReleaseLibJars
+react-native-reanimated:syncReleaseLibJars
+react-native-safe-area-context:syncReleaseLibJars
+react-native-screens:syncReleaseLibJars
+react-native-svg:syncReleaseLibJars
+react-native-vector-icons:syncReleaseLibJars
+app:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-async-storage_async-storage:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-community_geolocation:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-gesture-handler:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-maps:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-reanimated:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-safe-area-context:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-screens:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-svg:updateLintBaselineDebug - Update the lint baseline using the debug variant
+react-native-vector-icons:updateLintBaselineDebug - Update the lint baseline using the debug variant
+app:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-async-storage_async-storage:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-community_geolocation:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-gesture-handler:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-maps:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-reanimated:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-safe-area-context:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-screens:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-svg:updateLintBaselineRelease - Update the lint baseline using the release variant
+react-native-vector-icons:updateLintBaselineRelease - Update the lint baseline using the release variant
+app:validateSigningDebug
+app:validateSigningDebugAndroidTest
+react-native-async-storage_async-storage:validateSigningDebugAndroidTest
+react-native-community_geolocation:validateSigningDebugAndroidTest
+react-native-gesture-handler:validateSigningDebugAndroidTest
+react-native-maps:validateSigningDebugAndroidTest
+react-native-reanimated:validateSigningDebugAndroidTest
+react-native-safe-area-context:validateSigningDebugAndroidTest
+react-native-screens:validateSigningDebugAndroidTest
+react-native-svg:validateSigningDebugAndroidTest
+react-native-vector-icons:validateSigningDebugAndroidTest
+app:validateSigningRelease
+react-native-async-storage_async-storage:verifyReleaseResources
+react-native-community_geolocation:verifyReleaseResources
+react-native-gesture-handler:verifyReleaseResources
+react-native-maps:verifyReleaseResources
+react-native-reanimated:verifyReleaseResources
+react-native-safe-area-context:verifyReleaseResources
+react-native-screens:verifyReleaseResources
+react-native-svg:verifyReleaseResources
+react-native-vector-icons:verifyReleaseResources
+react-native-async-storage_async-storage:writeDebugAarMetadata
+react-native-community_geolocation:writeDebugAarMetadata
+react-native-gesture-handler:writeDebugAarMetadata
+react-native-maps:writeDebugAarMetadata
+react-native-reanimated:writeDebugAarMetadata
+react-native-safe-area-context:writeDebugAarMetadata
+react-native-screens:writeDebugAarMetadata
+react-native-svg:writeDebugAarMetadata
+react-native-vector-icons:writeDebugAarMetadata
+app:writeDebugAndroidTestSigningConfigVersions
+react-native-async-storage_async-storage:writeDebugAndroidTestSigningConfigVersions
+react-native-community_geolocation:writeDebugAndroidTestSigningConfigVersions
+react-native-gesture-handler:writeDebugAndroidTestSigningConfigVersions
+react-native-maps:writeDebugAndroidTestSigningConfigVersions
+react-native-reanimated:writeDebugAndroidTestSigningConfigVersions
+react-native-safe-area-context:writeDebugAndroidTestSigningConfigVersions
+react-native-screens:writeDebugAndroidTestSigningConfigVersions
+react-native-svg:writeDebugAndroidTestSigningConfigVersions
+react-native-vector-icons:writeDebugAndroidTestSigningConfigVersions
+app:writeDebugApplicationId
+app:writeDebugAppMetadata
+react-native-async-storage_async-storage:writeDebugLintModelMetadata
+react-native-community_geolocation:writeDebugLintModelMetadata
+react-native-gesture-handler:writeDebugLintModelMetadata
+react-native-maps:writeDebugLintModelMetadata
+react-native-reanimated:writeDebugLintModelMetadata
+react-native-safe-area-context:writeDebugLintModelMetadata
+react-native-screens:writeDebugLintModelMetadata
+react-native-svg:writeDebugLintModelMetadata
+react-native-vector-icons:writeDebugLintModelMetadata
+app:writeDebugModuleMetadata
+app:writeDebugSigningConfigVersions
+react-native-async-storage_async-storage:writeReleaseAarMetadata
+react-native-community_geolocation:writeReleaseAarMetadata
+react-native-gesture-handler:writeReleaseAarMetadata
+react-native-maps:writeReleaseAarMetadata
+react-native-reanimated:writeReleaseAarMetadata
+react-native-safe-area-context:writeReleaseAarMetadata
+react-native-screens:writeReleaseAarMetadata
+react-native-svg:writeReleaseAarMetadata
+react-native-vector-icons:writeReleaseAarMetadata
+app:writeReleaseApplicationId
+app:writeReleaseAppMetadata
+react-native-async-storage_async-storage:writeReleaseLintModelMetadata
+react-native-community_geolocation:writeReleaseLintModelMetadata
+react-native-gesture-handler:writeReleaseLintModelMetadata
+react-native-maps:writeReleaseLintModelMetadata
+react-native-reanimated:writeReleaseLintModelMetadata
+react-native-safe-area-context:writeReleaseLintModelMetadata
+react-native-screens:writeReleaseLintModelMetadata
+react-native-svg:writeReleaseLintModelMetadata
+react-native-vector-icons:writeReleaseLintModelMetadata
+app:writeReleaseModuleMetadata
+app:writeReleaseSigningConfigVersions
+app:zipApksForDebug
+app:zipApksForRelease
+
+BUILD SUCCESSFUL in 11s
+11 actionable tasks: 1 executed, 10 up-to-date

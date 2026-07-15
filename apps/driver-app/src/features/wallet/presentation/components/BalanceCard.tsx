@@ -1,5 +1,5 @@
 import React, { memo, useEffect } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,9 +17,10 @@ interface BalanceCardProps {
   amount: number;
   currency: CurrencyCode;
   lastUpdated?: string;
+  pendingAmount?: number;
 }
 
-export const BalanceCard = memo(({ amount, currency, lastUpdated }: BalanceCardProps) => {
+export const BalanceCard = memo(({ amount, currency, lastUpdated, pendingAmount }: BalanceCardProps) => {
   const { t } = useTranslation('wallet');
   const { colors } = useTheme();
 
@@ -31,7 +32,7 @@ export const BalanceCard = memo(({ amount, currency, lastUpdated }: BalanceCardP
     translateY.value = 12;
     opacity.value = withTiming(1, { duration: WalletAnimations.timing.duration });
     translateY.value = withSpring(0, WalletAnimations.spring);
-  }, [amount]);
+  }, [amount, pendingAmount]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -61,6 +62,18 @@ export const BalanceCard = memo(({ amount, currency, lastUpdated }: BalanceCardP
           {lastUpdated}
         </Text>
       ) : null}
+
+      {/* 🟠 Pending authorization request banner */}
+      {pendingAmount && pendingAmount > 0 ? (
+        <View style={styles.pendingContainer}>
+          <View style={styles.badgeRow}>
+            <View style={[styles.orangeDot, { backgroundColor: '#EA580C' }]} />
+            <Text style={[styles.pendingText, { color: '#92400E' }]}>
+              {formatCurrency(pendingAmount, currency)} {t('pending_validation')}
+            </Text>
+          </View>
+        </View>
+      ) : null}
     </Animated.View>
   );
 });
@@ -69,7 +82,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     borderWidth: 1,
-    paddingVertical: 32,
+    paddingVertical: 30,
     paddingHorizontal: 24,
     alignItems: 'center',
     shadowOffset: { width: 0, height: 4 },
@@ -77,6 +90,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     marginBottom: 16,
+    width: '100%',
   },
   label: {
     ...WalletTypography.caption,
@@ -92,5 +106,30 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     marginTop: 10,
+  },
+  pendingContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  orangeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  pendingText: {
+    fontSize: 12,
+    fontWeight: '800',
   },
 });

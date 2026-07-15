@@ -1,0 +1,1 @@
+/Users/benomar/VTC OLD/atlas projet vtc V1/apps/driver-app/android/app/build/intermediates/cxx/Debug/2q5r2k24/obj/arm64-v8a

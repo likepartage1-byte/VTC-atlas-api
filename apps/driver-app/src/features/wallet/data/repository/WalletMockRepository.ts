@@ -12,85 +12,85 @@ import {
 
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+// Module-level persistent state for mock database simulation
+const mockBalanceObj: WalletBalance = { amount: 39.84, currency: 'MAD', pending: 6.24 };
+
+let mockTransactionsArr: Transaction[] = [
+  {
+    id: 'txn-001',
+    type: 'vat',
+    status: 'pending',
+    amount: -1.04,
+    currency: 'MAD',
+    label: 'TVA',
+    description: 'Taxe sur la valeur ajoutée',
+    createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
+  },
+  {
+    id: 'txn-002',
+    type: 'service_fee',
+    status: 'pending',
+    amount: -5.20,
+    currency: 'MAD',
+    label: 'Paiement de service',
+    description: 'Frais de service Atlas',
+    createdAt: new Date(Date.now() - 30 * 60 * 1000),
+  },
+  {
+    id: 'txn-003',
+    type: 'vat',
+    status: 'completed',
+    amount: -0.62,
+    currency: 'MAD',
+    label: 'TVA',
+    description: 'Ville de Marrakech',
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+  },
+  {
+    id: 'txn-004',
+    type: 'service_fee',
+    status: 'completed',
+    amount: -3.10,
+    currency: 'MAD',
+    label: 'Paiement de service',
+    description: 'Course Ménara → Palmeraie',
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+  },
+  {
+    id: 'txn-005',
+    type: 'recharge',
+    status: 'completed',
+    amount: 150.00,
+    currency: 'MAD',
+    label: 'Rechargement',
+    description: 'Visa se terminant par 4242',
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+  },
+  {
+    id: 'txn-006',
+    type: 'commission',
+    status: 'completed',
+    amount: -4.20,
+    currency: 'MAD',
+    label: 'Commission',
+    description: 'Commission Atlas 10,4%',
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+  },
+];
+
 export class WalletMockRepository implements IWalletRepository {
 
   async getBalance(): Promise<ApiResponse<WalletBalance>> {
     await delay(700);
     return {
       success: true,
-      data: { amount: 39.84, currency: 'MAD', pending: 6.24 },
+      data: mockBalanceObj,
     };
   }
 
   async getTransactions(limit = 20): Promise<ApiResponse<Transaction[]>> {
     await delay(500);
-    const now = new Date();
-    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    const allTransactions: Transaction[] = [
-      {
-        id: 'txn-001',
-        type: 'vat',
-        status: 'pending',
-        amount: -1.04,
-        currency: 'MAD',
-        label: 'TVA',
-        description: 'Taxe sur la valeur ajoutée',
-        createdAt: new Date(now.getTime() - 30 * 60 * 1000), // 30 min ago
-      },
-      {
-        id: 'txn-002',
-        type: 'service_fee',
-        status: 'pending',
-        amount: -5.20,
-        currency: 'MAD',
-        label: 'Paiement de service',
-        description: 'Frais de service Atlas',
-        createdAt: new Date(now.getTime() - 30 * 60 * 1000),
-      },
-      {
-        id: 'txn-003',
-        type: 'vat',
-        status: 'completed',
-        amount: -0.62,
-        currency: 'MAD',
-        label: 'TVA',
-        description: 'Ville de Marrakech',
-        createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
-      },
-      {
-        id: 'txn-004',
-        type: 'service_fee',
-        status: 'completed',
-        amount: -3.10,
-        currency: 'MAD',
-        label: 'Paiement de service',
-        description: 'Course Ménara → Palmeraie',
-        createdAt: new Date(now.getTime() - 3 * 60 * 60 * 1000),
-      },
-      {
-        id: 'txn-005',
-        type: 'recharge',
-        status: 'completed',
-        amount: 150.00,
-        currency: 'MAD',
-        label: 'Rechargement',
-        description: 'Visa se terminant par 4242',
-        createdAt: yesterday,
-      },
-      {
-        id: 'txn-006',
-        type: 'commission',
-        status: 'completed',
-        amount: -4.20,
-        currency: 'MAD',
-        label: 'Commission',
-        description: 'Commission Atlas 10,4%',
-        createdAt: new Date(yesterday.getTime() - 2 * 60 * 60 * 1000),
-      },
-    ];
-
-    return { success: true, data: allTransactions.slice(0, limit) };
+    return { success: true, data: mockTransactionsArr.slice(0, limit) };
   }
 
   async getPendingPayments(): Promise<ApiResponse<PendingPayment[]>> {
@@ -138,6 +138,38 @@ export class WalletMockRepository implements IWalletRepository {
     if (amount < 10) {
       return { success: false, error: 'Montant minimum: 10 MAD', code: 422 };
     }
-    return { success: true, data: { newBalance: 39.84 + amount } };
+
+    const isPendingMethod = method === 'bank_transfer' || method === 'cash';
+
+    if (isPendingMethod) {
+      // Manual payment methods generate a pending state (admin approval required)
+      mockBalanceObj.pending += amount;
+    } else {
+      // Electronic gateways are processed and approved instantly
+      mockBalanceObj.amount += amount;
+    }
+
+    // Persist brand-new recharge transaction
+    const newTx: Transaction = {
+      id: `txn-${Date.now()}`,
+      type: 'recharge',
+      status: isPendingMethod ? 'pending' : 'completed',
+      amount: amount,
+      currency: 'MAD',
+      label: method === 'bank_transfer'
+        ? 'Recharge par Virement'
+        : method === 'cash'
+        ? 'Recharge par Agence Cash'
+        : 'Recharge par Carte Bancaire',
+      description: method === 'bank_transfer'
+        ? 'Demande de validation de virement bancaire (En attente)'
+        : method === 'cash'
+        ? 'Versement d’espèces en agence (En attente)'
+        : `Paiement simulé (${method.toUpperCase()}) via CMI Morocco`,
+      createdAt: new Date(),
+    };
+    mockTransactionsArr = [newTx, ...mockTransactionsArr];
+
+    return { success: true, data: { newBalance: mockBalanceObj.amount } };
   }
 }

@@ -34,7 +34,9 @@ import {
 import { useTheme } from '../../../theme/ThemeContext';
 
 const { width: SCREEN_W } = Dimensions.get('window');
-const DRAWER_WIDTH = SCREEN_W * 0.84;
+
+// ─── The drawer takes up to 85% of screen, leaving a visible close area ───────
+const DRAWER_WIDTH = SCREEN_W * 0.85;
 
 interface SideDrawerProps {
   isOpen:  boolean;
@@ -82,7 +84,6 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
     onClose();
     await i18n.changeLanguage(langCode);
     await AsyncStorage.setItem('user_language', langCode);
-    // RTL is applied globally; a restart is required for full native RTL
     const nextIsRTL = langCode === 'ar';
     if (I18nManager.isRTL !== nextIsRTL) {
       I18nManager.allowRTL(nextIsRTL);
@@ -100,136 +101,208 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
     }
   };
 
+  // ── Direction-aware row: for RTL, icon+text come from right, chevron from left ─
+  // We use explicit flexDirection instead of the web-only `direction` prop
+  const rowStyle = [
+    styles.menuRow,
+    { borderBottomColor: colors.surfaceAlt },
+    isRTL && styles.menuRowRTL,
+  ];
+
+  const menuLeftStyle = [
+    styles.menuLeft,
+    isRTL && styles.menuLeftRTL,
+  ];
+
+  const prefRowStyle = [
+    styles.prefRow,
+    isRTL && styles.prefRowRTL,
+  ];
+
   // Chevron direction based on RTL
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents={isOpen ? 'auto' : 'none'}>
 
-      {/* ── Backdrop: blocks touches to orders list ─────────── */}
+      {/* ── Backdrop: fully opaque black Layer — blocks all touches ─── */}
       <TouchableWithoutFeedback onPress={onClose}>
         <Animated.View
           style={[styles.backdrop, backdropOpacity]}
-          // pointerEvents as prop (not style) to properly block touches
           pointerEvents={isOpen ? 'auto' : 'none'}
         />
       </TouchableWithoutFeedback>
 
-      {/* ── Drawer Panel ────────────────────────────────────── */}
-      <Animated.View style={[styles.drawer, drawerStyle, { backgroundColor: colors.surface }]}>
-        {/*
-          Apply RTL/LTR direction to the entire drawer content.
-          This flips text alignment and flex row direction automatically.
-        */}
-        <View style={[styles.directionWrapper, { direction: isRTL ? 'rtl' : 'ltr' } as any]}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            bounces={false}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* ── Profile Header ─────────────────────────────── */}
-            <View style={[styles.profileHeader, { borderBottomColor: colors.surfaceAlt }]}>
-              <View style={[styles.avatar, { backgroundColor: colors.surfaceAlt }]}>
-                <User size={28} color={colors.textSecondary} />
-              </View>
-              <View style={styles.profileInfo}>
-                <Text style={[styles.driverName, { color: colors.textPrimary }]}>Khalid</Text>
-                <Text style={styles.rating}>⭐ 4.96</Text>
-              </View>
+      {/* ── Drawer Panel ──────────────────────────────────────────────── */}
+      <Animated.View
+        style={[
+          styles.drawer,
+          drawerStyle,
+          { backgroundColor: colors.surface },
+          I18nManager.isRTL 
+            ? { right: 0, left: undefined, borderTopLeftRadius: 20, borderBottomLeftRadius: 20, borderTopRightRadius: 0, borderBottomRightRadius: 0 } 
+            : { left: 0, right: undefined, borderTopRightRadius: 20, borderBottomRightRadius: 20, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }
+        ]}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          bounces={false}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── Profile Header ─────────────────────────────────────── */}
+          <View style={[
+            styles.profileHeader,
+            isRTL && styles.profileHeaderRTL,
+            { borderBottomColor: colors.surfaceAlt },
+          ]}>
+            <View style={[styles.avatar, { backgroundColor: colors.surfaceAlt }]}>
+              <User size={28} color={colors.textSecondary} />
             </View>
-
-            {/* ── Menu Items ─────────────────────────────────── */}
-            <View style={styles.menuList}>
-              {MENU_ITEMS.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={[styles.menuRow, { borderBottomColor: colors.surfaceAlt }]}
-                    activeOpacity={0.7}
-                    onPress={() => {
-                      onClose();
-                      if (item.key === 'wallet') navigation.navigate('Wallet');
-                    }}
-                  >
-                    <View style={styles.menuLeft}>
-                      <Icon size={20} color={colors.textSecondary} />
-                      <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
-                        {item.label}
-                      </Text>
-                    </View>
-                    <Chevron size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            {/* ── Preferences: Language & Dark Mode ──────────── */}
-            <View style={[styles.prefsSection, {
-              borderTopColor:    colors.surfaceAlt,
-              borderBottomColor: colors.surfaceAlt,
-            }]}>
-              {/* Language Row */}
-              <TouchableOpacity
-                style={styles.prefRow}
-                activeOpacity={0.7}
-                onPress={() => setLangSheetVisible(true)}
-              >
-                <View style={styles.menuLeft}>
-                  <Globe size={20} color={colors.textSecondary} />
-                  <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
-                    {t('wallet:language', 'Langue')}
-                  </Text>
-                </View>
-                <Text style={[styles.prefValue, { color: colors.primary }]}>
-                  {getLanguageName(i18n.language)}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Dark Mode Row */}
-              <TouchableOpacity
-                style={styles.prefRow}
-                activeOpacity={0.7}
-                onPress={toggleTheme}
-              >
-                <View style={styles.menuLeft}>
-                  <Moon size={20} color={colors.textSecondary} />
-                  <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
-                    {isDarkMode
-                      ? t('wallet:darkMode',  'Mode sombre')
-                      : t('wallet:lightMode', 'Mode clair')}
-                  </Text>
-                </View>
-                <View style={[styles.toggleCapsule, { backgroundColor: isDarkMode ? colors.primary + '22' : colors.surfaceAlt }]}>
-                  <Text style={[styles.toggleText, { color: isDarkMode ? colors.primary : colors.textMuted }]}>
-                    {isDarkMode ? 'ON' : 'OFF'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-
-            {/* ── Footer: Passenger Mode ─────────────────────── */}
-            <View style={styles.footer}>
-              <TouchableOpacity
-                style={[styles.switchModeBtn, {
-                  backgroundColor: colors.surfaceAlt,
-                  borderColor:     colors.primary + '30',
-                }]}
-                onPress={onClose}
-              >
-                <Text style={[styles.switchModeText, { color: colors.primary }]}>
-                  {t('passenger_mode')}
-                </Text>
-              </TouchableOpacity>
-              <Text style={[styles.version, { color: colors.textMuted }]}>
-                Atlas Driver • v1.0.0
+            <View style={[styles.profileInfo, isRTL && styles.profileInfoRTL]}>
+              <Text style={[styles.driverName, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
+                Khalid
+              </Text>
+              <Text style={[styles.rating, { textAlign: isRTL ? 'right' : 'left' }]}>
+                ⭐ 4.96
               </Text>
             </View>
-          </ScrollView>
-        </View>
+          </View>
+
+          {/* ── Menu Items ──────────────────────────────────────────── */}
+          <View style={styles.menuList}>
+            {MENU_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={rowStyle}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    onClose();
+                    if (item.key === 'wallet') {
+                      (global as any).walletNavStartTime = Date.now();
+                      console.time("Wallet Navigation");
+                      console.log(`[WALLET PERF] [1] Drawer Press — t=0ms — ${new Date().toISOString()}`);
+                      navigation.navigate('Wallet');
+                    } else if (item.key === 'profile') {
+                      navigation.navigate('Profile');
+                    }
+                  }}
+                >
+                  {/* In RTL: Chevron → Text+Icon. In LTR: Icon+Text → Chevron */}
+                  {isRTL && <Chevron size={16} color={colors.textMuted} />}
+
+                  <View style={menuLeftStyle}>
+                    {!isRTL && <Icon size={20} color={colors.textSecondary} />}
+                    <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                      {item.label}
+                    </Text>
+                    {isRTL && <Icon size={20} color={colors.textSecondary} />}
+                  </View>
+
+                  {!isRTL && <Chevron size={16} color={colors.textMuted} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* ── Preferences: Language & Dark Mode ──────────────────── */}
+          <View style={[styles.prefsSection, {
+            borderTopColor:    colors.surfaceAlt,
+            borderBottomColor: colors.surfaceAlt,
+          }]}>
+            {/* Language Row */}
+            <TouchableOpacity
+              style={prefRowStyle}
+              activeOpacity={0.7}
+              onPress={() => setLangSheetVisible(true)}
+            >
+              {isRTL ? (
+                <>
+                  <Text style={[styles.prefValue, { color: colors.primary }]}>
+                    {getLanguageName(i18n.language)}
+                  </Text>
+                  <View style={[styles.menuLeft, styles.menuLeftRTL]}>
+                    <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                      {t('wallet:language', 'Langue')}
+                    </Text>
+                    <Globe size={20} color={colors.textSecondary} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.menuLeft}>
+                    <Globe size={20} color={colors.textSecondary} />
+                    <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                      {t('wallet:language', 'Langue')}
+                    </Text>
+                  </View>
+                  <Text style={[styles.prefValue, { color: colors.primary }]}>
+                    {getLanguageName(i18n.language)}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            {/* Dark Mode Row */}
+            <TouchableOpacity
+              style={prefRowStyle}
+              activeOpacity={0.7}
+              onPress={toggleTheme}
+            >
+              {isRTL ? (
+                <>
+                  <View style={[styles.toggleCapsule, { backgroundColor: isDarkMode ? colors.primary + '22' : colors.surfaceAlt }]}>
+                    <Text style={[styles.toggleText, { color: isDarkMode ? colors.primary : colors.textMuted }]}>
+                      {isDarkMode ? 'ON' : 'OFF'}
+                    </Text>
+                  </View>
+                  <View style={[styles.menuLeft, styles.menuLeftRTL]}>
+                    <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                      {isDarkMode ? t('wallet:darkMode', 'Mode sombre') : t('wallet:lightMode', 'Mode clair')}
+                    </Text>
+                    <Moon size={20} color={colors.textSecondary} />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <View style={styles.menuLeft}>
+                    <Moon size={20} color={colors.textSecondary} />
+                    <Text style={[styles.menuLabel, { color: colors.textPrimary }]}>
+                      {isDarkMode ? t('wallet:darkMode', 'Mode sombre') : t('wallet:lightMode', 'Mode clair')}
+                    </Text>
+                  </View>
+                  <View style={[styles.toggleCapsule, { backgroundColor: isDarkMode ? colors.primary + '22' : colors.surfaceAlt }]}>
+                    <Text style={[styles.toggleText, { color: isDarkMode ? colors.primary : colors.textMuted }]}>
+                      {isDarkMode ? 'ON' : 'OFF'}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Footer: Passenger Mode ─────────────────────────────── */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.switchModeBtn, {
+                backgroundColor: colors.surfaceAlt,
+                borderColor:     colors.primary + '30',
+              }]}
+              onPress={onClose}
+            >
+              <Text style={[styles.switchModeText, { color: colors.primary }]}>
+                {t('passenger_mode')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.version, { color: colors.textMuted }]}>
+              Atlas Driver • v1.0.0
+            </Text>
+          </View>
+        </ScrollView>
       </Animated.View>
 
-      {/* ── Language Bottom Sheet ───────────────────────────── */}
+      {/* ── Language Bottom Sheet ──────────────────────────────────── */}
       <Modal
         visible={langSheetVisible}
         transparent
@@ -272,14 +345,14 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
 });
 
 const styles = StyleSheet.create({
-  /* ── Backdrop ── completely covers orders list ────────────── */
+  /* ── Backdrop: covers entire screen behind drawer ─────────── */
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.60)',
     zIndex: 999,
   },
 
-  /* ── Drawer Panel ───────────────────────────────────────── */
+  /* ── Drawer Panel ─────────────────────────────────────────── */
   drawer: {
     position:  'absolute',
     left:      0,
@@ -289,25 +362,20 @@ const styles = StyleSheet.create({
     zIndex:    1000,
     shadowColor:    '#000',
     shadowOffset:   { width: 6, height: 0 },
-    shadowOpacity:  0.30,
-    shadowRadius:   16,
-    elevation:      16,
-    borderTopRightRadius:    16,
-    borderBottomRightRadius: 16,
-  },
-
-  /* Direction wrapper — applies RTL/LTR to all children ──── */
-  directionWrapper: {
-    flex: 1,
+    shadowOpacity:  0.35,
+    shadowRadius:   20,
+    elevation:      20,
+    borderTopRightRadius:    20,
+    borderBottomRightRadius: 20,
   },
 
   scrollContent: {
     flexGrow:      1,
-    paddingTop:    52,
+    paddingTop:    56,
     paddingBottom: 30,
   },
 
-  /* ── Profile ─────────────────────────────────────────────── */
+  /* ── Profile ──────────────────────────────────────────────── */
   profileHeader: {
     flexDirection:  'row',
     alignItems:     'center',
@@ -315,6 +383,9 @@ const styles = StyleSheet.create({
     paddingBottom:  24,
     borderBottomWidth: 1,
     marginBottom:   18,
+  },
+  profileHeaderRTL: {
+    flexDirection: 'row-reverse',
   },
   avatar: {
     width:        52,
@@ -325,6 +396,10 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     marginLeft: 14,
+  },
+  profileInfoRTL: {
+    marginLeft:  0,
+    marginRight: 14,
   },
   driverName: {
     fontSize:   16,
@@ -337,7 +412,7 @@ const styles = StyleSheet.create({
     marginTop:   2,
   },
 
-  /* ── Menu List ───────────────────────────────────────────── */
+  /* ── Menu List ────────────────────────────────────────────── */
   menuList: {
     paddingHorizontal: 20,
   },
@@ -348,17 +423,24 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
+  menuRowRTL: {
+    // row-reverse: chevron on left, icon+text on right
+    flexDirection: 'row-reverse',
+  },
   menuLeft: {
     flexDirection: 'row',
     alignItems:    'center',
     gap:            12,
+  },
+  menuLeftRTL: {
+    flexDirection: 'row-reverse',
   },
   menuLabel: {
     fontSize:   14,
     fontWeight: '600',
   },
 
-  /* ── Preferences ─────────────────────────────────────────── */
+  /* ── Preferences ──────────────────────────────────────────── */
   prefsSection: {
     marginTop:    16,
     paddingHorizontal: 20,
@@ -371,6 +453,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems:     'center',
     paddingVertical: 14,
+  },
+  prefRowRTL: {
+    flexDirection: 'row-reverse',
   },
   prefValue: {
     fontSize:   13,
@@ -386,7 +471,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  /* ── Footer ─────────────────────────────────────────────── */
+  /* ── Footer ───────────────────────────────────────────────── */
   footer: {
     paddingHorizontal: 20,
     paddingTop:  32,
@@ -410,7 +495,7 @@ const styles = StyleSheet.create({
     marginTop:  4,
   },
 
-  /* ── Language Bottom Sheet ──────────────────────────────── */
+  /* ── Language Bottom Sheet ─────────────────────────────────── */
   modalOverlay: {
     flex:            1,
     backgroundColor: 'rgba(0,0,0,0.5)',

@@ -1,4 +1,5 @@
 import { RideOrder } from '../../store/useOrdersStore';
+import { CompletedRide } from './domain/entities/completedRide';
 
 export interface MockPassenger {
   name: string;
@@ -158,5 +159,75 @@ export const ordersRepository = {
         passengerDetail: MOCK_PASSENGERS[3],
       }
     ];
+  },
+  getCompletedRidesForRange: async (startDate: Date, endDate: Date): Promise<CompletedRide[]> => {
+    // Simulating API fetch delay
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const result: CompletedRide[] = [];
+    const current = new Date(startDate);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    while (current.getTime() <= end.getTime()) {
+      result.push(...generateCompletedRidesForDate(current));
+      current.setDate(current.getDate() + 1);
+    }
+    return result;
   }
 };
+
+// Deterministic mock generator for rides on a given Date
+const generateCompletedRidesForDate = (date: Date): CompletedRide[] => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dayOfWeek = d.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const timeVal = d.getTime();
+
+  if (dayOfWeek === 0) {
+    return []; // No rides completed on Sunday (default holiday)
+  }
+
+  const ridesCount = (dayOfWeek * 2) + 2; // Mon (1) -> 4 rides, Sat (6) -> 14 rides
+  const result: CompletedRide[] = [];
+
+  for (let i = 0; i < ridesCount; i++) {
+    const fare = 35 + (i * 15); // e.g. 35, 50, 65, 80 MAD ...
+    
+    // Services: Index even is Course (commission 8.4%, tva 1.48%), odd is Coursier en voiture (commission 7.99%, tva 0.5%)
+    const isCourse = i % 2 === 0;
+    const commRate = isCourse ? 0.084 : 0.0799;
+    const tvaRate = isCourse ? 0.0148 : 0.005;
+
+    const commission = Math.round(fare * commRate * 100) / 100;
+    const tva = Math.round(fare * tvaRate * 100) / 100;
+    const serviceFee = 0;
+    const netIncome = Math.round((fare - commission - tva) * 100) / 100;
+
+    const distance = 4 + i * 2.5; // e.g. 4km, 6.5km, 9km...
+    const duration = 8 + i * 4;  // e.g. 8, 12, 16 mins...
+
+    const rideDate = new Date(d);
+    rideDate.setHours(8 + i * 1.5, (i * 12) % 60, 0, 0);
+
+    result.push({
+      id: `ride-${timeVal}-${i}`,
+      passengerName: i % 2 === 0 ? 'Mohamed A.' : 'Karima B.',
+      pickupAddress: isCourse ? 'Reservation transport (Ménara)' : 'Gueliz',
+      dropoffAddress: isCourse ? 'Hotel Riu Tikida Palmeraie' : 'Marrakech Mall',
+      fare,
+      commission,
+      tva,
+      serviceFee,
+      netIncome,
+      distance,
+      duration,
+      createdAt: rideDate,
+      status: 'completed',
+    });
+  }
+
+  return result;
+};
+

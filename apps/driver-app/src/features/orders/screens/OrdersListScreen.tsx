@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  I18nManager,
 } from 'react-native';
 import { Menu, Compass, AlertCircle } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -84,7 +85,14 @@ export const OrdersListScreen = () => {
 
   // ── Render helpers ─────────────────────────────────────────────────────────
   const renderHeader = () => (
-    <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceAlt }]}>
+    <View style={[
+      styles.header,
+      { 
+        backgroundColor: colors.surface, 
+        borderBottomColor: colors.surfaceAlt,
+        flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row'
+      }
+    ]}>
       <TouchableOpacity 
         style={[styles.iconBtn, { backgroundColor: colors.surfaceAlt }]} 
         onPress={() => setDrawerOpen(true)} 

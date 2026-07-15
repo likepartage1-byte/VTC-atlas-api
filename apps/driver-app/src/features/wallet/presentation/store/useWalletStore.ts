@@ -18,6 +18,12 @@ interface WalletStoreActions {
   setTransactions:    (txns: Transaction[]) => void;
   setPendingPayments: (pending: PendingPayment[]) => void;
   setPaymentMethods:  (methods: PaymentMethod[]) => void;
+  setWalletData: (data: {
+    balance: WalletBalance;
+    transactions: Transaction[];
+    pendingPayments: PendingPayment[];
+    paymentMethods: PaymentMethod[];
+  }) => void;
   reset:              () => void;
 }
 
@@ -35,5 +41,11 @@ export const useWalletStore = create<WalletStoreData & WalletStoreActions>((set)
   setTransactions:    (transactions) => set({ transactions }),
   setPendingPayments: (pendingPayments) => set({ pendingPayments }),
   setPaymentMethods:  (paymentMethods) => set({ paymentMethods }),
+  setWalletData:      (data) => set({
+    balance: data.balance,
+    transactions: data.transactions,
+    pendingPayments: data.pendingPayments,
+    paymentMethods: data.paymentMethods,
+  }),
   reset:              () => set(INITIAL_DATA),
 }));

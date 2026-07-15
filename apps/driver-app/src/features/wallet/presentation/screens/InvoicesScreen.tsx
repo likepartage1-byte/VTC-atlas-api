@@ -2,17 +2,20 @@ import React from 'react';
 import { View, StyleSheet, SafeAreaView, FlatList, Text, Alert } from 'react-native';
 import { FileText, Download } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../../theme/ThemeContext';
 import { WalletHeader } from '../components/WalletHeader';
 import { WalletCard } from '../components/WalletCard';
 import { WalletEmpty } from '../components/WalletEmpty';
 import { formatCurrency } from '../utils/CurrencyFormatter';
+import { WALLET_ROUTES } from '../../navigation/wallet.routes';
 
 const ICON_SIZE = 20;
 
 export const InvoicesScreen = () => {
   const { t } = useTranslation('wallet');
   const { colors } = useTheme();
+  const navigation = useNavigation<any>();
 
   // Mock Invoice data
   const invoices = [
@@ -77,7 +80,11 @@ export const InvoicesScreen = () => {
           });
 
           return (
-            <WalletCard variant="elevated" onPress={() => handleDownload(item.invoiceNumber)} style={styles.cardItem}>
+            <WalletCard
+              variant="elevated"
+              onPress={() => navigation.navigate(WALLET_ROUTES.INVOICE_PREVIEW, { invoiceId: item.id })}
+              style={styles.cardItem}
+            >
               <View style={styles.invoiceRow}>
                 <View style={styles.invoiceLeft}>
                   <View style={[styles.iconBg, { backgroundColor: colors.surfaceAlt }]}>

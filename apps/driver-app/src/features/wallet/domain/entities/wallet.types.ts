@@ -67,3 +67,31 @@ export interface WalletData {
   pendingPayments: PendingPayment[];
   paymentMethods: PaymentMethod[];
 }
+
+// ─── Daily & Weekly summaries for Income module ──────────────────────────────
+
+export interface DailyIncomeSummary {
+  date:             string; // YYYY-MM-DD
+  grossIncome:      number; // إجمالي الدخل
+  netIncome:        number; // صافي الدخل
+  ridesCount:       number; // عدد الرحلات
+  workHours:        number; // ساعات العمل (محسوبة بشكل مستقل عن مدة الرحلة)
+  avgProfitPerRide: number; // متوسط الربح لكل رحلة
+  totalCommissions: number; // إجمالي العمولات
+  totalTaxes:       number; // إجمالي الضرائب (TVA)
+  totalFees:        number; // إجمالي الرسوم (خدمات المنصة)
+  distanceCovered:  number; // المسافة المقطوعة (كم)
+}
+
+export interface WeeklyIncomeSummary {
+  startDate:        string; // YYYY-MM-DD
+  endDate:          string; // YYYY-MM-DD
+  totalGrossIncome: number; // إجمالي الدخل الإسبوعي
+  totalNetIncome:   number; // إجمالي الدخل الصافي الأسبوعي
+  totalRidesCount:  number; // عدد الرحلات الإسبوعية
+  totalWorkHours:   number; // ساعات العمل الأسبوعية
+  bestDay:          string; // أفضل يوم في الأسبوع
+  peakHour:         string; // أفضل ساعة عمل
+  dailySummaries:   DailyIncomeSummary[]; // 7 items representing Mon-Sun
+}
+

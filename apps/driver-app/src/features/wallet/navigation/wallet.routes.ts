@@ -7,6 +7,8 @@ export const WALLET_ROUTES = {
   COMMISSION:      'Commission',
   BONUS:           'Bonus',
   INVOICES:        'Invoices',
+  INVOICE_PREVIEW: 'InvoicePreview',
+  INCOME:          'Income',
 } as const;
 
 export type WalletRouteName = typeof WALLET_ROUTES[keyof typeof WALLET_ROUTES];

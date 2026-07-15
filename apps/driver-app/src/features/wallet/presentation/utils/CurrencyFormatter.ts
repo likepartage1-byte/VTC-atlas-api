@@ -7,14 +7,15 @@ export const formatCurrency = (amount: number, currency: CurrencyCode): string =
   // Format based on standard Moroccan and European standards
   switch (currency) {
     case 'MAD':
-      return `${formattedAmount} MAD`;
+      // Return with non-breaking double space (\u00A0) to guarantee a visual gap in RTL and LTR
+      return `${formattedAmount}\u00A0\u00A0MAD`;
     case 'EUR':
-      return `${formattedAmount} €`;
+      return `${formattedAmount}\u00A0\u00A0€`;
     case 'USD':
       return `$ ${formattedAmount}`;
     case 'SAR':
-      return `${formattedAmount} SAR`;
+      return `${formattedAmount}\u00A0\u00A0SAR`;
     default:
-      return `${formattedAmount} ${currency}`;
+      return `${formattedAmount}\u00A0\u00A0${currency}`;
   }
 };

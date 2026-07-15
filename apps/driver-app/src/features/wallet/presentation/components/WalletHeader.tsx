@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, I18nManager } from 'react-native';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -10,17 +10,24 @@ const ICON_SIZE = 20;
 
 interface WalletHeaderProps {
   title: string;
+  onBack?: () => void;
 }
 
 /**
  * WalletHeader — navigation.goBack() is self-contained.
- * No onClose/onBack prop needed — standard nav pattern.
+ * Optionally accepts custom onBack for multi-step flows.
  */
-export const WalletHeader = memo(({ title }: WalletHeaderProps) => {
+export const WalletHeader = memo(({ title, onBack }: WalletHeaderProps) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const { i18n } = useTranslation();
-  const isRTL = i18n.language === 'ar';
+
+  const handlePress = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      navigation.goBack();
+    }
+  };
 
   return (
     <View
@@ -31,11 +38,11 @@ export const WalletHeader = memo(({ title }: WalletHeaderProps) => {
     >
       <TouchableOpacity
         style={[styles.backBtn, { backgroundColor: colors.surfaceAlt }]}
-        onPress={() => navigation.goBack()}
+        onPress={handlePress}
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        {isRTL
+        {I18nManager.isRTL
           ? <ArrowRight size={ICON_SIZE} color={colors.textPrimary} />
           : <ArrowLeft size={ICON_SIZE} color={colors.textPrimary} />
         }
