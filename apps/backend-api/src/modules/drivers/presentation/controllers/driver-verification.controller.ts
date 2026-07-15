@@ -1,16 +1,45 @@
-import { Controller, Get, Post, Param, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseInterceptors, UploadedFile, Req, BadRequestException, UseGuards, Headers } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { DriverVerificationService } from '../../application/services/driver-verification.service';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
+import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
+import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
+import { Roles } from '../../../identity/presentation/decorators/roles.decorator';
+import { CurrentUser } from '../../../identity/presentation/decorators/current-user.decorator';
 import { DocumentType } from '@prisma/client';
 
 @Controller('driver/verification')
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('DRIVER')
 export class DriverVerificationController {
-  constructor(private readonly verificationService: DriverVerificationService) {}
+  constructor(
+    private readonly verificationService: DriverVerificationService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Get('summary')
-  async getSummary(@Req() req: any) {
-    const driverId = req.user?.driverId || req.headers['x-driver-id']; // Fallback for dev
-    if (!driverId) throw new BadRequestException('Driver ID missing in session/headers');
+  async getSummary(
+    @CurrentUser('userId') userId: string,
+    @Headers('x-driver-id') xDriverId?: string,
+  ) {
+    let driverId: string | null = null;
+    
+    if (userId) {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      driverId = driver?.id || null;
+    }
+
+    if (!driverId) {
+      driverId = xDriverId || null;
+    }
+
+    if (!driverId) {
+      throw new BadRequestException('Driver ID missing in session/headers');
+    }
+
     return this.verificationService.getVerificationSummary(driverId);
   }
 
@@ -19,10 +48,26 @@ export class DriverVerificationController {
   async uploadDocument(
     @Param('type') type: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: any
+    @CurrentUser('userId') userId: string,
+    @Headers('x-driver-id') xDriverId?: string,
   ) {
-    const driverId = req.user?.driverId || req.headers['x-driver-id'];
-    if (!driverId) throw new BadRequestException('Driver ID missing in session/headers');
+    let driverId: string | null = null;
+
+    if (userId) {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId },
+        select: { id: true },
+      });
+      driverId = driver?.id || null;
+    }
+
+    if (!driverId) {
+      driverId = xDriverId || null;
+    }
+
+    if (!driverId) {
+      throw new BadRequestException('Driver ID missing in session/headers');
+    }
     
     if (!file) throw new BadRequestException('No file uploaded');
 
@@ -38,3 +83,4 @@ export class DriverVerificationController {
     );
   }
 }
+
