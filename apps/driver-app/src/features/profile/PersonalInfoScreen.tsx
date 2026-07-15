@@ -53,7 +53,7 @@ const CITIES = [
 ];
 
 export const PersonalInfoScreen = () => {
-  const { t, i18n } = useTranslation();
+  const { t, i18n } = useTranslation(['profile', 'translation']);
   const { colors } = useTheme();
   const navigation = useNavigation();
   const isRTL = i18n.language === 'ar';

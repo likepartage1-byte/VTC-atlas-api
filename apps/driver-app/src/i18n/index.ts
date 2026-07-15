@@ -115,6 +115,15 @@ const profileAr = {
   photo_review_badge: 'قيد المراجعة',
   info_verified_support: 'لقد تم توثيق اسمك الكامل وصورتك الشخصية. لتحديثهما، برجاء التواصل مع الدعم الفني.',
   profile_settings_title: 'إعدادات الملف الشخصي',
+  first_name_placeholder: 'سجل الاسم الأول',
+  last_name_placeholder: 'سجل اسم العائلة',
+  name_required_title: 'إعداد الحساب',
+  name_required_message: 'يرجى إدخال اسمك الحقيقي وحفظ التغييرات في الأسفل قبل التقاط صورة السيلفي.',
+  face_guide_instruction: 'ضع وجهك بالكامل داخل الإطار',
+  face_guide_sub_instruction: 'تأكد من أن الوجه واضح والإضاءة جيدة',
+  preview_photo_title: 'معاينة الصورة',
+  retake_photo_btn: '🔄 إعادة المحاولة',
+  use_photo_btn: '✅ استخدام الصورة',
 };
 
 const profileFr = {
@@ -222,6 +231,15 @@ const profileFr = {
   photo_review_badge: 'En cours',
   info_verified_support: "Votre nom complet et votre photo de profil ont été vérifiés. Pour les mettre à jour, veuillez contacter le Service d'assistance.",
   profile_settings_title: 'Paramètres du profil',
+  first_name_placeholder: 'Saisir le prénom',
+  last_name_placeholder: 'Saisir le nom de famille',
+  name_required_title: 'Configuration Requise',
+  name_required_message: 'Veuillez saisir votre vrai nom et prénom, puis enregistrer les modifications en bas avant de prendre une photo selfie.',
+  face_guide_instruction: 'Placez votre visage au centre du cadre',
+  face_guide_sub_instruction: "Assurez-vous que le visage est clair et que l'éclairage est bon",
+  preview_photo_title: 'Aperçu du Selfie',
+  retake_photo_btn: '🔄 Réessayer',
+  use_photo_btn: '✅ Utiliser la photo',
 };
 
 const profileEn = {
@@ -329,6 +347,15 @@ const profileEn = {
   photo_review_badge: 'Under Review',
   info_verified_support: 'Your full name and profile photo have been verified. To update them, please contact Support Service.',
   profile_settings_title: 'Profile Settings',
+  first_name_placeholder: 'Enter first name',
+  last_name_placeholder: 'Enter last name',
+  name_required_title: 'Setup Required',
+  name_required_message: 'Please enter your real first and last name, then save changes at the bottom before taking a selfie.',
+  face_guide_instruction: 'Place your face fully inside the frame',
+  face_guide_sub_instruction: 'Make sure your face is clear and lighting is good',
+  preview_photo_title: 'Selfie Preview',
+  retake_photo_btn: '🔄 Retake',
+  use_photo_btn: '✅ Use Photo',
 };
 
 const profileEs = {
@@ -427,6 +454,15 @@ const profileEs = {
   photo_review_badge: 'En revisión',
   info_verified_support: 'Tu nombre completo y foto de perfil han sido verificados. Para actualizarlos, ponte en contacto con el Servicio de soporte.',
   profile_settings_title: 'Ajustes del perfil',
+  first_name_placeholder: 'Saisir el nombre',
+  last_name_placeholder: 'Saisir el apellido',
+  name_required_title: 'Configuración Requerida',
+  name_required_message: 'Por favor, ingrese su nombre y apellido real, luego guarde los cambios en la parte inferior antes de tomar una foto selfie.',
+  face_guide_instruction: 'Coloque su rostro completamente dentro del marco',
+  face_guide_sub_instruction: 'Asegúrese de que el rostro esté claro y la iluminación sea buena',
+  preview_photo_title: 'Vista previa del selfie',
+  retake_photo_btn: '🔄 Reintentar',
+  use_photo_btn: '✅ Usar foto',
 };
 
 const resources = {
