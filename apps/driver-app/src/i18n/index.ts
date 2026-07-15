@@ -173,6 +173,14 @@ const profileAr = {
   cancel_btn: 'إلغاء',
   continue_btn: 'متابعة',
   change_type_btn: 'تغيير نوع المركبة',
+  vehicle_photo_label: 'صورة المركبة',
+  grey_card_label: 'البطاقة الرمادية للمركبة',
+  take_photo_option: 'التقاط صورة',
+  take_new_photo_option: 'التقاط صورة جديدة',
+  choose_from_device_option: 'اختيار من الجهاز',
+  choose_another_option: 'اختيار صورة أخرى',
+  camera_guide_vehicle: 'ضع المركبة بالكامل داخل الإطار',
+  camera_guide_registration: 'ضع البطاقة الرمادية بشكل واضح داخل الإطار',
 };
 
 const profileFr = {
@@ -338,6 +346,14 @@ const profileFr = {
   cancel_btn: 'Annuler',
   continue_btn: 'Continuer',
   change_type_btn: 'Changer de type de véhicule',
+  vehicle_photo_label: 'Photo du véhicule',
+  grey_card_label: 'Carte grise du véhicule',
+  take_photo_option: 'Prendre une photo',
+  take_new_photo_option: 'Prendre une nouvelle photo',
+  choose_from_device_option: 'Choisir depuis l\'appareil',
+  choose_another_option: 'Choisir une autre photo',
+  camera_guide_vehicle: 'Placez le véhicule en entier dans le cadre.',
+  camera_guide_registration: 'Placez la carte grise de manière lisible dans le cadre.',
 };
 
 const profileEn = {
@@ -503,6 +519,14 @@ const profileEn = {
   cancel_btn: 'Cancel',
   continue_btn: 'Continue',
   change_type_btn: 'Change Vehicle Type',
+  vehicle_photo_label: 'Vehicle Photo',
+  grey_card_label: 'Grey Registration Card',
+  take_photo_option: 'Take Photo',
+  take_new_photo_option: 'Take New Photo',
+  choose_from_device_option: 'Choose From Device',
+  choose_another_option: 'Choose Another',
+  camera_guide_vehicle: 'Place the entire vehicle inside the frame.',
+  camera_guide_registration: 'Place the registration card clearly inside the frame.',
 };
 
 const profileEs = {
@@ -659,6 +683,14 @@ const profileEs = {
   cancel_btn: 'Cancelar',
   continue_btn: 'Continuar',
   change_type_btn: 'Cambiar Tipo de Vehículo',
+  vehicle_photo_label: 'Foto del vehículo',
+  grey_card_label: 'Tarjeta de registro (Gris)',
+  take_photo_option: 'Tomar foto',
+  take_new_photo_option: 'Tomar nueva foto',
+  choose_from_device_option: 'Elegir del dispositivo',
+  choose_another_option: 'Elegir otra',
+  camera_guide_vehicle: 'Coloque todo el vehículo dentro del marco.',
+  camera_guide_registration: 'Coloque la tarjeta de registro claramente dentro del marco.',
 };
 
 const resources = {

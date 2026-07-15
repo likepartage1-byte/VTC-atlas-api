@@ -492,17 +492,9 @@ export class ProfileService {
     fields.vin = currentVIN;
 
     const photos: any = {
-      front: data.photos?.front || (driver.vehicleInfo as any)?.photos?.front || null,
-      back: data.photos?.back || (driver.vehicleInfo as any)?.photos?.back || null,
-      right: data.photos?.right || (driver.vehicleInfo as any)?.photos?.right || null,
-      left: data.photos?.left || (driver.vehicleInfo as any)?.photos?.left || null,
-      plate: data.photos?.plate || (driver.vehicleInfo as any)?.photos?.plate || null,
+      vehicle: data.photos?.vehicle || (driver.vehicleInfo as any)?.photos?.vehicle || null,
+      registration: data.photos?.registration || (driver.vehicleInfo as any)?.photos?.registration || null,
     };
-    if (data.type === 'MOTORCYCLE') {
-      photos.interior = null;
-    } else {
-      photos.interior = data.photos?.interior || (driver.vehicleInfo as any)?.photos?.interior || null;
-    }
 
     metadata.vehicleUpdateRequest = {
       status: 'PENDING',
