@@ -290,6 +290,7 @@ export const VehicleInfoScreen = () => {
   const [dbModels, setDbModels] = useState<{ id: string; name: string }[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
+  const [maxVehicleAge, setMaxVehicleAge] = useState<number>(20);
 
   // Suggestion states
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
@@ -395,6 +396,10 @@ export const VehicleInfoScreen = () => {
     try {
       const response = await api.get('/driver/profile/vehicle');
       const data = response.data;
+
+      if (data.maxVehicleAge !== undefined) {
+        setMaxVehicleAge(data.maxVehicleAge);
+      }
 
       const vehicle = data.vehicleInfo || {};
       const activeType = vehicle.type || null;
@@ -615,7 +620,8 @@ export const VehicleInfoScreen = () => {
       setRejectionReason(null);
       Alert.alert(t('success'), t('profile_update_submitted'));
     } catch (err: any) {
-      Alert.alert(t('error'), 'Update failed.');
+      const serverMsg = err?.response?.data?.message || err?.message || 'Update failed.';
+      Alert.alert(t('error'), serverMsg);
     } finally {
       setSubmitting(false);
     }
@@ -862,7 +868,10 @@ export const VehicleInfoScreen = () => {
               <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
                 <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('year_label', 'Année de production')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizWheelScroll}>
-                  {YEARS_ARRAY.map((y) => (
+                  {Array.from(
+                    { length: maxVehicleAge + 1 },
+                    (_, i) => String(new Date().getFullYear() - i)
+                  ).map((y) => (
                     <TouchableOpacity
                       key={y}
                       style={[

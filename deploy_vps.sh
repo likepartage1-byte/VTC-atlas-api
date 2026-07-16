@@ -137,7 +137,8 @@ async function seed() {
     { key: 'silver_commission',         value: 8.4 },
     { key: 'gold_commission',           value: 8.4 },
     { key: 'premier_commission',        value: 8.4 },
-    { key: 'priority_enabled',          value: true }
+    { key: 'priority_enabled',          value: true },
+    { key: 'max_vehicle_age',           value: { ageLimit: 20 } }
   ];
 
   for (const item of configs) {

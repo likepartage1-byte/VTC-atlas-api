@@ -418,6 +418,14 @@ export class ProfileService {
       }
     }
 
+    const systemVal = await this.getSystemSetting('max_vehicle_age', { ageLimit: 20 });
+    let ageLimit = 20;
+    if (systemVal && typeof systemVal === 'object' && systemVal.ageLimit !== undefined) {
+      ageLimit = Number(systemVal.ageLimit);
+    } else if (typeof systemVal === 'number') {
+      ageLimit = systemVal;
+    }
+
     return {
       vehicleInfo: {
         type: currentVehicle.type || 'CAR',
@@ -443,6 +451,7 @@ export class ProfileService {
       },
       pendingVehicleUpdate,
       rejectedVehicleUpdate,
+      maxVehicleAge: ageLimit,
     };
   }
 
@@ -479,7 +488,31 @@ export class ProfileService {
     if (data.manufacturer !== undefined) fields.manufacturer = data.manufacturer;
     if (data.brand !== undefined) fields.brand = data.brand;
     if (data.model !== undefined) fields.model = data.model;
-    if (data.year !== undefined) fields.year = Number(data.year) || data.year;
+    if (data.year !== undefined) {
+      const yearVal = Number(data.year);
+      if (yearVal) {
+        const currentYear = new Date().getFullYear();
+        const systemVal = await this.getSystemSetting('max_vehicle_age', { ageLimit: 20 });
+        let ageLimit = 20;
+        if (systemVal && typeof systemVal === 'object' && systemVal.ageLimit !== undefined) {
+          ageLimit = Number(systemVal.ageLimit);
+        } else if (typeof systemVal === 'number') {
+          ageLimit = systemVal;
+        }
+        const vehicleAge = currentYear - yearVal;
+        const backendStrictLimit = ageLimit + 2;
+
+        if (vehicleAge > backendStrictLimit) {
+          throw new BadRequestException(
+            `❌ This vehicle is not eligible to operate on Yalla VTC because it exceeds the maximum allowed vehicle age of ${ageLimit} years.\n\n` +
+            `❌ هذه المركبة غير مؤهلة للعمل على Yalla VTC لأنها تتجاوز الحد الأقصى لعمر المركبة (${ageLimit} سنة).\n\n` +
+            `❌ Ce véhicule n'est pas éligible pour travailler sur Yalla VTC car il dépasse l'âge maximal autorisé de ${ageLimit} ans.\n\n` +
+            `❌ Este vehículo no es apto para operar en Yalla VTC porque supera la antigüedad máxima permitida de ${ageLimit} años.`
+          );
+        }
+      }
+      fields.year = yearVal || data.year;
+    }
     if (data.color !== undefined) fields.color = data.color;
     if (data.fuelType !== undefined) fields.fuelType = data.fuelType;
     if (data.transmission !== undefined) fields.transmission = data.transmission;
