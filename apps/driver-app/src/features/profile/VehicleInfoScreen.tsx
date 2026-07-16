@@ -87,6 +87,125 @@ const COLOR_TEMPLATES = [
 const FUEL_TYPES = ['Diesel', 'Petrol', 'Hybrid', 'Electric'];
 const TRANSMISSIONS = ['Manual', 'Automatic'];
 
+const GUIDE_TRANSLATIONS = {
+  ar: {
+    vehicle_title: 'صورة المركبة',
+    vehicle_instruction: 'التقط صورة للسيارة من الأمام. تأكد من أن السيارة مرئية بالكامل وبأن لوحة الترخيص واضحة وسهلة القراءة.',
+    grey_card_title: 'البطاقة الرمادية للمركبة',
+    grey_card_inst_1: 'قم بتحميل صورة لشهادة تسجيل مركبتك (البطاقة الرمادية).',
+    grey_card_inst_2: 'لقطات الشاشة، النسخ أو الصور المطبوعة غير مسموح بها.',
+    grey_card_inst_3: 'تأكد من أن جميع التفاصيل والبيانات واضحة ومقروءة تماماً.',
+    take_photo: 'التقاط صورة',
+    choose_gallery: 'اختيار من المعرض',
+    close: 'إغلاق',
+  },
+  fr: {
+    vehicle_title: 'Photo du véhicule',
+    vehicle_instruction: 'Prenez une photo de la voiture de face. Assurez-vous que la voiture est entièrement visible et que la plaque d\'immatriculation est facile à lire.',
+    grey_card_title: 'Carte grise du véhicule',
+    grey_card_inst_1: 'Téléchargez une photo du certificat d\'immatriculation de votre véhicule.',
+    grey_card_inst_2: 'Les captures d\'écran, les copies ou les photos imprimées ne sont pas autorisées.',
+    grey_card_inst_3: 'Assurez-vous que tous les détails sont clairement visibles.',
+    take_photo: 'Prendre une photo',
+    choose_gallery: 'Choisir dans la galerie',
+    close: 'Fermer',
+  },
+  es: {
+    vehicle_title: 'Foto del vehículo',
+    vehicle_instruction: 'Tome una foto del automóvil de frente. Asegúrese de que el automóvil sea completamente visible y que la matrícula sea fácil de leer.',
+    grey_card_title: 'Tarjeta de registro del vehículo',
+    grey_card_inst_1: 'Suba una foto del certificado de registro de su vehículo.',
+    grey_card_inst_2: 'No se permiten capturas de pantalla, copias o fotos impresas.',
+    grey_card_inst_3: 'Asegúrese de que todos los detalles sean claramente visibles.',
+    take_photo: 'Tomar una foto',
+    choose_gallery: 'Elegir de la galería',
+    close: 'Cerrar',
+  },
+  en: {
+    vehicle_title: 'Vehicle photo',
+    vehicle_instruction: 'Take a photo of the car from the front. Make sure the car is fully visible and the license plate is easy to read.',
+    grey_card_title: 'Vehicle registration card',
+    grey_card_inst_1: 'Upload a photo of your vehicle\'s registration certificate.',
+    grey_card_inst_2: 'Screenshots, copies, or printed photos are not allowed.',
+    grey_card_inst_3: 'Make sure all details are clearly visible.',
+    take_photo: 'Take a photo',
+    choose_gallery: 'Choose from gallery',
+    close: 'Close',
+  }
+};
+
+const MoroccanGreyCardGuide = () => {
+  return (
+    <View style={guideStyles.moroccoCardWoodBg}>
+      <View style={guideStyles.moroccoCardBody}>
+        {/* Header decoration */}
+        <View style={guideStyles.moroccoCardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={guideStyles.moroccoCardHeaderTextFr}>ROYAUME DU MAROC</Text>
+            <Text style={guideStyles.moroccoCardSubTextFr}>CERTIFICAT D'IMMATRICULATION</Text>
+          </View>
+          {/* Moroccan map shape placeholder */}
+          <View style={guideStyles.moroccoCardMapPlaceholder}>
+            <Svg viewBox="0 0 100 100" style={{ width: 22, height: 22 }}>
+              <Path
+                d="M40 10 C 45 15, 48 18, 50 25 C 52 32, 55 35, 53 45 C 50 55, 45 60, 42 75 Z"
+                fill="#FFD700"
+              />
+            </Svg>
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={guideStyles.moroccoCardHeaderTextAr}>المملكة المغربية</Text>
+            <Text style={guideStyles.moroccoCardSubTextAr}>شهادة التسجيل</Text>
+          </View>
+        </View>
+
+        {/* Horizontal separator */}
+        <View style={guideStyles.moroccoCardDivider} />
+
+        {/* Fields list */}
+        <View style={guideStyles.moroccoCardFields}>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Numéro d'immatriculation</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>55334-1</Text>
+            <Text style={guideStyles.fieldValAr}>رقم التسجيل</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Immatriculation antérieure</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>AA9922BB</Text>
+            <Text style={guideStyles.fieldValAr}>التسجيل السابق</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Première mise en circulation</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>10/02/2024</Text>
+            <Text style={guideStyles.fieldValAr}>تاريخ أول الشروع</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>M.C. au Maroc</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>10/02/2024</Text>
+            <Text style={guideStyles.fieldValAr}>الاستعمال بالمغرب</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Propriétaire</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldValBold}>MOHAMED EL ARHOUNI</Text>
+            <Text style={guideStyles.fieldValAr}>المالك</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Adresse</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldValSmall} numberOfLines={1}>RESIDENCE ENNASR IMM 4 RABAT</Text>
+            <Text style={guideStyles.fieldValAr}>العنوان</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
 // Brand Logo Svg Renderer Component
 const BrandLogo = ({ type, color }: { type: string; color: string }) => {
   switch (type) {
@@ -1263,50 +1382,129 @@ export const VehicleInfoScreen = () => {
       </Modal>
 
       {/* --- PHOTO SHEET BOTTOM SHEETS SELECTOR --- */}
-      <Modal visible={showPhotoOptionsSheet} animationType="slide" transparent>
-        <View style={styles.sheetBackdrop}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowPhotoOptionsSheet(false)} />
-          <View style={[styles.sheetFrame, { backgroundColor: colors.surface }]}>
-            <View style={styles.sheetTopNotch} />
-            <View style={styles.sheetHeaderGroup}>
-              <Text style={[styles.sheetTitleText, { color: colors.textPrimary }]}>
-                {selectedPhotoSlot === 'vehicle' ? t('vehicle_photo_label') : t('grey_card_label')}
-              </Text>
-              <TouchableOpacity onPress={() => setShowPhotoOptionsSheet(false)}>
-                <X size={20} color={colors.textPrimary} />
-              </TouchableOpacity>
-            </View>
+      <Modal visible={showPhotoOptionsSheet} animationType="slide">
+        {(() => {
+          const rawLang = i18n.language || 'fr';
+          const langKey = rawLang.startsWith('ar')
+            ? 'ar'
+            : rawLang.startsWith('es')
+            ? 'es'
+            : rawLang.startsWith('en')
+            ? 'en'
+            : 'fr';
+          const tGuide = GUIDE_TRANSLATIONS[langKey] || GUIDE_TRANSLATIONS['fr'];
+          const isRtl = i18n.dir() === 'rtl';
 
-            <View style={styles.sheetItemsStack}>
-              {/* If not approved (first reg): camera only */}
-              {!(selectedPhotoSlot === 'vehicle' ? approvedPhotos.vehicle : approvedPhotos.registration) ? (
-                <TouchableOpacity activeOpacity={0.8} style={[styles.sheetRowBtn, { borderBottomColor: colors.border }]} onPress={triggerCamera}>
-                  <CameraIcon size={20} color={colors.textPrimary} />
-                  <Text style={[styles.sheetRowText, { color: colors.textPrimary }]}>{t('take_photo_option', '📷 Prendre une photo')}</Text>
+          return (
+            <SafeAreaView style={guideStyles.guideModalRoot}>
+              <StatusBar barStyle="light-content" backgroundColor="#121212" />
+              
+              {/* Header Row */}
+              <View style={guideStyles.guideHeader}>
+                <TouchableOpacity
+                  style={guideStyles.guideBackButton}
+                  onPress={() => setShowPhotoOptionsSheet(false)}
+                >
+                  <ChevronLeft size={22} color="#FFFFFF" />
                 </TouchableOpacity>
-              ) : (
-                // Approved state: camera & gallery
-                <>
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.sheetRowBtn, { borderBottomColor: colors.border }]} onPress={triggerCamera}>
-                    <CameraIcon size={20} color={colors.textPrimary} />
-                    <Text style={[styles.sheetRowText, { color: colors.textPrimary }]}>{t('take_new_photo_option')}</Text>
-                  </TouchableOpacity>
+                
+                <TouchableOpacity onPress={() => setShowPhotoOptionsSheet(false)}>
+                  <Text style={guideStyles.guideCloseText}>{tGuide.close}</Text>
+                </TouchableOpacity>
+              </View>
 
-                  <TouchableOpacity activeOpacity={0.8} style={[styles.sheetRowBtn, { borderBottomColor: colors.border }]} onPress={triggerGallery}>
-                    <Info size={20} color={colors.textPrimary} />
-                    <Text style={[styles.sheetRowText, { color: colors.textPrimary }]}>{t('choose_from_device_option')}</Text>
-                  </TouchableOpacity>
-                </>
-              )}
+              <ScrollView style={guideStyles.guideContentContainer}>
+                {/* Dynamic Title */}
+                <Text style={[guideStyles.guideTitleText, { textAlign: isRtl ? 'right' : 'left' }]}>
+                  {selectedPhotoSlot === 'vehicle' 
+                    ? tGuide.vehicle_title 
+                    : tGuide.grey_card_title
+                  }
+                </Text>
 
-              {/* Cancel option */}
-              <TouchableOpacity activeOpacity={0.8} style={styles.sheetRowBtn} onPress={() => setShowPhotoOptionsSheet(false)}>
-                <X size={20} color={colors.error} />
-                <Text style={[styles.sheetRowText, { color: colors.error, fontWeight: '700' }]}>{t('cancel_btn', 'Annuler')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                {/* Instructions Stack */}
+                {selectedPhotoSlot === 'vehicle' ? (
+                  <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                    <View style={guideStyles.guideCheckIconWrapper}>
+                      <Check size={18} color="#4ADE80" />
+                    </View>
+                    <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      {tGuide.vehicle_instruction}
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                      <View style={guideStyles.guideCheckIconWrapper}>
+                        <Check size={18} color="#4ADE80" />
+                      </View>
+                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                        {tGuide.grey_card_inst_1}
+                      </Text>
+                    </View>
+                    
+                    <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                      <View style={guideStyles.guideCheckIconWrapper}>
+                        <Check size={18} color="#4ADE80" />
+                      </View>
+                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                        {tGuide.grey_card_inst_2}
+                      </Text>
+                    </View>
+
+                    <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                      <View style={guideStyles.guideCheckIconWrapper}>
+                        <Check size={18} color="#4ADE80" />
+                      </View>
+                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                        {tGuide.grey_card_inst_3}
+                      </Text>
+                    </View>
+                  </>
+                )}
+
+                {/* Guide Image Card Frame */}
+                {selectedPhotoSlot === 'vehicle' ? (
+                  <View style={guideStyles.imageCardWrapper}>
+                    <View style={guideStyles.checkmarkBadge}>
+                      <Check size={16} color="#FFFFFF" />
+                    </View>
+                    <Image 
+                      source={{ uri: 'https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&w=600&q=80' }} 
+                      style={{ width: '100%', height: 260, resizeMode: 'cover' }} 
+                    />
+                  </View>
+                ) : (
+                  <View style={guideStyles.imageCardWrapperGreyCard}>
+                    <View style={guideStyles.checkmarkBadge}>
+                      <Check size={16} color="#FFFFFF" />
+                    </View>
+                    <MoroccanGreyCardGuide />
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Bottom Trigger buttons */}
+              <View style={guideStyles.actionButtonsGroup}>
+                <TouchableOpacity 
+                  activeOpacity={0.85} 
+                  style={guideStyles.btnPrimaryLime} 
+                  onPress={triggerCamera}
+                >
+                  <Text style={guideStyles.btnPrimaryLimeText}>{tGuide.take_photo}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  activeOpacity={0.85} 
+                  style={guideStyles.btnSecondaryGray} 
+                  onPress={triggerGallery}
+                >
+                  <Text style={guideStyles.btnSecondaryGrayText}>{tGuide.choose_gallery}</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          );
+        })()}
       </Modal>
 
       {/* --- Fuel Type Bottom Sheet Modal selector --- */}
@@ -1978,5 +2176,233 @@ const styles = StyleSheet.create({
     height: 230,
     borderRadius: 20,
     borderWidth: 3,
+  },
+});
+
+const guideStyles = StyleSheet.create({
+  // Moroccan Grey Card mockup styling
+  moroccoCardWoodBg: {
+    width: '100%',
+    height: 250,
+    backgroundColor: '#302217',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  moroccoCardBody: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  moroccoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  moroccoCardHeaderTextFr: {
+    fontSize: 7.5,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  moroccoCardSubTextFr: {
+    fontSize: 6,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  moroccoCardMapPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moroccoCardHeaderTextAr: {
+    fontSize: 7.8,
+    fontWeight: '800',
+    color: '#1E293B',
+    textAlign: 'right',
+  },
+  moroccoCardSubTextAr: {
+    fontSize: 6.2,
+    color: '#64748B',
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  moroccoCardDivider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 6,
+  },
+  moroccoCardFields: {
+    gap: 4.5,
+  },
+  moroccoCardFieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fieldLabel: {
+    width: 105,
+    fontSize: 6.5,
+    color: '#475569',
+    fontWeight: '600',
+  },
+  fieldDivider: {
+    width: 6,
+    fontSize: 6.5,
+    color: '#475569',
+  },
+  fieldVal: {
+    flex: 1,
+    fontSize: 6.8,
+    color: '#1E293B',
+    fontWeight: '700',
+    paddingLeft: 4,
+  },
+  fieldValBold: {
+    flex: 1,
+    fontSize: 6.8,
+    color: '#1E293B',
+    fontWeight: '800',
+    paddingLeft: 4,
+  },
+  fieldValSmall: {
+    flex: 1,
+    fontSize: 5.8,
+    color: '#1E293B',
+    fontWeight: '700',
+    paddingLeft: 4,
+  },
+  fieldValAr: {
+    width: 60,
+    fontSize: 6.2,
+    color: '#475569',
+    textAlign: 'right',
+    fontWeight: '600',
+  },
+
+  // Guidelines container styling
+  guideModalRoot: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
+  guideContentContainer: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+  guideHeader: {
+    flexDirection: 'row',
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#262626',
+  },
+  guideBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E1E1E',
+  },
+  guideCloseText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#9CA3AF',
+  },
+  guideTitleText: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 20,
+    marginBottom: 24,
+  },
+  guideInstructionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginBottom: 16,
+    paddingRight: 12,
+  },
+  guideCheckIconWrapper: {
+    marginTop: 2,
+  },
+  guideInstructionText: {
+    fontSize: 15.5,
+    color: '#E5E7EB',
+    lineHeight: 22,
+    fontWeight: '500',
+  },
+  imageCardWrapper: {
+    position: 'relative',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#4ADE80',
+    overflow: 'hidden',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  imageCardWrapperGreyCard: {
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#4ADE80',
+    overflow: 'hidden',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  checkmarkBadge: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    zIndex: 10,
+  },
+  actionButtonsGroup: {
+    paddingHorizontal: 24,
+    paddingBottom: Platform.OS === 'ios' ? 42 : 24,
+    gap: 12,
+  },
+  btnPrimaryLime: {
+    height: 54,
+    backgroundColor: '#D2EA3C',
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#D2EA3C',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  btnPrimaryLimeText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#000000',
+  },
+  btnSecondaryGray: {
+    height: 54,
+    backgroundColor: '#262626',
+    borderRadius: 27,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnSecondaryGrayText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
