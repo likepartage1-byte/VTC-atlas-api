@@ -32,6 +32,7 @@ import {
   RefreshCw,
   Search,
   Sliders,
+  Plus,
 } from 'lucide-react-native';
 import Svg, { Path, Circle, Rect, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeContext';
@@ -913,7 +914,7 @@ export const VehicleInfoScreen = () => {
                       <Image source={{ uri: photos.vehicle }} style={styles.glassPhotoPreview} />
                     ) : (
                       <View style={styles.photoStubCenterSquare}>
-                        <Text style={[styles.plusIconText, { color: colors.textPrimary }]}>+</Text>
+                        <Plus size={28} color={colors.textPrimary} />
                       </View>
                     )}
                   </View>
@@ -938,7 +939,7 @@ export const VehicleInfoScreen = () => {
                       <Image source={{ uri: photos.registration }} style={styles.glassPhotoPreview} />
                     ) : (
                       <View style={styles.photoStubCenterSquare}>
-                        <Text style={[styles.plusIconText, { color: colors.textPrimary }]}>+</Text>
+                        <Plus size={28} color={colors.textPrimary} />
                       </View>
                     )}
                   </View>
