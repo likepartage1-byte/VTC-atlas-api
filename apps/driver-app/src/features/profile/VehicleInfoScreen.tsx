@@ -896,53 +896,57 @@ export const VehicleInfoScreen = () => {
               </View>
             </Animated.View>
 
-            {/* Upload Section - Two Glassmorphic Cards Side-by-Side */}
+            {/* Upload Section - Two Grid-aligned Cards */}
             <View style={styles.photoContainerSplit}>
               {/* Photo du véhicule */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.glassPhotoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => {
-                  setSelectedPhotoSlot('vehicle');
-                  setShowPhotoOptionsSheet(true);
-                }}
-              >
-                <View style={styles.glassPhotoInner}>
-                  {photos.vehicle ? (
-                    <Image source={{ uri: photos.vehicle }} style={styles.glassPhotoPreview} />
-                  ) : (
-                    <View style={styles.photoStubCenter}>
-                      <CameraIcon size={24} color={colors.primary} />
-                      <Text style={[styles.photoTitleText, { color: colors.textSecondary }]}>
-                        {t('vehicle_photo_label', 'Photo du véhicule')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+              <View style={styles.photoBoxContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.glassPhotoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                  onPress={() => {
+                    setSelectedPhotoSlot('vehicle');
+                    setShowPhotoOptionsSheet(true);
+                  }}
+                >
+                  <View style={styles.glassPhotoInner}>
+                    {photos.vehicle ? (
+                      <Image source={{ uri: photos.vehicle }} style={styles.glassPhotoPreview} />
+                    ) : (
+                      <View style={styles.photoStubCenterSquare}>
+                        <Text style={[styles.plusIconText, { color: colors.textPrimary }]}>+</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <Text style={[styles.photoUnderLabelText, { color: colors.textSecondary }]}>
+                  {t('vehicle_photo_label', 'Photo du véhicule')}
+                </Text>
+              </View>
 
               {/* Carte grise */}
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.glassPhotoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                onPress={() => {
-                  setSelectedPhotoSlot('registration');
-                  setShowPhotoOptionsSheet(true);
-                }}
-              >
-                <View style={styles.glassPhotoInner}>
-                  {photos.registration ? (
-                    <Image source={{ uri: photos.registration }} style={styles.glassPhotoPreview} />
-                  ) : (
-                    <View style={styles.photoStubCenter}>
-                      <CameraIcon size={24} color={colors.primary} />
-                      <Text style={[styles.photoTitleText, { color: colors.textSecondary }]}>
-                        {t('grey_card_label', 'Carte grise')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </TouchableOpacity>
+              <View style={styles.photoBoxContainer}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.glassPhotoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+                  onPress={() => {
+                    setSelectedPhotoSlot('registration');
+                    setShowPhotoOptionsSheet(true);
+                  }}
+                >
+                  <View style={styles.glassPhotoInner}>
+                    {photos.registration ? (
+                      <Image source={{ uri: photos.registration }} style={styles.glassPhotoPreview} />
+                    ) : (
+                      <View style={styles.photoStubCenterSquare}>
+                        <Text style={[styles.plusIconText, { color: colors.textPrimary }]}>+</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <Text style={[styles.photoUnderLabelText, { color: colors.textSecondary }]}>
+                  {t('grey_card_label_full', 'Carte grise du véhicule')}
+                </Text>
+              </View>
             </View>
 
             {/* Inputs Form */}
@@ -1400,26 +1404,26 @@ export const VehicleInfoScreen = () => {
           const isRtl = i18n.dir() === 'rtl';
 
           return (
-            <SafeAreaView style={guideStyles.guideModalRoot}>
-              <StatusBar barStyle="light-content" backgroundColor="#121212" />
+            <SafeAreaView style={[guideStyles.guideModalRoot, { backgroundColor: colors.bg }]}>
+              <StatusBar barStyle={colors.bg === '#000000' ? 'light-content' : 'dark-content'} />
               
               {/* Header Row */}
-              <View style={guideStyles.guideHeader}>
+              <View style={[guideStyles.guideHeader, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity
-                  style={guideStyles.guideBackButton}
+                  style={[guideStyles.guideBackButton, { backgroundColor: colors.surfaceAlt }]}
                   onPress={() => setShowPhotoOptionsSheet(false)}
                 >
-                  <ChevronLeft size={22} color="#FFFFFF" />
+                  <ChevronLeft size={22} color={colors.textPrimary} />
                 </TouchableOpacity>
                 
                 <TouchableOpacity onPress={() => setShowPhotoOptionsSheet(false)}>
-                  <Text style={guideStyles.guideCloseText}>{tGuide.close}</Text>
+                  <Text style={[guideStyles.guideCloseText, { color: colors.textSecondary }]}>{tGuide.close}</Text>
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={guideStyles.guideContentContainer}>
                 {/* Dynamic Title */}
-                <Text style={[guideStyles.guideTitleText, { textAlign: isRtl ? 'right' : 'left' }]}>
+                <Text style={[guideStyles.guideTitleText, { color: colors.textPrimary, textAlign: isRtl ? 'right' : 'left' }]}>
                   {selectedPhotoSlot === 'vehicle' 
                     ? tGuide.vehicle_title 
                     : tGuide.grey_card_title
@@ -1433,7 +1437,7 @@ export const VehicleInfoScreen = () => {
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
-                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
                         {tGuide.vehicle_inst_1}
                       </Text>
                     </View>
@@ -1442,7 +1446,7 @@ export const VehicleInfoScreen = () => {
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
-                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
                         {tGuide.vehicle_inst_2}
                       </Text>
                     </View>
@@ -1453,7 +1457,7 @@ export const VehicleInfoScreen = () => {
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
-                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
                         {tGuide.grey_card_inst_1}
                       </Text>
                     </View>
@@ -1462,7 +1466,7 @@ export const VehicleInfoScreen = () => {
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
-                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
                         {tGuide.grey_card_inst_2}
                       </Text>
                     </View>
@@ -1471,7 +1475,7 @@ export const VehicleInfoScreen = () => {
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
-                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                      <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
                         {tGuide.grey_card_inst_3}
                       </Text>
                     </View>
@@ -1485,7 +1489,7 @@ export const VehicleInfoScreen = () => {
                       <Check size={16} color="#FFFFFF" />
                     </View>
                     <Image 
-                      source={{ uri: 'https://images.unsplash.com/photo-1617469767053-d3b508a0d825?auto=format&fit=crop&w=600&q=80' }} 
+                      source={require('./peugeot_guide.jpg')} 
                       style={{ width: '100%', height: 260, resizeMode: 'cover' }} 
                     />
                   </View>
@@ -1511,10 +1515,10 @@ export const VehicleInfoScreen = () => {
 
                 <TouchableOpacity 
                   activeOpacity={0.85} 
-                  style={guideStyles.btnSecondaryGray} 
+                  style={[guideStyles.btnSecondaryGray, { backgroundColor: colors.surfaceAlt }]} 
                   onPress={triggerGallery}
                 >
-                  <Text style={guideStyles.btnSecondaryGrayText}>{tGuide.choose_gallery}</Text>
+                  <Text style={[guideStyles.btnSecondaryGrayText, { color: colors.textPrimary }]}>{tGuide.choose_gallery}</Text>
                 </TouchableOpacity>
               </View>
             </SafeAreaView>
@@ -1815,12 +1819,16 @@ const styles = StyleSheet.create({
   photoContainerSplit: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 16,
     marginBottom: 24,
   },
-  glassPhotoCard: {
+  photoBoxContainer: {
+    alignItems: 'center',
     flex: 1,
-    aspectRatio: 1.15,
+  },
+  glassPhotoCard: {
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 20,
     borderWidth: 1,
     padding: 6,
@@ -1838,6 +1846,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  photoStubCenterSquare: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plusIconText: {
+    fontSize: 34,
+    fontWeight: '300',
+  },
+  photoUnderLabelText: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'center',
   },
   photoStubCenter: {
     alignItems: 'center',
