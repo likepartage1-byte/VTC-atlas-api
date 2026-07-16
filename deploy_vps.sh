@@ -24,8 +24,12 @@ if [ -d "/root/VTC-atlas-api" ]; then
   PROJECT_DIR="/root/VTC-atlas-api"
 elif [ -d "/var/www/VTC-atlas-api" ]; then
   PROJECT_DIR="/var/www/VTC-atlas-api"
+elif [ -f "./apps/backend-api/package.json" ]; then
+  PROJECT_DIR="$(pwd)"
+elif [ -f "../apps/backend-api/package.json" ]; then
+  PROJECT_DIR="$(pwd)/.."
 else
-  fail "Cannot find project directory. Expected /root/VTC-atlas-api or /var/www/VTC-atlas-api"
+  fail "Cannot find project directory. Run this script from the root of VTC project."
 fi
 
 info "Project root: $PROJECT_DIR"
