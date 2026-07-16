@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Post, Body, UseGuards, Version, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Query, UseGuards, Version, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
@@ -25,6 +25,27 @@ export class ProfileController {
     @Body() data: any,
   ) {
     return this.profileService.updateDriverProfile(userId, data);
+  }
+
+  @Get('vehicle/manufacturers')
+  @Version('1')
+  async getManufacturers() {
+    return this.profileService.getManufacturers();
+  }
+
+  @Get('vehicle/models')
+  @Version('1')
+  async getModels(@Query('manufacturer') manufacturer?: string) {
+    return this.profileService.getModels(manufacturer);
+  }
+
+  @Post('vehicle/models/suggest')
+  @Version('1')
+  async suggestModel(
+    @CurrentUser('userId') userId: string,
+    @Body() body: { manufacturerName: string; modelName: string },
+  ) {
+    return this.profileService.suggestModel(userId, body.manufacturerName, body.modelName);
   }
 
   @Get('vehicle')

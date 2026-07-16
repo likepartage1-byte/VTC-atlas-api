@@ -626,3 +626,34 @@ model Notification {
   @@index([userId])
   @@index([status])
 }
+
+model Manufacturer {
+  id        String         @id @default(uuid())
+  name      String         @unique
+  logo      String?        // SVG identifier or asset path
+  models    VehicleModel[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model VehicleModel {
+  id             String        @id @default(uuid())
+  name           String
+  manufacturerId String
+  manufacturer   Manufacturer  @relation(fields: [manufacturerId], references: [id])
+  years          Json?         // Custom array of production years E.g., ["2015", "2016", ...]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([name, manufacturerId])
+}
+
+model VehicleModelSuggestion {
+  id               String   @id @default(uuid())
+  driverId         String
+  manufacturerName String
+  modelName        String
+  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

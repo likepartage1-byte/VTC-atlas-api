@@ -530,5 +530,119 @@ export class ProfileService {
     const { url } = await this.storage.uploadFile(file, storageKey);
     return { url };
   }
+
+  async getManufacturers() {
+    let list = await this.prisma.manufacturer.findMany({
+      orderBy: { name: 'asc' },
+    });
+
+    if (list.length === 0) {
+      await this.seedManufacturersAndModels();
+      list = await this.prisma.manufacturer.findMany({
+        orderBy: { name: 'asc' },
+      });
+    }
+    return list;
+  }
+
+  async getModels(manufacturerNameOrId?: string) {
+    if (!manufacturerNameOrId) {
+      return this.prisma.vehicleModel.findMany({
+        orderBy: { name: 'asc' },
+      });
+    }
+
+    const isUuid = manufacturerNameOrId.length === 36 && manufacturerNameOrId.includes('-');
+    const whereClause = isUuid
+      ? { manufacturerId: manufacturerNameOrId }
+      : {
+          manufacturer: {
+            name: {
+              equals: manufacturerNameOrId,
+            },
+          },
+        };
+
+    return this.prisma.vehicleModel.findMany({
+      where: whereClause,
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async suggestModel(userId: string, manufacturerName: string, modelName: string) {
+    const driver = await this.prisma.driver.findUnique({
+      where: { userId },
+    });
+    if (!driver) {
+      throw new NotFoundException('Driver not found');
+    }
+
+    return this.prisma.vehicleModelSuggestion.create({
+      data: {
+        driverId: driver.id,
+        manufacturerName,
+        modelName,
+        status: 'PENDING',
+      },
+    });
+  }
+
+  private async seedManufacturersAndModels() {
+    const seedData: Record<string, { logo: string; models: string[] }> = {
+      'Renault': { logo: 'renault', models: ['Clio', 'Clio Campus', 'Clio IV', 'Clio V', 'Megane', 'Megane II', 'Megane III', 'Megane IV', 'Captur', 'Kadjar', 'Koleos', 'Arkana', 'Austral', 'Express', 'Kangoo', 'Trafic', 'Master', 'Symbol', 'Talisman', 'Laguna', 'Scenic', 'Grand Scenic', 'Zoe'] },
+      'Dacia': { logo: 'dacia', models: ['Logan', 'Sandero', 'Duster', 'Lodgy', 'Jogger', 'Dokker', 'Solenza', 'Nova'] },
+      'Peugeot': { logo: 'peugeot', models: ['206', '207', '208', '301', '307', '308', '407', '508', '2008', '3008', '5008', 'Partner', 'Rifter', 'Expert', 'Boxer'] },
+      'Citroën': { logo: 'citroen', models: ['C3', 'C4', 'C5', 'C-Elysée', 'Berlingo', 'Jumpy', 'Jumper', 'C3 Aircross', 'C4 Cactus', 'Ds3'] },
+      'DS Automobiles': { logo: 'ds', models: ['DS 3', 'DS 4', 'DS 7 Crossback', 'DS 9'] },
+      'Opel': { logo: 'opel', models: ['Corsa', 'Astra', 'Insignia', 'Mokka', 'Grandland', 'Combo', 'Vivaro', 'Zafira'] },
+      'Fiat': { logo: 'fiat', models: ['Fiat 500', 'Panda', 'Punto', 'Marea', 'Uno', 'Doblo', 'Fiorino', 'Ducato', 'Tipo'] },
+      'Volkswagen': { logo: 'volkswagen', models: ['Golf v', 'Golf vi', 'Golf vii', 'Golf viii', 'Polo', 'Passat', 'Touareg', 'Tiguan', 'Caddy', 'Crafter', 'Transporter', 'T-Roc', 'Taigo', 'Arteon'] },
+      'Seat': { logo: 'seat', models: ['Ibiza', 'Leon', 'Arona', 'Ateca', 'Tarraco'] },
+      'Cupra': { logo: 'cupra', models: ['Formentor', 'Leon', 'Ateca', 'Born'] },
+      'Skoda': { logo: 'skoda', models: ['Fabia', 'Octavia', 'Superb', 'Kamiq', 'Karoq', 'Kodiaq'] },
+      'Mercedes-Benz': { logo: 'mercedes', models: ['Classe A', 'Classe B', 'Classe C', 'Classe E', 'Classe S', 'CLA', 'GLA', 'GLB', 'GLC', 'GLE', 'Classe V', 'Vito', 'Sprinter'] },
+      'BMW': { logo: 'bmw', models: ['Série 1', 'Série 2', 'Série 3', 'Série 4', 'Série 5', 'Série 7', 'X1', 'X3', 'X4', 'X5', 'X6', 'iX'] },
+      'Audi': { logo: 'audi', models: ['A1', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'Q2', 'Q3', 'Q5', 'Q7', 'Q8', 'e-tron'] },
+      'Toyota': { logo: 'toyota', models: ['Yaris', 'Corolla', 'Camry', 'Prius', 'C-HR', 'RAV4', 'Land Cruiser', 'Hilux', 'Proace'] },
+      'Hyundai': { logo: 'hyundai', models: ['i10', 'i20', 'i30', 'Accent', 'Elantra', 'Tucson', 'Santa Fe', 'Creta', 'Kona', 'H1'] },
+      'Kia': { logo: 'kia', models: ['Picanto', 'Rio', 'Ceed', 'Cerato', 'Sportage', 'Sorento', 'K5', 'Sonet', 'Seltos'] },
+      'Nissan': { logo: 'nissan', models: ['Micra', 'Sunny', 'Qashqai', 'Juke', 'X-Trail', 'Patrol', 'Navara'] },
+      'Ford': { logo: 'ford', models: ['Fiesta', 'Focus', 'Fusion', 'Mondeo', 'Kuga', 'Explorer', 'Mustang', 'Transit', 'Ranger'] },
+      'Suzuki': { logo: 'suzuki', models: ['Swift', 'Celerio', 'Ignis', 'Baleno', 'Jimny', 'Vitara', 'S-Cross', 'Ertiga'] },
+      'Honda': { logo: 'honda', models: ['Jazz', 'Civic', 'Accord', 'CR-V', 'HR-V'] },
+      'Mitsubishi': { logo: 'mitsubishi', models: ['Space Star', 'Lancer', 'ASX', 'Eclipse Cross', 'Outlander', 'Pajero', 'L200'] },
+      'Mazda': { logo: 'mazda', models: ['Mazda 2', 'Mazda 3', 'Mazda 6', 'CX-3', 'CX-30', 'CX-5', 'CX-9'] },
+      'Volvo': { logo: 'volvo', models: ['XC40', 'XC60', 'XC90', 'V40', 'S60', 'S90'] },
+      'Jeep': { logo: 'jeep', models: ['Renegade', 'Compass', 'Cherokee', 'Grand Cherokee', 'Wrangler'] },
+      'Land Rover': { logo: 'landrover', models: ['Range Rover', 'Range Rover Sport', 'Range Rover Velar', 'Evoque', 'Discovery', 'Defender'] },
+      'Porsche': { logo: 'porsche', models: ['911', 'Cayenne', 'Macan', 'Panamera', 'Taycan'] },
+      'Lexus': { logo: 'lexus', models: ['UX', 'NX', 'RX', 'ES', 'LS'] },
+      'Tesla': { logo: 'tesla', models: ['Model 3', 'Model Y', 'Model S', 'Model X'] },
+    };
+
+    for (const [mName, mInfo] of Object.entries(seedData)) {
+      const createdManufacturer = await this.prisma.manufacturer.upsert({
+        where: { name: mName },
+        update: { logo: mInfo.logo },
+        create: { name: mName, logo: mInfo.logo },
+      });
+
+      for (const mModel of mInfo.models) {
+        await this.prisma.vehicleModel.upsert({
+          where: {
+            name_manufacturerId: {
+              name: mModel,
+              manufacturerId: createdManufacturer.id,
+            },
+          },
+          update: {},
+          create: {
+            name: mModel,
+            manufacturerId: createdManufacturer.id,
+          },
+        });
+      }
+    }
+  }
 }
 

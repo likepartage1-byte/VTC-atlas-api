@@ -285,6 +285,18 @@ export const VehicleInfoScreen = () => {
   const [showPhotoOptionsSheet, setShowPhotoOptionsSheet] = useState(false);
   const [selectedPhotoSlot, setSelectedPhotoSlot] = useState<'vehicle' | 'registration' | null>(null);
 
+  // --- Dynamic Vehicle Data from Database ---
+  const [dbBrands, setDbBrands] = useState<{ id: string; name: string; logo: string | null }[]>([]);
+  const [dbModels, setDbModels] = useState<{ id: string; name: string }[]>([]);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  // Suggestion states
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestedBrand, setSuggestedBrand] = useState('');
+  const [suggestedModel, setSuggestedModel] = useState('');
+  const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
+
   // --- Search text in brand list ---
   const [brandSearchQuery, setBrandSearchQuery] = useState('');
 
@@ -341,6 +353,41 @@ export const VehicleInfoScreen = () => {
       ])
     ).start();
   }, []);
+
+  const fetchManufacturers = async () => {
+    setLoadingBrands(true);
+    try {
+      const res = await api.get('/driver/profile/vehicle/manufacturers');
+      setDbBrands(res.data);
+    } catch (err) {
+      console.warn('Failed to load brands from database:', err);
+    } finally {
+      setLoadingBrands(false);
+    }
+  };
+
+  const fetchModelsForBrand = async (brandName: string) => {
+    if (!brandName) return;
+    setLoadingModels(true);
+    try {
+      const res = await api.get(`/driver/profile/vehicle/models?manufacturer=${encodeURIComponent(brandName)}`);
+      setDbModels(res.data);
+    } catch (err) {
+      console.warn('Failed to load models for brand:', err);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchManufacturers();
+  }, []);
+
+  useEffect(() => {
+    if (brand) {
+      fetchModelsForBrand(brand);
+    }
+  }, [brand]);
 
   // Fetch approved profile settings
   const fetchVehicleProfile = async () => {
@@ -574,7 +621,7 @@ export const VehicleInfoScreen = () => {
     }
   };
 
-  const filteredBrands = BRANDS_DATA.filter((b) =>
+  const filteredBrands = dbBrands.filter((b) =>
     b.name.toLowerCase().includes(brandSearchQuery.toLowerCase())
   );
 
@@ -1018,33 +1065,55 @@ export const VehicleInfoScreen = () => {
             />
           </View>
 
-          <FlatList
-            data={filteredBrands}
-            keyExtractor={(item) => item.name}
-            contentContainerStyle={styles.listPaddings}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                style={[styles.brandItemRow, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  setBrand(item.name);
-                  setModel(''); // Reset model when brand changes
-                  setBrandSearchQuery('');
-                  setShowBrandSelector(false);
-                  // Automatically trigger model selector open after select
-                  setTimeout(() => {
-                    setShowModelSelector(true);
-                  }, 400);
-                }}
-              >
-                <View style={styles.brandRowLeft}>
-                  <BrandLogo type={item.logo} color={colors.primary} />
-                  <Text style={[styles.brandLabelName, { color: colors.textPrimary }]}>{item.name}</Text>
-                </View>
-                {brand === item.name && <Check size={18} color={colors.primary} />}
-              </TouchableOpacity>
-            )}
-          />
+          {loadingBrands ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={filteredBrands}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listPaddings}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.brandItemRow, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setBrand(item.name);
+                    setModel(''); // Reset model when brand changes
+                    setBrandSearchQuery('');
+                    setShowBrandSelector(false);
+                    // Automatically trigger model selector open after select
+                    setTimeout(() => {
+                      setShowModelSelector(true);
+                    }, 400);
+                  }}
+                >
+                  <View style={styles.brandRowLeft}>
+                    <BrandLogo type={item.logo || ''} color={colors.primary} />
+                    <Text style={[styles.brandLabelName, { color: colors.textPrimary }]}>{item.name}</Text>
+                  </View>
+                  {brand === item.name && <Check size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+              ListFooterComponent={
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[styles.triggerTypeChangeBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 20 }]}
+                  onPress={() => {
+                    setShowBrandSelector(false);
+                    setSuggestedBrand('');
+                    setSuggestedModel('');
+                    setTimeout(() => {
+                      setShowSuggestionModal(true);
+                    }, 450);
+                  }}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>Marque introuvable ? Suggérer de l'ajouter</Text>
+                </TouchableOpacity>
+              }
+            />
+          )}
         </SafeAreaView>
       </Modal>
 
@@ -1058,30 +1127,130 @@ export const VehicleInfoScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <FlatList
-            data={brand ? MODELS_MAP[brand] || [] : []}
-            keyExtractor={(item) => item}
-            contentContainerStyle={styles.listPaddings}
-            renderItem={({ item }) => (
+          {loadingModels ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={dbModels}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listPaddings}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  style={[styles.brandItemRow, { borderBottomColor: colors.border }]}
+                  onPress={() => {
+                    setModel(item.name);
+                    setShowModelSelector(false);
+                  }}
+                >
+                  <Text style={[styles.brandLabelName, { color: colors.textPrimary }]}>{item.name}</Text>
+                  {model === item.name && <Check size={18} color={colors.primary} />}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyViewSearch}>
+                  <Text style={{ color: colors.textMuted }}>Aucun modèle disponible.</Text>
+                </View>
+              }
+              ListFooterComponent={
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[styles.triggerTypeChangeBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 20 }]}
+                  onPress={() => {
+                    setShowModelSelector(false);
+                    setSuggestedBrand(brand || '');
+                    setSuggestedModel('');
+                    setTimeout(() => {
+                      setShowSuggestionModal(true);
+                    }, 450);
+                  }}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>Modèle introuvable ? Suggérer de l'ajouter</Text>
+                </TouchableOpacity>
+              }
+            />
+          )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* --- MODEL/BRAND SUGGESTION MODAL --- */}
+      <Modal visible={showSuggestionModal} animationType="slide" transparent>
+        <View style={styles.sheetBackdrop}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowSuggestionModal(false)} />
+          <View style={[styles.sheetFrame, { backgroundColor: colors.surface, paddingBottom: 40 }]}>
+            <View style={styles.sheetHeaderGroup}>
+              <Text style={[styles.sheetTitleText, { color: colors.textPrimary }]}>
+                Suggérer une marque/modèle
+              </Text>
+              <TouchableOpacity onPress={() => setShowSuggestionModal(false)}>
+                <X size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, gap: 15 }} keyboardShouldPersistTaps="handled">
+              <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
+                Proposez un nouveau modèle de véhicule à l'administration de Yalla VTC. Après vérification par l'équipe, il sera disponible pour tous les chauffeurs.
+              </Text>
+
+              {/* Manufacturer input */}
+              <View style={[styles.modalSearchBox, { backgroundColor: colors.bg, borderColor: colors.border, margin: 0, height: 48 }]}>
+                <TextInput
+                  style={[styles.modalSearchInput, { color: colors.textPrimary }]}
+                  placeholder="Nom du constructeur (ex: Renault)"
+                  placeholderTextColor={colors.textMuted}
+                  value={suggestedBrand}
+                  onChangeText={setSuggestedBrand}
+                />
+              </View>
+
+              {/* Model input */}
+              <View style={[styles.modalSearchBox, { backgroundColor: colors.bg, borderColor: colors.border, margin: 0, height: 48 }]}>
+                <TextInput
+                  style={[styles.modalSearchInput, { color: colors.textPrimary }]}
+                  placeholder="Nom du modèle (ex: Clio Campus)"
+                  placeholderTextColor={colors.textMuted}
+                  value={suggestedModel}
+                  onChangeText={setSuggestedModel}
+                />
+              </View>
+
               <TouchableOpacity
                 activeOpacity={0.8}
-                style={[styles.brandItemRow, { borderBottomColor: colors.border }]}
-                onPress={() => {
-                  setModel(item);
-                  setShowModelSelector(false);
+                style={[styles.luxPrimaryBtn, { backgroundColor: colors.primary, marginTop: 10 }]}
+                disabled={submittingSuggestion}
+                onPress={async () => {
+                  if (!suggestedBrand.trim() || !suggestedModel.trim()) {
+                    Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+                    return;
+                  }
+                  setSubmittingSuggestion(true);
+                  try {
+                    await api.post('/driver/profile/vehicle/models/suggest', {
+                      manufacturerName: suggestedBrand.trim(),
+                      modelName: suggestedModel.trim(),
+                    });
+                    Alert.alert('Succès', 'Votre suggestion a été enregistrée avec succès. Elle sera examinée très bientôt.');
+                    setSuggestedBrand('');
+                    setSuggestedModel('');
+                    setShowSuggestionModal(false);
+                  } catch (err: any) {
+                    Alert.alert('Erreur', 'Une erreur est survenue lors de l\'enregistrement de votre suggestion.');
+                  } finally {
+                    setSubmittingSuggestion(false);
+                  }
                 }}
               >
-                <Text style={[styles.brandLabelName, { color: colors.textPrimary }]}>{item}</Text>
-                {model === item && <Check size={18} color={colors.primary} />}
+                {submittingSuggestion ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.luxPrimaryBtnText}>Envoyer la suggestion</Text>
+                )}
               </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyViewSearch}>
-                <Text style={{ color: colors.textMuted }}>Aucun modèle disponible.</Text>
-              </View>
-            }
-          />
-        </SafeAreaView>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
 
       {/* --- PHOTO SHEET BOTTOM SHEETS SELECTOR --- */}
