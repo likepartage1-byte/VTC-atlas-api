@@ -90,7 +90,8 @@ const TRANSMISSIONS = ['Manual', 'Automatic'];
 const GUIDE_TRANSLATIONS = {
   ar: {
     vehicle_title: 'صورة المركبة',
-    vehicle_instruction: 'التقط صورة للسيارة من الأمام. تأكد من أن السيارة مرئية بالكامل وبأن لوحة الترخيص واضحة وسهلة القراءة.',
+    vehicle_inst_1: 'مثال لطريقة التقاط الصورة الأمامية للمركبة.',
+    vehicle_inst_2: 'تأكد من ظهور السيارة كاملة من الأمام، وأن تكون لوحة التسجيل واضحة ومقروءة.',
     grey_card_title: 'البطاقة الرمادية للمركبة',
     grey_card_inst_1: 'قم بتحميل صورة لشهادة تسجيل مركبتك (البطاقة الرمادية).',
     grey_card_inst_2: 'لقطات الشاشة، النسخ أو الصور المطبوعة غير مسموح بها.',
@@ -101,7 +102,8 @@ const GUIDE_TRANSLATIONS = {
   },
   fr: {
     vehicle_title: 'Photo du véhicule',
-    vehicle_instruction: 'Prenez une photo de la voiture de face. Assurez-vous que la voiture est entièrement visible et que la plaque d\'immatriculation est facile à lire.',
+    vehicle_inst_1: 'Exemple de comment prendre la photo avant du véhicule.',
+    vehicle_inst_2: 'Assurez-vous que la voiture est entièrement visible de face, et que la plaque d\'immatriculation est claire et lisible.',
     grey_card_title: 'Carte grise du véhicule',
     grey_card_inst_1: 'Téléchargez une photo du certificat d\'immatriculation de votre véhicule.',
     grey_card_inst_2: 'Les captures d\'écran, les copies ou les photos imprimées ne sont pas autorisées.',
@@ -112,7 +114,8 @@ const GUIDE_TRANSLATIONS = {
   },
   es: {
     vehicle_title: 'Foto del vehículo',
-    vehicle_instruction: 'Tome una foto del automóvil de frente. Asegúrese de que el automóvil sea completamente visible y que la matrícula sea fácil de leer.',
+    vehicle_inst_1: 'Ejemplo de cómo tomar la foto frontal del vehículo.',
+    vehicle_inst_2: 'Asegúrese de que el automóvil sea completamente visible de frente, y que la matrícula sea clara y legible.',
     grey_card_title: 'Tarjeta de registro del vehículo',
     grey_card_inst_1: 'Suba una foto del certificado de registro de su vehículo.',
     grey_card_inst_2: 'No se permiten capturas de pantalla, copias o fotos impresas.',
@@ -123,7 +126,8 @@ const GUIDE_TRANSLATIONS = {
   },
   en: {
     vehicle_title: 'Vehicle photo',
-    vehicle_instruction: 'Take a photo of the car from the front. Make sure the car is fully visible and the license plate is easy to read.',
+    vehicle_inst_1: 'Example of how to take the front photo of the vehicle.',
+    vehicle_inst_2: 'Make sure the car is fully visible from the front, and the license plate is clear and readable.',
     grey_card_title: 'Vehicle registration card',
     grey_card_inst_1: 'Upload a photo of your vehicle\'s registration certificate.',
     grey_card_inst_2: 'Screenshots, copies, or printed photos are not allowed.',
@@ -1424,14 +1428,25 @@ export const VehicleInfoScreen = () => {
 
                 {/* Instructions Stack */}
                 {selectedPhotoSlot === 'vehicle' ? (
-                  <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
-                    <View style={guideStyles.guideCheckIconWrapper}>
-                      <Check size={18} color="#4ADE80" />
+                  <>
+                    <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                      <View style={guideStyles.guideCheckIconWrapper}>
+                        <Check size={18} color="#4ADE80" />
+                      </View>
+                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                        {tGuide.vehicle_inst_1}
+                      </Text>
                     </View>
-                    <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
-                      {tGuide.vehicle_instruction}
-                    </Text>
-                  </View>
+                    
+                    <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
+                      <View style={guideStyles.guideCheckIconWrapper}>
+                        <Check size={18} color="#4ADE80" />
+                      </View>
+                      <Text style={[guideStyles.guideInstructionText, { textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
+                        {tGuide.vehicle_inst_2}
+                      </Text>
+                    </View>
+                  </>
                 ) : (
                   <>
                     <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
