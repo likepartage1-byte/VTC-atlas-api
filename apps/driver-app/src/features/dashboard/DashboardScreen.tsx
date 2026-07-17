@@ -1,4 +1,5 @@
-import React, {
+import * as React from 'react';
+import {
   useRef, useCallback, useEffect, useState, useMemo
 } from 'react';
 import {
@@ -6,10 +7,16 @@ import {
   Text,
   StyleSheet,
   StatusBar as RNStatusBar,
+  Animated,
+  Easing,
+  ImageBackground,
 } from 'react-native';
 import MapView, { Marker, UrlTile } from 'react-native-maps';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path, Defs, RadialGradient, Stop } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../theme/ThemeContext';
 
 import { socketService } from '../../services/socket.service';
 import { useLocationTracking } from '../../hooks/useLocationTracking';
@@ -84,6 +91,9 @@ const INITIAL_MOCK_OFFERS: RideOffer[] = [
 export const DashboardScreen = () => {
   const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView>(null);
+  const { t, i18n } = useTranslation('profile');
+  const { isDarkMode, colors: themeColors } = useTheme();
+  const isRTL = i18n.language === 'ar';
 
   // ── Presence state (controlled by driver, never by GPS) ─────────────────
   const [isAvailable, setIsAvailable] = useState(false);
@@ -92,6 +102,13 @@ export const DashboardScreen = () => {
   // Offers lists & selection (Phase 4 & 5)
   const [offers, setOffers] = useState<RideOffer[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<RideOffer | null>(null);
+
+  // Radar Animation States
+  const pulse1 = useRef(new Animated.Value(0)).current;
+  const pulse2 = useRef(new Animated.Value(0)).current;
+  const pulse3 = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const textAnim = useRef(new Animated.Value(0)).current;
 
   const pendingPresence = useRef<'AVAILABLE' | 'ONLINE' | null>(null);
   const isAvailableRef  = useRef(isAvailable);
@@ -268,6 +285,101 @@ export const DashboardScreen = () => {
     setSelectedOffer(null);
   }, [selectedOffer]);
 
+  // ── Radar Loop & Pulsing Interpolations ──────────────────────────────────────────
+  const startAnimations = useCallback(() => {
+    const runPulse = (anim: Animated.Value) => {
+      anim.setValue(0);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => runPulse(anim));
+    };
+
+    runPulse(pulse1);
+    const t2 = setTimeout(() => runPulse(pulse2), 900);
+    const t3 = setTimeout(() => runPulse(pulse3), 1800);
+
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 3600,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(textAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textAnim, {
+          toValue: 0.4,
+          duration: 1000,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    return () => {
+      clearTimeout(t2);
+      clearTimeout(t3);
+      pulse1.stopAnimation();
+      pulse2.stopAnimation();
+      pulse3.stopAnimation();
+      spinAnim.stopAnimation();
+      textAnim.stopAnimation();
+    };
+  }, [pulse1, pulse2, pulse3, spinAnim, textAnim]);
+
+  useEffect(() => {
+    const showRadar = isAvailable && offers.length === 0;
+    if (showRadar) {
+      const cleanup = startAnimations();
+      return cleanup;
+    }
+  }, [isAvailable, offers.length, startAnimations]);
+
+  const pulse1Scale = pulse1.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 2.2],
+  });
+  const pulse1Opacity = pulse1.interpolate({
+    inputRange: [0, 0.1, 0.8, 1],
+    outputRange: [0, 0.7, 0.4, 0],
+  });
+
+  const pulse2Scale = pulse2.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 2.2],
+  });
+  const pulse2Opacity = pulse2.interpolate({
+    inputRange: [0, 0.1, 0.8, 1],
+    outputRange: [0, 0.7, 0.4, 0],
+  });
+
+  const pulse3Scale = pulse3.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 2.2],
+  });
+  const pulse3Opacity = pulse3.interpolate({
+    inputRange: [0, 0.1, 0.8, 1],
+    outputRange: [0, 0.7, 0.4, 0],
+  });
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const textOpacity = textAnim;
+
   // ── Derived markers ────────────────────────────────────────────────────────
   const driverCoord = useMemo(() => location
     ? { latitude: location.latitude, longitude: location.longitude }
@@ -334,6 +446,87 @@ export const DashboardScreen = () => {
           </Marker>
         )}
       </MapView>
+
+      {/* ── Radar Scanner overlay (pops up when Online and offers list is empty) ── */}
+      {isAvailable && offers.length === 0 && (
+        <View style={styles.radarContainer} pointerEvents="box-none">
+          <ImageBackground
+            source={
+              isDarkMode
+                ? require('../../assets/radar_dark.png')
+                : require('../../assets/radar_light.png')
+            }
+            style={StyleSheet.absoluteFillObject}
+            resizeMode="cover"
+          >
+            {/* Pulsing Concentric Circles */}
+            <Animated.View
+              style={[
+                styles.pulsingRing,
+                {
+                  transform: [{ scale: pulse1Scale }],
+                  opacity: pulse1Opacity,
+                  borderColor: isDarkMode ? '#4ADE80' : '#16A34A',
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.pulsingRing,
+                {
+                  transform: [{ scale: pulse2Scale }],
+                  opacity: pulse2Opacity,
+                  borderColor: isDarkMode ? '#4ADE80' : '#16A34A',
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.pulsingRing,
+                {
+                  transform: [{ scale: pulse3Scale }],
+                  opacity: pulse3Opacity,
+                  borderColor: isDarkMode ? '#4ADE80' : '#16A34A',
+                },
+              ]}
+            />
+
+            {/* Rotating Sweep Sector */}
+            <Animated.View
+              style={[
+                styles.sweepWrapper,
+                {
+                  transform: [{ rotate: spin }],
+                },
+              ]}
+            >
+              <Svg width={360} height={360} viewBox="0 0 200 200">
+                <Defs>
+                  <RadialGradient id="radarSweep" cx="100" cy="100" r="100" fx="100" fy="100">
+                    <Stop offset="0%" stopColor={isDarkMode ? '#4ADE80' : '#16A34A'} stopOpacity="0.45" />
+                    <Stop offset="50%" stopColor={isDarkMode ? '#4ADE80' : '#16A34A'} stopOpacity="0.25" />
+                    <Stop offset="100%" stopColor={isDarkMode ? '#4ADE80' : '#16A34A'} stopOpacity="0" />
+                  </RadialGradient>
+                </Defs>
+                <Path
+                  d="M100 100 L170 30 A 100 100 0 0 0 100 0 Z"
+                  fill="url(#radarSweep)"
+                />
+              </Svg>
+            </Animated.View>
+
+            {/* HUD Status Texts */}
+            <View style={styles.radarHUD}>
+              <Animated.Text style={[styles.radarStatusText, { color: isDarkMode ? '#4ADE80' : '#16A34A', opacity: textOpacity }]}>
+                {isRTL ? 'جاري البحث عن طلبات قريبة...' : 'Recherche de courses à proximité...'}
+              </Animated.Text>
+              <Text style={[styles.radarSubText, { color: themeColors.textSecondary }]}>
+                {isRTL ? 'ابق قريباً من المناطق النشطة' : 'Restez à proximité des zones animées'}
+              </Text>
+            </View>
+          </ImageBackground>
+        </View>
+      )}
 
       {/* ── Top overlay ──────────────────────────────────────────────── */}
       <SafeAreaView edges={['top']} style={styles.topOverlay} pointerEvents="box-none">
@@ -479,6 +672,57 @@ const styles = StyleSheet.create({
     color: AtlasColors.warning,
     fontSize: 11,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  radarContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
+  },
+  pulsingRing: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    borderWidth: 1.5,
+    top: '50%',
+    left: '50%',
+    marginTop: -110,
+    marginLeft: -110,
+  },
+  sweepWrapper: {
+    position: 'absolute',
+    width: 360,
+    height: 360,
+    top: '50%',
+    left: '50%',
+    marginTop: -180,
+    marginLeft: -180,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  radarHUD: {
+    position: 'absolute',
+    top: 140,
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  radarStatusText: {
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  radarSubText: {
+    fontSize: 13,
+    marginTop: 6,
     textAlign: 'center',
   },
 });

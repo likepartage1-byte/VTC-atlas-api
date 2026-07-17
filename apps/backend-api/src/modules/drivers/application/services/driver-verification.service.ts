@@ -281,6 +281,42 @@ export class DriverVerificationService {
   }
 
   /**
+   * Admin helper to update document requirements (e.g. requiresTechnicalInspection, requiredDocuments)
+   */
+  async updateRequirements(
+    driverId: string,
+    data: { requiresTechnicalInspection?: boolean; requiredDocuments?: string[] }
+  ) {
+    let verification = await this.prisma.driverVerification.findUnique({
+      where: { driverId }
+    });
+
+    if (!verification) {
+      verification = await this.initializeVerification(driverId);
+    }
+
+    if (!verification) {
+      throw new NotFoundException('Could not create or find verification profile');
+    }
+
+    const currentMetadata = (verification.metadata as any) || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      requiresTechnicalInspection: data.requiresTechnicalInspection !== undefined 
+        ? data.requiresTechnicalInspection 
+        : currentMetadata.requiresTechnicalInspection,
+      requiredDocuments: data.requiredDocuments !== undefined
+        ? data.requiredDocuments
+        : currentMetadata.requiredDocuments,
+    };
+
+    return this.prisma.driverVerification.update({
+      where: { id: verification.id },
+      data: { metadata: updatedMetadata }
+    });
+  }
+
+  /**
    * Admin action to approve/reject an individual document.
    */
   async reviewDocument(

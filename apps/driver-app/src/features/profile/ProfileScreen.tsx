@@ -85,13 +85,14 @@ interface SectionRowProps {
   subtitle?: string;
   onPress?: () => void;
   rightElement?: React.ReactNode;
+  badge?: number;   // red dot count badge (e.g. documents needing action)
   isRTL: boolean;
   colors: any;
   isLast?: boolean;
 }
 
 const SectionRow = ({
-  icon: Icon, label, subtitle, onPress, rightElement, isRTL, colors, isLast,
+  icon: Icon, label, subtitle, onPress, rightElement, badge, isRTL, colors, isLast,
 }: SectionRowProps) => {
   const Chevron = isRTL ? ChevronLeft : ChevronRight;
   return (
@@ -130,10 +131,22 @@ const SectionRow = ({
           ) : null}
         </View>
       </View>
-      {rightElement ?? (onPress ? <Chevron size={16} color={colors.textMuted} /> : null)}
+      {/* Right side: badge OR custom element OR chevron */}
+      {badge && badge > 0 ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={styles.badgeDot}>
+            <Text style={styles.badgeDotText}>{badge > 9 ? '9+' : badge}</Text>
+          </View>
+          {rightElement ?? (onPress ? <Chevron size={16} color={colors.textMuted} style={{ marginLeft: 6 }} /> : null)}
+        </View>
+      ) : (
+        rightElement ?? (onPress ? <Chevron size={16} color={colors.textMuted} /> : null)
+      )}
     </TouchableOpacity>
   );
 };
+
+// (duplicate removed — see new SectionRow above)
 
 // ─── Main ProfileScreen ───────────────────────────────────────────────────────
 export const ProfileScreen = () => {
@@ -147,6 +160,9 @@ export const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // ── Document badge (needs-action count) ──
+  const [docBadgeCount, setDocBadgeCount] = useState(0);
 
   // ── Modal visibility ──
   const [verifyModalVisible,   setVerifyModalVisible]   = useState(false);
@@ -190,6 +206,23 @@ export const ProfileScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchProfile();
+      // Fetch document badge count silently in background
+      api.get('/driver/documents').then(res => {
+        const docs: any[] = res.data?.uploadedDocuments || [];
+        const required: string[] = [
+          ...(res.data?.basicRequired || []),
+          ...(res.data?.conditionalRequired || []),
+        ];
+        const uploadedTypes = new Set(docs.map((d: any) => d.type));
+        const missingCount = required.filter(t => !uploadedTypes.has(t)).length;
+        const actionCount = docs.filter((d: any) => {
+          const daysLeft = d.expiresAt
+            ? Math.ceil((new Date(d.expiresAt).getTime() - Date.now()) / 86400000)
+            : null;
+          return d.status === 'REJECTED' || d.status === 'EXPIRED' || (daysLeft !== null && daysLeft <= 0);
+        }).length;
+        setDocBadgeCount(missingCount + actionCount);
+      }).catch(() => {});
       return () => {};
     }, [])
   );
@@ -634,7 +667,7 @@ export const ProfileScreen = () => {
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <SectionRow icon={User}       label={t('personal_info')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('PersonalInfo')} />
             <SectionRow icon={Car}        label={t('vehicle_info')}  isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('VehicleInfo')} />
-            <SectionRow icon={FileText}   label={t('documents')}     isRTL={isRTL} colors={colors} onPress={() => {}} />
+            <SectionRow icon={FileText}   label={t('documents')}     isRTL={isRTL} colors={colors} badge={docBadgeCount} onPress={() => navigation.navigate('Documents')} />
             <SectionRow icon={CreditCard} label={t('payment_info')}  isRTL={isRTL} colors={colors} onPress={() => {}} isLast />
           </View>
 
@@ -1334,6 +1367,20 @@ const styles = StyleSheet.create({
   sectionRowText:  { flex: 1, gap: 2 },
   sectionRowLabel: { fontSize: 14, fontWeight: '600' },
   sectionRowSub:   { fontSize: 12, fontWeight: '400' },
+  badgeDot: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  badgeDotText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
   levelPill: {
     paddingHorizontal: 10,
     paddingVertical: 4,

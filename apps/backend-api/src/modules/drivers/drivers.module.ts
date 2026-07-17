@@ -13,6 +13,7 @@ import { LocationModule } from '../location/location.module';
 import { AdminDriverController } from './presentation/controllers/admin-driver.controller';
 import { DriverVerificationController } from './presentation/controllers/driver-verification.controller';
 import { ProfileController } from './presentation/controllers/profile.controller';
+import { DriverDocumentsController } from './presentation/controllers/driver-documents.controller';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { ProfileController } from './presentation/controllers/profile.controller
   controllers: [
     AdminDriverController,
     DriverVerificationController,
-    ProfileController
+    ProfileController,
+    DriverDocumentsController
   ],
   providers: [
     DriverAcceptanceService, 

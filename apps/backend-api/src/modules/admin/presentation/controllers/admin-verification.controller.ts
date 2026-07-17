@@ -74,4 +74,16 @@ export class AdminVerificationController {
         'admin-system'
     );
   }
+
+  /**
+   * Update required documents metadata for a driver.
+   * POST /admin/verification/:driverId/requirements
+   */
+  @Post(':driverId/requirements')
+  async updateRequirements(
+    @Param('driverId') driverId: string,
+    @Body() body: { requiresTechnicalInspection?: boolean; requiredDocuments?: string[] }
+  ) {
+    return this.verificationService.updateRequirements(driverId, body);
+  }
 }

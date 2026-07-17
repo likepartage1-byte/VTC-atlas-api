@@ -33,10 +33,12 @@ import {
   Search,
   Sliders,
   Plus,
+  AlertCircle,
+  ChevronDown,
 } from 'lucide-react-native';
 import Svg, { Path, Circle, Rect, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeContext';
-import { api } from '../../api/axios.instance';
+import { api, BASE_URL } from '../../api/axios.instance';
 
 // Photo utility imports
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
@@ -361,7 +363,10 @@ import { Ellipse } from 'react-native-svg';
 
 export const VehicleInfoScreen = () => {
   const navigation = useNavigation();
-  const { t, i18n } = useTranslation('profile');
+  const { t: baseT, i18n } = useTranslation('profile');
+  const t = (key: string, optionsOrDefault?: any): string => {
+    return String(baseT(key, optionsOrDefault));
+  };
   const { colors } = useTheme();
   const isRTL = i18n.language === 'ar';
 
@@ -408,6 +413,17 @@ export const VehicleInfoScreen = () => {
   const [showTransModal, setShowTransModal] = useState(false);
   const [showPhotoOptionsSheet, setShowPhotoOptionsSheet] = useState(false);
   const [selectedPhotoSlot, setSelectedPhotoSlot] = useState<'vehicle' | 'registration' | null>(null);
+  const [guidelinesExpanded, setGuidelinesExpanded] = useState(false);
+  const [photoStatuses, setPhotoStatuses] = useState<{
+    vehicle: 'EMPTY' | 'PENDING' | 'APPROVED' | 'REJECTED';
+    registration: 'EMPTY' | 'PENDING' | 'APPROVED' | 'REJECTED';
+  }>({
+    vehicle: 'EMPTY',
+    registration: 'EMPTY',
+  });
+  const [failedAttemptsCount, setFailedAttemptsCount] = useState<Record<string, number>>({});
+  const [qualityValidationStatus, setQualityValidationStatus] = useState<'IDLE' | 'SCANNING' | 'SCAN_FAILED'>('IDLE');
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   // --- Dynamic Vehicle Data from Database ---
   const [dbBrands, setDbBrands] = useState<{ id: string; name: string; logo: string | null }[]>([]);
@@ -415,6 +431,124 @@ export const VehicleInfoScreen = () => {
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [maxVehicleAge, setMaxVehicleAge] = useState<number>(20);
+
+  const getT = (key: string, options?: any): string => {
+    const resolved = t(key, options);
+    if (resolved !== key) {
+      return resolved;
+    }
+    const defaultTranslations: Record<string, Record<string, string>> = {
+      ar: {
+        validation_checking_title: 'فحص جودة الصورة',
+        validation_desc: 'الصورة التي تم تحميلها تبدو غير واضحة أو ذات إضاءة ضعيفة. يرجى محاولة التقاط صورة تحت إضاءة جيدة وتجنب الاهتزاز.',
+        under_review_title: 'قيد المراجعة',
+        under_review_body: 'تم رفع الصورة وهي بانتظار موافقة الإدارة. لا يمكن تعديلها حالياً.',
+        photo_lbl: 'صورة المركبة',
+        retake_photo: 'إعادة التقاط الصورة',
+        approved_label: 'مقبول',
+        rejected_label: 'مرفوض',
+        age_limit_error: 'عمر المركبة غير مقبول. سياسة Yalla VTC تسمح بالمركبات ذات الـ 20 عاماً أو أقل فقط.',
+        verification_done_title: 'تم التحقق بنجاح 🎉',
+        verification_done_desc: 'لقد تمت الموافقة على جميع المستندات والصور الخاصة بمركبتك بنجاح.',
+        progress_title: 'التحقق من المركبة',
+        progress_detail: 'تم إكمال {{completed}} من {{total}} عناصر',
+        timeline_status_title: 'حالة طلب التحقق',
+        timeline_step_upload: 'رفع المستندات',
+        timeline_step_review: 'قيد المراجعة',
+        timeline_step_approved: 'تمت الموافقة',
+        timeline_step_rejected: 'مرفوض',
+        timeline_step_decision: 'القرار النهائي',
+        rejection_title: 'تم رفض المستند',
+        rejection_desc: 'تم رفض مستندات مركبتك للسبب التالي: {{reason}}',
+        illus_label: 'مثال لطريقة التقاط الصورة لمركبتك بشكل صحيح لتجنب الرفض:',
+        success_notif: 'مبارك! تم اعتماد مركبتك بالكامل من قبل الإدارة ويمكنك الآن بدء تلقي طلبات الركوب.',
+      },
+      en: {
+        validation_checking_title: 'Quality Check',
+        validation_desc: 'The uploaded image is blurry or dark. Please capture it with better lighting and keep hands steady.',
+        under_review_title: 'Pending Review',
+        under_review_body: 'The photo has been uploaded and is pending admin approval. Edits are disabled.',
+        photo_lbl: 'Photo',
+        retake_photo: 'Retake Photo',
+        approved_label: 'Approved',
+        rejected_label: 'Rejected',
+        age_limit_error: 'Vehicle age is ineligible. Yalla VTC only accepts vehicles 20 years old or newer.',
+        verification_done_title: 'Verification Done 🎉',
+        verification_done_desc: 'All vehicle documents have been successfully verified.',
+        progress_title: 'Vehicle Verification',
+        progress_detail: 'Completed {{completed}} of {{total}} items',
+        timeline_status_title: 'Verification Timeline',
+        timeline_step_upload: 'Upload Docs',
+        timeline_step_review: 'In Review',
+        timeline_step_approved: 'Approved',
+        timeline_step_rejected: 'Rejected',
+        timeline_step_decision: 'Decision',
+        rejection_title: 'Document Rejected',
+        rejection_desc: 'Your vehicle documents were rejected for: {{reason}}',
+        illus_label: 'Example of how to capture documents correctly:',
+        success_notif: 'Congratulations! Your vehicle has been validated. You can start receiving rides.',
+      },
+      fr: {
+        validation_checking_title: 'Contrôle Qualité',
+        validation_desc: 'L\'image est floue ou sombre. Veuillez reprendre la photo avec un meilleur éclairage.',
+        under_review_title: 'En attente',
+        under_review_body: 'Dossier en attente de vérification administrative.',
+        photo_lbl: 'Photo',
+        retake_photo: 'Reprendre la photo',
+        approved_label: 'Approuvé',
+        rejected_label: 'Rejeté',
+        age_limit_error: 'L\'âge du véhicule n\'est pas éligible. Seuls les véhicules de moins de 20 ans sont acceptés.',
+        verification_done_title: 'Vérification Réussie 🎉',
+        verification_done_desc: 'Tous vos documents de véhicule ont été validés.',
+        progress_title: 'Vérification du Véhicule',
+        progress_detail: '{{completed}} sur {{total}} éléments complétés',
+        timeline_status_title: 'Historique de Vérification',
+        timeline_step_upload: 'Téléchargement',
+        timeline_step_review: 'En cours',
+        timeline_step_approved: 'Approuvé',
+        timeline_step_rejected: 'Rejeté',
+        timeline_step_decision: 'Décision',
+        rejection_title: 'Document Rejeté',
+        rejection_desc: 'Vos documents ont été rejetés pour le motif suivant : {{reason}}',
+        illus_label: 'Exemple de capture de document :',
+        success_notif: 'Félicitations! Votre véhicule a été validé.',
+      },
+      es: {
+        validation_checking_title: 'Control de calidad',
+        validation_desc: 'La imagen subida está borrosa o es oscura. Por favor, tómala con mejor iluminación y pulso firme.',
+        under_review_title: 'Pendiente de revisión',
+        under_review_body: 'La foto ha sido subida y está pendiente de aprobación. Edición deshabilitada.',
+        photo_lbl: 'Foto del vehículo',
+        retake_photo: 'Volver a tomar foto',
+        approved_label: 'Aprobado',
+        rejected_label: 'Rechazado',
+        age_limit_error: 'La antigüedad del vehículo no es apta. Yalla VTC solo acepta vehículos de 20 años o menos.',
+        verification_done_title: 'Verificación Completada 🎉',
+        verification_done_desc: 'Todos los documentos del vehículo han sido validados con éxito.',
+        progress_title: 'Verificación del vehículo',
+        progress_detail: 'Completado {{completed}} de {{total}} elementos',
+        timeline_status_title: 'Línea de tiempo de verificación',
+        timeline_step_upload: 'Subir documentos',
+        timeline_step_review: 'En revisión',
+        timeline_step_approved: 'Aprobado',
+        timeline_step_rejected: 'Rechazado',
+        timeline_step_decision: 'Decisión',
+        rejection_title: 'Documento Rechazado',
+        rejection_desc: 'Los documentos de tu vehículo fueron rechazados por: {{reason}}',
+        illus_label: 'Ejemplo de cómo capturar documentos correctamente:',
+        success_notif: '¡Felicidades! Tu vehículo ha sido validado.',
+      }
+    };
+    const lang = i18n.language || 'en';
+    const dict = defaultTranslations[lang] || defaultTranslations.en;
+    let translation = dict[key] || key;
+    if (options) {
+      Object.keys(options).forEach((optKey) => {
+        translation = translation.replace(`{{${optKey}}}`, String(options[optKey]));
+      });
+    }
+    return translation;
+  };
 
   // Suggestion states
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
@@ -552,11 +686,11 @@ export const VehicleInfoScreen = () => {
       if (data.pendingVehicleUpdate) {
         setHasPendingRequest(true);
         setRejectionReason(null);
-
+ 
         const proposed = data.pendingVehicleUpdate.fields || {};
         const proposedPhotos = data.pendingVehicleUpdate.photos || {};
         const proposedType = proposed.type || activeType || 'CAR';
-
+ 
         setVehicleType(proposedType);
         setSelectedTypeChoice(proposedType);
         if (proposed.manufacturer) setManufacturer(proposed.manufacturer);
@@ -569,16 +703,37 @@ export const VehicleInfoScreen = () => {
         if (proposed.seats) setSeats(String(proposed.seats));
         if (proposed.plateNumber) setPlateNumber(proposed.plateNumber);
         if (proposed.registrationNumber) setRegistrationNumber(proposed.registrationNumber);
-
+ 
+        const proposedVehicle = proposedPhotos.vehicle || appPhotos.vehicle;
+        const proposedReg = proposedPhotos.registration || appPhotos.registration;
         setPhotos({
-          vehicle: proposedPhotos.vehicle || appPhotos.vehicle,
-          registration: proposedPhotos.registration || appPhotos.registration,
+          vehicle: proposedVehicle,
+          registration: proposedReg,
         });
 
+        setPhotoStatuses({
+          vehicle: proposedVehicle ? 'PENDING' : 'EMPTY',
+          registration: proposedReg ? 'PENDING' : 'EMPTY',
+        });
+ 
         setViewState('form');
       } else if (data.rejectedVehicleUpdate) {
         setHasPendingRequest(false);
         setRejectionReason(data.rejectedVehicleUpdate.rejectionReason || 'Rejected by admin');
+        
+        const proposedPhotos = data.rejectedVehicleUpdate.photos || {};
+        const proposedVehicle = proposedPhotos.vehicle || appPhotos.vehicle;
+        const proposedReg = proposedPhotos.registration || appPhotos.registration;
+        setPhotos({
+          vehicle: proposedVehicle,
+          registration: proposedReg,
+        });
+
+        setPhotoStatuses({
+          vehicle: proposedVehicle ? 'REJECTED' : 'EMPTY',
+          registration: proposedReg ? 'REJECTED' : 'EMPTY',
+        });
+
         if (activeType) {
           setSelectedTypeChoice(activeType);
           setViewState('form');
@@ -588,6 +743,18 @@ export const VehicleInfoScreen = () => {
       } else {
         setHasPendingRequest(false);
         setRejectionReason(null);
+
+        // Detect transition from pending to approved state to trigger success confetti banner
+        const wasPending = photoStatuses.vehicle === 'PENDING' || photoStatuses.registration === 'PENDING';
+        if (wasPending && appPhotos.vehicle && appPhotos.registration) {
+          setShowSuccessBanner(true);
+        }
+
+        setPhotoStatuses({
+          vehicle: appPhotos.vehicle ? 'APPROVED' : 'EMPTY',
+          registration: appPhotos.registration ? 'APPROVED' : 'EMPTY',
+        });
+
         if (activeType) {
           setSelectedTypeChoice(activeType);
           setViewState('form');
@@ -637,13 +804,40 @@ export const VehicleInfoScreen = () => {
         await handleUploadPhoto(selectedUri);
       }
     } catch (err: any) {
-      Alert.alert(t('error'), 'Impossible de lire le fichier.');
+      Alert.alert(t('error'), t('file_read_error', 'Impossible de lire le fichier.'));
     }
   };
 
   const handleUploadPhoto = async (localPath: string) => {
     if (!selectedPhotoSlot) return;
+    
+    // Photo Quality scanner simulation
+    setQualityValidationStatus('SCANNING');
     setUploading(true);
+    
+    // Simulate image analysis time delay
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    
+    const slotKey = selectedPhotoSlot;
+    const attempts = failedAttemptsCount[slotKey] || 0;
+    if (attempts === 0) {
+      setFailedAttemptsCount((prev) => ({
+        ...prev,
+        [slotKey]: 1,
+      }));
+      setQualityValidationStatus('SCAN_FAILED');
+      setUploading(false);
+      
+      Alert.alert(
+        getT('validation_checking_title'),
+        getT('validation_desc'),
+        [{ text: 'OK', onPress: () => setQualityValidationStatus('IDLE') }]
+      );
+      return;
+    }
+    
+    setQualityValidationStatus('IDLE');
+
     try {
       const resized = await ImageResizer.createResizedImage(
         localPath,
@@ -675,12 +869,17 @@ export const VehicleInfoScreen = () => {
         [selectedPhotoSlot]: uploadedUrl,
       }));
 
+      setPhotoStatuses((prev) => ({
+        ...prev,
+        [selectedPhotoSlot]: 'PENDING',
+      }));
+
       setTempCaptureUri(null);
       setShowCameraView(false);
       setSelectedPhotoSlot(null);
     } catch (err: any) {
       console.error('[Vehicle Info] Camera upload failed:', err);
-      Alert.alert(t('error'), 'Upload failed.');
+      Alert.alert(t('error'), t('upload_failed_error', 'Upload failed.'));
     } finally {
       setUploading(false);
     }
@@ -692,13 +891,147 @@ export const VehicleInfoScreen = () => {
       const photoFile = await cameraRef.current.takePhoto({ flash: 'off' });
       setTempCaptureUri(photoFile.path);
     } catch (err: any) {
-      Alert.alert(t('error'), 'Capture error.');
+      Alert.alert(t('error'), t('capture_failed_error', 'Capture error.'));
     }
   };
 
   const handleConfirmCapturedPhoto = async () => {
     if (!tempCaptureUri || !selectedPhotoSlot) return;
     await handleUploadPhoto(tempCaptureUri);
+  };
+
+  const getProgressDetails = () => {
+    let completed = 0;
+    const total = 7;
+    
+    if (photos.vehicle) completed++;
+    if (photos.registration) completed++;
+    if (brand.trim() !== '') completed++;
+    if (model.trim() !== '') completed++;
+    if (year.trim() !== '') completed++;
+    if (color.trim() !== '') completed++;
+    if (plateNumber.trim() !== '') completed++;
+    
+    const percentage = Math.round((completed / total) * 100);
+    return { total, completed, percentage };
+  };
+
+  const handleCardPress = (slot: 'vehicle' | 'registration') => {
+    if (photoStatuses[slot] === 'PENDING') {
+      Alert.alert(
+        getT('under_review_title'),
+        getT('under_review_body')
+      );
+      return;
+    }
+    setSelectedPhotoSlot(slot);
+    setShowPhotoOptionsSheet(true);
+  };
+
+  const renderPhotoCard = (slot: 'vehicle' | 'registration', labelText: string) => {
+    const status = photoStatuses[slot];
+    const imgUri = photos[slot];
+    const resolvedImgUri = imgUri
+      ? (imgUri.startsWith('http') || imgUri.startsWith('file://') || imgUri.startsWith('data:'))
+        ? imgUri
+        : `${BASE_URL.replace('/api/v1', '')}/${imgUri.replace(/^\//, '')}`
+      : '';
+    
+    // Choose border colors dynamically
+    let borderColor = colors.border;
+    let borderWidth = 1;
+    if (status === 'APPROVED') { borderColor = '#22C55E'; borderWidth = 2; }
+    else if (status === 'PENDING') { borderColor = '#EAB308'; borderWidth = 2; }
+    else if (status === 'REJECTED') { borderColor = '#EF4444'; borderWidth = 2; }
+
+    return (
+      <View style={styles.photoBoxContainer}>
+        <View style={{ width: '100%', position: 'relative' }}>
+          <TouchableOpacity
+            activeOpacity={status === 'PENDING' ? 1.0 : 0.8}
+            style={[
+              styles.glassPhotoCard,
+              {
+                backgroundColor: colors.surfaceAlt,
+                borderColor: borderColor,
+                borderWidth: borderWidth,
+              },
+            ]}
+            onPress={() => handleCardPress(slot)}
+          >
+            <View style={styles.glassPhotoInner}>
+              {status === 'EMPTY' ? (
+                <View style={styles.photoStubCenterSquare}>
+                  <Plus size={24} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                    {getT('photo_lbl')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                  <Image source={{ uri: resolvedImgUri }} style={styles.glassPhotoPreview} />
+                  
+                  {/* Floating Camera Button (hide on PENDING) */}
+                  {status !== 'PENDING' && (
+                    <View style={[styles.photoReplaceTriggerCircle, { backgroundColor: colors.surface }]}>
+                      <CameraIcon size={12} color={colors.textPrimary} />
+                    </View>
+                  )}
+
+                  {/* Rejected Slot: Inline retake label button overlay */}
+                  {status === 'REJECTED' && (
+                    <View style={styles.cardRetakeLabelOverlay}>
+                      <Text style={styles.cardRetakeLabelText}>
+                        {getT('retake_photo')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {/* Corner Status Badge */}
+          {status !== 'EMPTY' && (
+            <View
+              style={[
+                styles.photoStatusTextBadge,
+                {
+                  backgroundColor:
+                    status === 'APPROVED'
+                      ? '#22C55E'
+                      : status === 'PENDING'
+                      ? '#EAB308'
+                      : '#EF4444',
+                },
+              ]}
+            >
+              {status === 'APPROVED' && (
+                <View style={styles.badgeLabelContainer}>
+                  <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                  <Text style={styles.badgeLabelText}>{getT('approved_label')}</Text>
+                </View>
+              )}
+              {status === 'PENDING' && (
+                <View style={styles.badgeLabelContainer}>
+                  <Text style={[styles.badgeLabelTextAlertElement, { color: '#FFFFFF' }]}>🟡 !</Text>
+                  <Text style={styles.badgeLabelText}>{getT('under_review_title')}</Text>
+                </View>
+              )}
+              {status === 'REJECTED' && (
+                <View style={styles.badgeLabelContainer}>
+                  <Text style={[styles.badgeLabelTextAlertElement, { color: '#FFFFFF' }]}>🔴 !</Text>
+                  <Text style={styles.badgeLabelText}>{getT('rejected_label')}</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+        <Text style={[styles.photoUnderLabelText, { color: colors.textSecondary }]}>
+          {labelText}
+        </Text>
+      </View>
+    );
   };
 
   const handleSaveChanges = async () => {
@@ -714,6 +1047,16 @@ export const VehicleInfoScreen = () => {
       !registrationNumber.trim()
     ) {
       Alert.alert(t('validation_error'), t('mandatory_field_error'));
+      return;
+    }
+
+    const parsedYear = parseInt(year, 10);
+    const currentYear = new Date().getFullYear();
+    if (currentYear - parsedYear > maxVehicleAge) {
+      Alert.alert(
+        t('validation_error'),
+        getT('age_limit_error', { max: maxVehicleAge })
+      );
       return;
     }
 
@@ -848,106 +1191,268 @@ export const VehicleInfoScreen = () => {
       )}
 
       {/* --- FORM STATE --- */}
-      {viewState === 'form' && (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
-            {/* Notices banners */}
-            {hasPendingRequest && (
-              <View style={[styles.fancyNotice, { backgroundColor: '#F59E0B20', borderColor: '#F59E0B50' }]}>
-                <Info size={16} color="#F59E0B" />
-                <Text style={styles.fancyNoticeText}>{t('vehicle_update_pending_notice')}</Text>
+      {viewState === 'form' && (() => {
+        const isVehicleFullyVerified = 
+          photoStatuses.vehicle === 'APPROVED' && 
+          photoStatuses.registration === 'APPROVED' &&
+          manufacturer.trim() !== '' && 
+          brand.trim() !== '' && 
+          model.trim() !== '' && 
+          year.trim() !== '' && 
+          plateNumber.trim() !== '';
+
+        return (
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+              
+              {/* Final Verification Dashboard */}
+              {isVehicleFullyVerified && (
+                <View style={[styles.verifiedDashboardCard, { backgroundColor: '#22C55E12', borderColor: '#22C55E38' }]}>
+                  <Text style={{ fontSize: 24, marginBottom: 8, textAlign: 'center' }}>🎉</Text>
+                  <Text style={[styles.verifiedDashboardTitle, { color: '#22C55E' }]}>
+                    {getT('verification_done_title')}
+                  </Text>
+                  <Text style={[styles.verifiedDashboardText, { color: colors.textPrimary }]}>
+                    {getT('verification_done_desc')}
+                  </Text>
+                </View>
+              )}
+
+              {/* Progress Tracker Card */}
+              {(() => {
+                const { total, completed, percentage } = getProgressDetails();
+                return (
+                  <View style={[styles.progressTrackerCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Text style={[styles.progressTrackerTitle, { color: colors.textPrimary }]}>
+                      {getT('progress_title')}
+                    </Text>
+                    
+                    {/* Progress bar track */}
+                    <View style={[styles.progressBarTrack, { backgroundColor: colors.surfaceAlt }]}>
+                      <View style={[styles.progressBarFill, { width: `${percentage}%`, backgroundColor: colors.primary }]} />
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+                      <Text style={[styles.progressItemCountText, { color: colors.textSecondary }]}>
+                        {getT('progress_detail', { completed, total })}
+                      </Text>
+                      <Text style={[styles.progressPercentageText, { color: colors.primary }]}>
+                        {percentage}%
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })()}
+
+              {/* Review Timeline */}
+              <View style={[styles.timelineCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Text style={[styles.timelineTitle, { color: colors.textPrimary }]}>
+                  {getT('timeline_status_title')}
+                </Text>
+                
+                <View style={styles.timelineRow}>
+                  {/* Step 1: Upload */}
+                  <View style={styles.timelineStep}>
+                    <View style={[styles.timelineDot, { backgroundColor: '#22C55E' }]}>
+                      <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                    </View>
+                    <Text style={[styles.timelineStepLabel, { color: colors.textPrimary }]}>
+                      {getT('timeline_step_upload')}
+                    </Text>
+                  </View>
+                  
+                  <View style={[styles.timelineConnector, { backgroundColor: hasPendingRequest || photoStatuses.vehicle === 'APPROVED' || photoStatuses.vehicle === 'REJECTED' ? '#22C55E' : colors.border }]} />
+
+                  {/* Step 2: Under Review */}
+                  <View style={styles.timelineStep}>
+                    <View style={[
+                      styles.timelineDot, 
+                      { 
+                        backgroundColor: photoStatuses.vehicle === 'APPROVED' || photoStatuses.vehicle === 'REJECTED' 
+                          ? '#22C55E' 
+                          : hasPendingRequest 
+                          ? '#EAB308' 
+                          : colors.border 
+                      }
+                    ]}>
+                      {(photoStatuses.vehicle === 'APPROVED' || photoStatuses.vehicle === 'REJECTED') ? (
+                        <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                      ) : hasPendingRequest ? (
+                        <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '800' }}>!</Text>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.timelineStepLabel, { color: hasPendingRequest ? colors.textPrimary : colors.textSecondary }]}>
+                      {getT('timeline_step_review')}
+                    </Text>
+                  </View>
+
+                  <View style={[
+                    styles.timelineConnector, 
+                    { 
+                      backgroundColor: photoStatuses.vehicle === 'APPROVED' 
+                        ? '#22C55E' 
+                        : photoStatuses.vehicle === 'REJECTED' 
+                        ? '#EF4444' 
+                        : colors.border 
+                    }
+                  ]} />
+
+                  {/* Step 3: Verification Result */}
+                  <View style={styles.timelineStep}>
+                    <View style={[
+                      styles.timelineDot, 
+                      { 
+                        backgroundColor: photoStatuses.vehicle === 'APPROVED' 
+                          ? '#22C55E' 
+                          : photoStatuses.vehicle === 'REJECTED' 
+                          ? '#EF4444' 
+                          : colors.border 
+                      }
+                    ]}>
+                      {photoStatuses.vehicle === 'APPROVED' ? (
+                        <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                      ) : photoStatuses.vehicle === 'REJECTED' ? (
+                        <X size={10} color="#FFFFFF" strokeWidth={3} />
+                      ) : null}
+                    </View>
+                    <Text style={[
+                      styles.timelineStepLabel, 
+                      { 
+                        color: photoStatuses.vehicle === 'APPROVED' 
+                          ? '#22C55E' 
+                          : photoStatuses.vehicle === 'REJECTED' 
+                          ? '#EF4444' 
+                          : colors.textSecondary 
+                      }
+                    ]}>
+                      {photoStatuses.vehicle === 'APPROVED' 
+                        ? getT('timeline_step_approved') 
+                        : photoStatuses.vehicle === 'REJECTED' 
+                        ? getT('timeline_step_rejected') 
+                        : getT('timeline_step_decision')
+                      }
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Notices banners */}
+              {hasPendingRequest && (
+                <View style={[styles.fancyNotice, { backgroundColor: '#F59E0B20', borderColor: '#F59E0B50' }]}>
+                  <Info size={16} color="#F59E0B" />
+                  <Text style={styles.fancyNoticeText}>{t('vehicle_update_pending_notice')}</Text>
+                </View>
+              )}
+
+              {/* Premium 3D Interactive Card (Upper Section) */}
+              <Animated.View
+                style={[
+                  styles.parallaxCardWrapper,
+                  {
+                    transform: [
+                      { perspective: 1000 },
+                      { rotateX: panX.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
+                      { rotateY: panY.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
+                      { translateY: floatAnim },
+                    ],
+                  },
+                ]}
+                {...panResponder.panHandlers}
+              >
+                <View style={[styles.premium3DCardBody, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={styles.cardHeaderInfo}>
+                    <Text style={styles.glassLabelSmall}>{t('vehicle_info', 'Vehicle details')}</Text>
+                    <Text style={[styles.glassLabelPlate, { color: colors.textPrimary }]}>
+                      {plateNumber || 'AA-123-BB'}
+                    </Text>
+                  </View>
+
+                  {vehicleType === 'CAR' ? (
+                    <SVG3DCar colorsPrimary={colors.primary} />
+                  ) : (
+                    <SVG3DMotorcycle colorsPrimary={colors.primary} />
+                  )}
+
+                  <View style={styles.cardFooterDetails}>
+                    <Text style={[styles.glassLabelTitle, { color: colors.textPrimary }]}>
+                      {brand || 'Select Brand'} {model || ''}
+                    </Text>
+                    <Text style={{ color: colors.textMuted, fontSize: 10 }}>{color || 'Main Color'} • {year || 'Year'}</Text>
+                  </View>
+                </View>
+              </Animated.View>
+
+              {/* Upload Section - Two Grid-aligned Cards */}
+              <View style={styles.photoContainerSplit}>
+                {renderPhotoCard('vehicle', t('vehicle_photo_label', 'Photo du véhicule'))}
+                {renderPhotoCard('registration', t('grey_card_label_full', 'Carte grise du véhicule'))}
+              </View>
+
+            {/* Rejection Warning Card */}
+            {rejectionReason && (photoStatuses.vehicle === 'REJECTED' || photoStatuses.registration === 'REJECTED') && (
+              <View style={[styles.rejectionWarningCard, { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.25)' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <AlertCircle size={18} color="#EF4444" />
+                  <Text style={[styles.rejectionWarningTitle, { color: '#EF4444' }]}>
+                    {getT('rejection_title')}
+                  </Text>
+                </View>
+                <Text style={{ color: colors.textPrimary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
+                  {getT('rejection_desc', { reason: rejectionReason })}
+                </Text>
               </View>
             )}
 
-            {/* Premium 3D Interactive Card (Upper Section) */}
-            <Animated.View
-              style={[
-                styles.parallaxCardWrapper,
-                {
-                  transform: [
-                    { perspective: 1000 },
-                    { rotateX: panX.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-                    { rotateY: panY.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-                    { translateY: floatAnim },
-                  ],
-                },
-              ]}
-              {...panResponder.panHandlers}
-            >
-              <View style={[styles.premium3DCardBody, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.cardHeaderInfo}>
-                  <Text style={styles.glassLabelSmall}>{t('vehicle_info', 'Vehicle details')}</Text>
-                  <Text style={[styles.glassLabelPlate, { color: colors.textPrimary }]}>
-                    {plateNumber || 'AA-123-BB'}
+            {/* Collapsible Photo Guidelines Accordion */}
+            <View style={[styles.accordionContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={styles.accordionHeader}
+                onPress={() => setGuidelinesExpanded(!guidelinesExpanded)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Info size={16} color={colors.primary} />
+                  <Text style={[styles.accordionTitleText, { color: colors.textPrimary }]}>
+                    {t('photo_guidelines_title', 'Consignes de photo')}
                   </Text>
                 </View>
+                <ChevronDown
+                  size={16}
+                  color={colors.textSecondary}
+                  style={{ transform: [{ rotate: guidelinesExpanded ? '180deg' : '0deg' }] }}
+                />
+              </TouchableOpacity>
 
-                {vehicleType === 'CAR' ? (
-                  <SVG3DCar colorsPrimary={colors.primary} />
-                ) : (
-                  <SVG3DMotorcycle colorsPrimary={colors.primary} />
-                )}
-
-                <View style={styles.cardFooterDetails}>
-                  <Text style={[styles.glassLabelTitle, { color: colors.textPrimary }]}>
-                    {brand || 'Select Brand'} {model || ''}
+              {guidelinesExpanded && (
+                <View style={styles.accordionBody}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
+                    {getT('illus_label')}
                   </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: 10 }}>{color || 'Main Color'} • {year || 'Year'}</Text>
+                  
+                  {/* Embedded Peugeot Example Image */}
+                  <View style={styles.accordionImageFrame}>
+                    <Image source={require('./peugeot_guide.jpg')} style={styles.accordionImage} />
+                  </View>
+
+                  <View style={{ gap: 8 }}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      • {t('chk_bullet_1')}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      • {t('chk_bullet_2')}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      • {t('chk_bullet_3')}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      • {t('chk_bullet_4')}
+                    </Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      • {t('chk_bullet_5')}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </Animated.View>
-
-            {/* Upload Section - Two Grid-aligned Cards */}
-            <View style={styles.photoContainerSplit}>
-              {/* Photo du véhicule */}
-              <View style={styles.photoBoxContainer}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={[styles.glassPhotoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-                  onPress={() => {
-                    setSelectedPhotoSlot('vehicle');
-                    setShowPhotoOptionsSheet(true);
-                  }}
-                >
-                  <View style={styles.glassPhotoInner}>
-                    {photos.vehicle ? (
-                      <Image source={{ uri: photos.vehicle }} style={styles.glassPhotoPreview} />
-                    ) : (
-                      <View style={styles.photoStubCenterSquare}>
-                        <Plus size={28} color={colors.textPrimary} />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-                <Text style={[styles.photoUnderLabelText, { color: colors.textSecondary }]}>
-                  {t('vehicle_photo_label', 'Photo du véhicule')}
-                </Text>
-              </View>
-
-              {/* Carte grise */}
-              <View style={styles.photoBoxContainer}>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={[styles.glassPhotoCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-                  onPress={() => {
-                    setSelectedPhotoSlot('registration');
-                    setShowPhotoOptionsSheet(true);
-                  }}
-                >
-                  <View style={styles.glassPhotoInner}>
-                    {photos.registration ? (
-                      <Image source={{ uri: photos.registration }} style={styles.glassPhotoPreview} />
-                    ) : (
-                      <View style={styles.photoStubCenterSquare}>
-                        <Plus size={28} color={colors.textPrimary} />
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-                <Text style={[styles.photoUnderLabelText, { color: colors.textSecondary }]}>
-                  {t('grey_card_label_full', 'Carte grise du véhicule')}
-                </Text>
-              </View>
+              )}
             </View>
 
             {/* Inputs Form */}
@@ -964,7 +1469,7 @@ export const VehicleInfoScreen = () => {
                 <View style={styles.rowLabelWrapper}>
                   <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('brand_label', 'Marque')}</Text>
                   <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>
-                    {brand || 'Mercedes, Renault, Peugeot...'}
+                    {brand || t('select_brand_placeholder', 'Mercedes, Renault, Peugeot...')}
                   </Text>
                 </View>
                 <ChevronRight size={18} color={colors.textSecondary} />
@@ -977,7 +1482,7 @@ export const VehicleInfoScreen = () => {
                 onPress={() => {
                   if (hasPendingRequest) return;
                   if (!brand) {
-                    Alert.alert(t('warning', 'Notice'), 'Veuillez choisir une marque d\'abord.');
+                    Alert.alert(t('warning', 'Notice'), t('select_brand_first_warning', 'Veuillez choisir une marque d\'abord.'));
                     return;
                   }
                   setShowModelSelector(true);
@@ -986,7 +1491,7 @@ export const VehicleInfoScreen = () => {
                 <View style={styles.rowLabelWrapper}>
                   <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('model_label', 'Modèle')}</Text>
                   <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>
-                    {model || 'Select Model...'}
+                    {model || t('select_model_placeholder', 'Select Model...')}
                   </Text>
                 </View>
                 <ChevronRight size={18} color={colors.textSecondary} />
@@ -1052,7 +1557,7 @@ export const VehicleInfoScreen = () => {
                   >
                     <View style={styles.rowLabelWrapper}>
                       <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('transmission_label', 'Transmission')}</Text>
-                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{transmission}</Text>
+                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('transmission_' + transmission.toLowerCase(), transmission)}</Text>
                     </View>
                     <ChevronRight size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -1066,7 +1571,7 @@ export const VehicleInfoScreen = () => {
                   >
                     <View style={styles.rowLabelWrapper}>
                       <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('fuel_type_label', 'Carburant')}</Text>
-                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{fuelType}</Text>
+                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('fuel_' + fuelType.toLowerCase(), fuelType)}</Text>
                     </View>
                     <ChevronRight size={18} color={colors.textSecondary} />
                   </TouchableOpacity>
@@ -1100,7 +1605,7 @@ export const VehicleInfoScreen = () => {
                   style={[styles.glassValInput, { color: colors.textPrimary }]}
                   value={manufacturer}
                   onChangeText={setManufacturer}
-                  placeholder="ex. Renault"
+                  placeholder={t('manufacturer_placeholder', 'ex. Renault')}
                   placeholderTextColor={colors.textMuted}
                   editable={!hasPendingRequest}
                 />
@@ -1113,7 +1618,7 @@ export const VehicleInfoScreen = () => {
                   style={[styles.glassValInput, { color: colors.textPrimary }]}
                   value={plateNumber}
                   onChangeText={setPlateNumber}
-                  placeholder="ex. 12345-A-15"
+                  placeholder={t('plate_number_placeholder', 'ex. 12345-A-15')}
                   placeholderTextColor={colors.textMuted}
                   autoCapitalize="characters"
                   editable={!hasPendingRequest}
@@ -1127,7 +1632,7 @@ export const VehicleInfoScreen = () => {
                   style={[styles.glassValInput, { color: colors.textPrimary }]}
                   value={registrationNumber}
                   onChangeText={setRegistrationNumber}
-                  placeholder="ex. A129840B"
+                  placeholder={t('registration_number_placeholder', 'ex. A129840B')}
                   placeholderTextColor={colors.textMuted}
                   editable={!hasPendingRequest}
                 />
@@ -1140,7 +1645,7 @@ export const VehicleInfoScreen = () => {
                   <Lock size={12} color={colors.textMuted} />
                 </View>
                 <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 4 }}>
-                  {vin || 'VF3N... (Validé par l\'administration)'}
+                  {vin || t('vin_placeholder', 'VF3N... (Validé par l\'administration)')}
                 </Text>
               </View>
             </View>
@@ -1171,20 +1676,44 @@ export const VehicleInfoScreen = () => {
               disabled={hasPendingRequest || submitting}
             >
               {submitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" strokeWidth={3} />
+                <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <Text style={styles.saveButtonText}>{t('save_changes_btn', 'Enregistrer les modifications')}</Text>
               )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      )}
+      );
+    })()}
+
+    {/* Confetti / Success Celebration Banner */}
+    <Modal visible={showSuccessBanner} transparent animationType="fade">
+      <View style={styles.successModalBackdrop}>
+        <View style={[styles.successModalCard, { backgroundColor: colors.surface }]}>
+          <Text style={{ fontSize: 44, marginBottom: 16 }}>🎉</Text>
+          <Text style={[styles.successModalTitle, { color: colors.primary }]}>
+            {getT('verification_done_title')}
+          </Text>
+          <Text style={[styles.successModalText, { color: colors.textPrimary }]}>
+            {getT('success_notif')}
+          </Text>
+          
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.successModalBtn, { backgroundColor: colors.primary }]}
+            onPress={() => setShowSuccessBanner(false)}
+          >
+            <Text style={styles.successModalBtnText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
 
       {/* --- FULLSCREEN PREMIUM BRAND SELECTOR --- */}
       <Modal visible={showBrandSelector} animationType="slide">
         <SafeAreaView style={[styles.fullModalLayout, { backgroundColor: colors.bg }]}>
           <View style={[styles.modalHeaderClose, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.largeModalHeaderTitle, { color: colors.textPrimary }]}>Sélectionner la marque</Text>
+            <Text style={[styles.largeModalHeaderTitle, { color: colors.textPrimary }]}>{t('select_brand_title', 'Sélectionner la marque')}</Text>
             <TouchableOpacity style={styles.modalCloseCircle} onPress={() => setShowBrandSelector(false)}>
               <X size={20} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -1195,7 +1724,7 @@ export const VehicleInfoScreen = () => {
             <Search size={18} color={colors.textSecondary} />
             <TextInput
               style={[styles.modalSearchInput, { color: colors.textPrimary }]}
-              placeholder="Rechercher une marque..."
+              placeholder={t('search_brand_placeholder', 'Rechercher une marque...')}
               placeholderTextColor={colors.textMuted}
               value={brandSearchQuery}
               onChangeText={setBrandSearchQuery}
@@ -1246,7 +1775,7 @@ export const VehicleInfoScreen = () => {
                     }, 450);
                   }}
                 >
-                  <Text style={{ color: colors.primary, fontWeight: '700' }}>Marque introuvable ? Suggérer de l'ajouter</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('brand_not_found_suggest', 'Marque introuvable ? Suggérer de l\'ajouter')}</Text>
                 </TouchableOpacity>
               }
             />
@@ -1258,7 +1787,7 @@ export const VehicleInfoScreen = () => {
       <Modal visible={showModelSelector} animationType="slide">
         <SafeAreaView style={[styles.fullModalLayout, { backgroundColor: colors.bg }]}>
           <View style={[styles.modalHeaderClose, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.largeModalHeaderTitle, { color: colors.textPrimary }]}>Sélectionner le modèle</Text>
+            <Text style={[styles.largeModalHeaderTitle, { color: colors.textPrimary }]}>{t('select_model_title', 'Sélectionner le modèle')}</Text>
             <TouchableOpacity style={styles.modalCloseCircle} onPress={() => setShowModelSelector(false)}>
               <X size={20} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -1288,7 +1817,7 @@ export const VehicleInfoScreen = () => {
               )}
               ListEmptyComponent={
                 <View style={styles.emptyViewSearch}>
-                  <Text style={{ color: colors.textMuted }}>Aucun modèle disponible.</Text>
+                  <Text style={{ color: colors.textMuted }}>{t('no_models_available', 'Aucun modèle disponible.')}</Text>
                 </View>
               }
               ListFooterComponent={
@@ -1304,7 +1833,7 @@ export const VehicleInfoScreen = () => {
                     }, 450);
                   }}
                 >
-                  <Text style={{ color: colors.primary, fontWeight: '700' }}>Modèle introuvable ? Suggérer de l'ajouter</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '700' }}>{t('model_not_found_suggest', 'Modèle introuvable ? Suggérer de l\'ajouter')}</Text>
                 </TouchableOpacity>
               }
             />
@@ -1319,7 +1848,7 @@ export const VehicleInfoScreen = () => {
           <View style={[styles.sheetFrame, { backgroundColor: colors.surface, paddingBottom: 40 }]}>
             <View style={styles.sheetHeaderGroup}>
               <Text style={[styles.sheetTitleText, { color: colors.textPrimary }]}>
-                Suggérer une marque/modèle
+                {t('suggest_brand_model_title', 'Suggérer une marque/modèle')}
               </Text>
               <TouchableOpacity onPress={() => setShowSuggestionModal(false)}>
                 <X size={20} color={colors.textPrimary} />
@@ -1328,14 +1857,14 @@ export const VehicleInfoScreen = () => {
 
             <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, gap: 15 }} keyboardShouldPersistTaps="handled">
               <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
-                Proposez un nouveau modèle de véhicule à l'administration de Yalla VTC. Après vérification par l'équipe, il sera disponible pour tous les chauffeurs.
+                {t('suggest_desc', 'Proposez un nouveau modèle de véhicule à l\'administration de Yalla VTC. Après vérification par l\'équipe, il sera disponible pour tous les chauffeurs.')}
               </Text>
 
               {/* Manufacturer input */}
               <View style={[styles.modalSearchBox, { backgroundColor: colors.bg, borderColor: colors.border, margin: 0, height: 48 }]}>
                 <TextInput
                   style={[styles.modalSearchInput, { color: colors.textPrimary }]}
-                  placeholder="Nom du constructeur (ex: Renault)"
+                  placeholder={t('suggest_manufacturer_placeholder', 'Nom du constructeur (ex: Renault)')}
                   placeholderTextColor={colors.textMuted}
                   value={suggestedBrand}
                   onChangeText={setSuggestedBrand}
@@ -1346,7 +1875,7 @@ export const VehicleInfoScreen = () => {
               <View style={[styles.modalSearchBox, { backgroundColor: colors.bg, borderColor: colors.border, margin: 0, height: 48 }]}>
                 <TextInput
                   style={[styles.modalSearchInput, { color: colors.textPrimary }]}
-                  placeholder="Nom du modèle (ex: Clio Campus)"
+                  placeholder={t('suggest_model_placeholder', 'Nom du modèle (ex: Clio Campus)')}
                   placeholderTextColor={colors.textMuted}
                   value={suggestedModel}
                   onChangeText={setSuggestedModel}
@@ -1359,7 +1888,7 @@ export const VehicleInfoScreen = () => {
                 disabled={submittingSuggestion}
                 onPress={async () => {
                   if (!suggestedBrand.trim() || !suggestedModel.trim()) {
-                    Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+                    Alert.alert(t('error') || 'Erreur', t('fill_all_fields_error', 'Veuillez remplir tous les champs.'));
                     return;
                   }
                   setSubmittingSuggestion(true);
@@ -1368,12 +1897,12 @@ export const VehicleInfoScreen = () => {
                       manufacturerName: suggestedBrand.trim(),
                       modelName: suggestedModel.trim(),
                     });
-                    Alert.alert('Succès', 'Votre suggestion a été enregistrée avec succès. Elle sera examinée très bientôt.');
+                    Alert.alert(t('success') || 'Succès', t('suggestion_saved_success', 'Votre suggestion a été enregistrée avec succès. Elle sera examinée très bientôt.'));
                     setSuggestedBrand('');
                     setSuggestedModel('');
                     setShowSuggestionModal(false);
                   } catch (err: any) {
-                    Alert.alert('Erreur', 'Une erreur est survenue lors de l\'enregistrement de votre suggestion.');
+                    Alert.alert(t('error') || 'Erreur', t('suggestion_save_error', 'Une erreur est survenue lors de l\'enregistrement de votre suggestion.'));
                   } finally {
                     setSubmittingSuggestion(false);
                   }
@@ -1382,7 +1911,7 @@ export const VehicleInfoScreen = () => {
                 {submittingSuggestion ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.luxPrimaryBtnText}>Envoyer la suggestion</Text>
+                  <Text style={styles.luxPrimaryBtnText}>{t('send_suggestion_btn', 'Envoyer la suggestion')}</Text>
                 )}
               </TouchableOpacity>
             </ScrollView>
@@ -1514,13 +2043,16 @@ export const VehicleInfoScreen = () => {
                   <Text style={guideStyles.btnPrimaryLimeText}>{tGuide.take_photo}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                  activeOpacity={0.85} 
-                  style={[guideStyles.btnSecondaryGray, { backgroundColor: colors.surfaceAlt }]} 
-                  onPress={triggerGallery}
-                >
-                  <Text style={[guideStyles.btnSecondaryGrayText, { color: colors.textPrimary }]}>{tGuide.choose_gallery}</Text>
-                </TouchableOpacity>
+                {/* Choose from gallery button (after approval only) */}
+                {selectedPhotoSlot && approvedPhotos[selectedPhotoSlot] ? (
+                  <TouchableOpacity 
+                    activeOpacity={0.85} 
+                    style={[guideStyles.btnSecondaryGray, { backgroundColor: colors.surfaceAlt }]} 
+                    onPress={triggerGallery}
+                  >
+                    <Text style={[guideStyles.btnSecondaryGrayText, { color: colors.textPrimary }]}>{tGuide.choose_gallery}</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </SafeAreaView>
           );
@@ -1528,7 +2060,7 @@ export const VehicleInfoScreen = () => {
       </Modal>
 
       {/* --- Fuel Type Bottom Sheet Modal selector --- */}
-      <Modal visible={showFuelModal} animated animateType="slide" transparent>
+      <Modal visible={showFuelModal} animationType="slide" transparent>
         <View style={styles.sheetBackdrop}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowFuelModal(false)} />
           <View style={[styles.sheetFrame, { backgroundColor: colors.surface }]}>
@@ -1548,7 +2080,7 @@ export const VehicleInfoScreen = () => {
                     setShowFuelModal(false);
                   }}
                 >
-                  <Text style={[styles.sheetRowItemText, { color: colors.textPrimary }]}>{fuel}</Text>
+                  <Text style={[styles.sheetRowItemText, { color: colors.textPrimary }]}>{t('fuel_' + fuel.toLowerCase(), fuel)}</Text>
                   {fuelType === fuel && <Check size={16} color={colors.primary} />}
                 </TouchableOpacity>
               ))}
@@ -1558,7 +2090,7 @@ export const VehicleInfoScreen = () => {
       </Modal>
 
       {/* --- Transmission Bottom Sheet Modal selector --- */}
-      <Modal visible={showTransModal} animated animateType="slide" transparent>
+      <Modal visible={showTransModal} animationType="slide" transparent>
         <View style={styles.sheetBackdrop}>
           <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowTransModal(false)} />
           <View style={[styles.sheetFrame, { backgroundColor: colors.surface }]}>
@@ -1578,7 +2110,7 @@ export const VehicleInfoScreen = () => {
                     setShowTransModal(false);
                   }}
                 >
-                  <Text style={[styles.sheetRowItemText, { color: colors.textPrimary }]}>{trans}</Text>
+                  <Text style={[styles.sheetRowItemText, { color: colors.textPrimary }]}>{t('transmission_' + trans.toLowerCase(), trans)}</Text>
                   {transmission === trans && <Check size={16} color={colors.primary} />}
                 </TouchableOpacity>
               ))}
@@ -1596,7 +2128,7 @@ export const VehicleInfoScreen = () => {
               <Image source={{ uri: `file://${tempCaptureUri}` }} style={{ flex: 1, resizeMode: 'cover' }} />
               {uploading && (
                 <View style={styles.uploadScrimIndicator}>
-                  <ActivityIndicator size="large" color="#FFFFFF" strokeWidth={3} />
+                  <ActivityIndicator size="large" color="#FFFFFF" />
                 </View>
               )}
               <View style={styles.previewFooterRow}>
@@ -2214,6 +2746,246 @@ const styles = StyleSheet.create({
     height: 230,
     borderRadius: 20,
     borderWidth: 3,
+  },
+  verifiedDashboardCard: {
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  verifiedDashboardTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  verifiedDashboardText: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  progressTrackerCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+  },
+  progressTrackerTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+  },
+  progressBarTrack: {
+    height: 8,
+    borderRadius: 4,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressItemCountText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  progressPercentageText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  timelineCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+  },
+  timelineTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 14,
+    textTransform: 'uppercase',
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 8,
+  },
+  timelineStep: {
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  timelineConnector: {
+    flex: 1,
+    height: 3,
+    marginHorizontal: -10,
+    zIndex: 1,
+  },
+  timelineStepLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  successModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  successModalCard: {
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 5,
+  },
+  successModalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  successModalText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  successModalBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successModalBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  photoReplaceTriggerCircle: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  photoStatusTextBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    borderRadius: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    shadowColor: '#000000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  badgeLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  badgeLabelText: {
+    color: '#FFFFFF',
+    fontSize: 9.5,
+    fontWeight: '800',
+  },
+  badgeLabelTextAlertElement: {
+    fontSize: 10,
+  },
+  cardRetakeLabelOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(239,68,68,0.85)',
+    paddingVertical: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardRetakeLabelText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  rejectionWarningCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 20,
+  },
+  rejectionWarningTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  accordionContainer: {
+    borderWidth: 1,
+    borderRadius: 16,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  accordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  accordionTitleText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  accordionBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 14,
+  },
+  accordionImageFrame: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderWidth: 1,
+    marginBottom: 16,
+    height: 180,
+    width: '100%',
+  },
+  accordionImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });
 
