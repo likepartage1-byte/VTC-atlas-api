@@ -7,6 +7,8 @@ import { setAuthenticated } from '../../store';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
 
+import { LaserLogo } from '../../components/LaserLogo';
+
 type SplashScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Splash'>;
 
 interface Props {
@@ -46,8 +48,7 @@ export const SplashScreen = ({ navigation }: Props) => {
   return (
     <View style={styles.container}>
       <Animated.View style={{ opacity: fadeAnim }}>
-        <Text style={styles.logo}>Yalla VTC</Text>
-        <Text style={styles.tagline}>DRIVER PARTNER</Text>
+        <LaserLogo fontSize={46} showTagline={true} />
       </Animated.View>
     </View>
   );
@@ -59,18 +60,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  logo: {
-    fontSize: 44,
-    fontWeight: '900',
-    color: Colors.white,
-    letterSpacing: 4,
-  },
-  tagline: {
-    color: Colors.primary,
-    fontWeight: '700',
-    letterSpacing: 2,
-    textAlign: 'center',
-    marginTop: 10,
   },
 });

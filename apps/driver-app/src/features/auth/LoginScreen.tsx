@@ -22,6 +22,8 @@ interface Props {
 
 import { authService } from '../../services/auth.service';
 
+import { LaserLogo } from '../../components/LaserLogo';
+
 export const LoginScreen = ({ navigation }: Props) => {
   const { t } = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -46,6 +48,10 @@ export const LoginScreen = ({ navigation }: Props) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
+      <View style={styles.logoHeader}>
+        <LaserLogo fontSize={38} showTagline={true} />
+      </View>
+
       <View style={styles.header}>
         <Text style={styles.title}>{t('welcome')}</Text>
         <Text style={styles.subtitle}>Sign in to start your shift</Text>
@@ -83,18 +89,24 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     padding: 24,
   },
+  logoHeader: {
+    marginTop: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   header: {
-    marginTop: 80,
-    marginBottom: 40,
+    marginTop: 30,
+    marginBottom: 30,
+    alignItems: 'center',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: Colors.white,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: Colors.textSecondary,
   },
   form: {
