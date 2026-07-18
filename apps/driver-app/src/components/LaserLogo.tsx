@@ -130,11 +130,14 @@ export const LaserLogo = ({ fontSize = 42, showTagline = true }: LaserLogoProps)
             },
           ]}
         >
-          {/* F1 High energy core line */}
+          {/* F1 White Core */}
           <View style={styles.laserCore} />
           
-          {/* Horizontal lightning glare effect */}
-          <View style={styles.laserGlareShadow} />
+          {/* Inner Light Turquoise Glow */}
+          <View style={styles.laserGlowTurquoise} />
+
+          {/* Outer Light Blue Flare Wing */}
+          <View style={styles.laserGlowBlue} />
         </Animated.View>
       </View>
 
@@ -168,10 +171,10 @@ const styles = StyleSheet.create({
   logoBase: {
     fontWeight: '900',
     letterSpacing: 4,
-    color: '#6366f1', // Glowing neon Indigo base
+    color: '#3FD1EA', // Medium Turquoise glow backing
     ...Platform.select({
       ios: {
-        shadowColor: '#00F0FF',
+        shadowColor: '#29E9F6', // Light Turquoise shadow glow
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 1.0,
         shadowRadius: 22,
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   vtcText: {
-    color: '#00F0FF', // Cyan color for high speed laser look
+    color: '#29E9F6', // Light Turquoise branding
     fontWeight: '955',
   },
   laserMask: {
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
   laserBeamContainer: {
     position: 'absolute',
     height: '180%',
-    width: 25, // Wider glare line like formula 1 headlight flash
+    width: 32, // Wider glare line like formula 1 headlight flash
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -211,24 +214,41 @@ const styles = StyleSheet.create({
     width: 4,
     height: '100%',
     backgroundColor: '#FFFFFF',
-    zIndex: 3,
+    zIndex: 4,
     shadowColor: '#FFF',
     shadowOpacity: 1,
-    shadowRadius: 10,
+    shadowRadius: 8,
     elevation: 8,
   },
-  laserGlareShadow: {
+  laserGlowTurquoise: {
     position: 'absolute',
-    width: 32,
+    width: 14,
     height: '100%',
-    backgroundColor: 'rgba(0, 240, 255, 0.45)', // Cyan laser glow trail
-    borderRadius: 16,
+    backgroundColor: '#29E9F6', // Light Turquoise inner beam
+    opacity: 0.8,
+    borderRadius: 7,
+    zIndex: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#29E9F6',
+        shadowOpacity: 1,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  laserGlowBlue: {
+    position: 'absolute',
+    width: 30,
+    height: '100%',
+    backgroundColor: '#2F8EF3', // Light Blue outer flare trail
+    opacity: 0.45,
+    borderRadius: 15,
     zIndex: 1,
     ...Platform.select({
       ios: {
-        shadowColor: '#00F0FF',
-        shadowOpacity: 1,
-        shadowRadius: 18,
+        shadowColor: '#2F8EF3',
+        shadowOpacity: 0.9,
+        shadowRadius: 15,
       },
     }),
   },
