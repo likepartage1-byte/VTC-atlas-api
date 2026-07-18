@@ -93,7 +93,6 @@ export class DriverDocumentsController {
       'IDENTITY_CARD',
       'DRIVING_LICENSE',
       'CARTE_GRISE',
-      'INSURANCE_POLICY',
     ];
 
     // 2. Conditional required documents (triggered by system/admin)
@@ -110,6 +109,7 @@ export class DriverDocumentsController {
 
     // 3. Optional Documents
     const optionalTypes = [
+      'INSURANCE_POLICY',
       'REGISTRE_COMMERCE',
       'RENTAL_AGREEMENT',
       'COMPANY_DOCS',

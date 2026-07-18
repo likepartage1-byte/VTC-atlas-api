@@ -109,7 +109,6 @@ export class DriverVerificationService {
       'IDENTITY_CARD',
       'DRIVING_LICENSE',
       'CARTE_GRISE',
-      'INSURANCE_POLICY',
       'PROFILE_PHOTO',
     ];
 
