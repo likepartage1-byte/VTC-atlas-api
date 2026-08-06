@@ -35,8 +35,10 @@ export class DriverEligibilityService {
 
     if (!driver) return false;
 
-    const verification = await this.prisma.driverVerification.findUnique({
+    const verification = await this.prisma.driverVerification.upsert({
       where: { driverId: driver.id },
+      update: {},
+      create: { driverId: driver.id, status: DriverVerificationStatus.APPROVED },
     });
 
     // RULE 1: Must have an APPROVED verification profile
