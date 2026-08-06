@@ -21,6 +21,7 @@ import { WorkflowTraceService } from './application/orchestration/workflow-trace
 import { RideOtpService } from './application/ride-otp.service';
 import { RideAssignmentService } from './application/services/ride-assignment.service';
 import { RidesNegotiationGateway } from './presentation/gateways/rides-negotiation.gateway';
+import { RideGateway } from './presentation/gateways/ride.gateway';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { RidesNegotiationGateway } from './presentation/gateways/rides-negotiati
     PricingService,
     RideAssignmentService,
     RidesNegotiationGateway,
+    RideGateway,
     {
       provide: 'IRideRepository',
       useClass: PrismaRideRepository,
