@@ -13,8 +13,13 @@ export class RealtimeDispatchListener {
   ) {}
 
   @OnEvent('Dispatch.CandidateFound')
-  async handleCandidateFound(event: { rideId: string; driverId: string }) {
-    const { rideId, driverId } = event;
+  async handleCandidateFound(event: any) {
+    const rideId = event?.payload?.rideId || event?.rideId;
+    const driverId = event?.payload?.driverId || event?.driverId;
+    if (!rideId || !driverId) {
+      this.logger.warn(`[DispatchListener] Invalid event payload received: ${JSON.stringify(event)}`);
+      return;
+    }
     const traceId = `trace:${rideId.slice(0, 8)}`;
 
     this.logger.log(`[${traceId}] Dispatching offer to Driver [${driverId}]`);
