@@ -31,13 +31,16 @@ export class DriverEligibilityService {
     // 2. DB Check
     const driver = await this.prisma.driver.findUnique({
       where: { id: driverId },
-      include: { verification: true },
     });
 
     if (!driver) return false;
 
+    const verification = await this.prisma.driverVerification.findUnique({
+      where: { driverId: driver.id },
+    });
+
     // RULE 1: Must have an APPROVED verification profile
-    const isKycApproved = driver.verification?.status === DriverVerificationStatus.APPROVED;
+    const isKycApproved = verification?.status === DriverVerificationStatus.APPROVED;
     
     // RULE 2: Driver must NOT be suspended (placeholder for future field)
     const isNotSuspended = true; 
@@ -48,7 +51,7 @@ export class DriverEligibilityService {
     await redisClient.set(cacheKey, isEligible ? '1' : '0', 'EX', this.CACHE_TTL);
 
     if (!isEligible) {
-      this.logger.debug(`Driver [${driverId}] is NOT eligible for rides. KYC: ${driver.verification?.status}`);
+      this.logger.debug(`Driver [${driverId}] is NOT eligible for rides. KYC: ${verification?.status}`);
     }
 
     return isEligible;
