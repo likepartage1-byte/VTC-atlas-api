@@ -229,7 +229,15 @@ export class DispatchEngine {
    * Atomic Lua-based claim validation — supports both single and multi-driver claims.
    * First driver to call this wins; all others get 0.
    */
-  async validateAndConsume(rideId: string, driverId: string): Promise<boolean> {
+  async validateAndConsume(rideId: string, driverIdOrUserId: string): Promise<boolean> {
+    const driver = await this.prisma.driver.findFirst({
+      where: { OR: [{ id: driverIdOrUserId }, { userId: driverIdOrUserId }] },
+      select: { id: true, userId: true },
+    });
+
+    const dId = driver?.id || driverIdOrUserId;
+    const uId = driver?.userId || driverIdOrUserId;
+
     const luaScript = `
       local claim = redis.call('get', KEYS[1])
       if not claim then return 0 end
@@ -238,13 +246,13 @@ export class DispatchEngine {
 
       local is_allowed = false
 
-      if decoded.driverId == ARGV[1] then
+      if decoded.driverId == ARGV[1] or decoded.driverId == ARGV[2] then
         is_allowed = true
       end
 
       if not is_allowed and decoded.allowedDriverIds then
         for _, id in ipairs(decoded.allowedDriverIds) do
-          if id == ARGV[1] then
+          if id == ARGV[1] or id == ARGV[2] then
             is_allowed = true
             break
           end
@@ -262,8 +270,9 @@ export class DispatchEngine {
     const result = await this.redis.getClient().eval(
       luaScript, 2,
       `dispatch:claim:${rideId}`,
-      `driver:claim:${driverId}`,
-      driverId,
+      `driver:claim:${dId}`,
+      dId,
+      uId,
     );
     return result === 1;
   }
