@@ -103,6 +103,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         select: { id: true },
       });
       if (driver) {
+        client.join(`driver:${driver.id}`);
         const redisClient = (this.presence as any).redis?.getClient();
         if (redisClient) {
           await redisClient.set(`driver:${driver.id}:state`, dbStatus);
