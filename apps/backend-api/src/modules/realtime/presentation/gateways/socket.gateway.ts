@@ -45,6 +45,19 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (!user) return;
     await this.presence.setOnline(user.userId, client.id, user.role);
     client.join(`${user.role.toLowerCase()}:${user.userId}`);
+
+    // If DRIVER, also join canonical room for Driver.id (resolves User.id vs Driver.id socket room mismatch)
+    if (user.role === 'DRIVER') {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.userId },
+        select: { id: true },
+      });
+      if (driver) {
+        client.join(`driver:${driver.id}`);
+        this.logger.log(`[Gateway] DRIVER joined canonical rooms: driver:${user.userId} AND driver:${driver.id}`);
+      }
+    }
+
     this.logger.log(`[Gateway] ${user.role} ${user.userId} connected (${client.id})`);
   }
 
