@@ -37,6 +37,29 @@ export class RealtimeDispatchListener {
       return;
     }
 
+    // 🔒 STRICT BACKEND VEHICLE TYPE MATCHING (Stage 3 - Socket Dispatch Guard)
+    const driver = await this.prisma.driver.findFirst({
+      where: { OR: [{ id: driverId }, { userId: driverId }] },
+      select: { id: true, userId: true, vehicleInfo: true },
+    });
+
+    const driverVehicleType = (
+      (driver?.vehicleInfo as any)?.type ||
+      (driver?.vehicleInfo as any)?.vehicle_type ||
+      'CAR'
+    ).toUpperCase();
+
+    const rideServiceType = (ride.serviceType ?? 'ECONOMY').toUpperCase();
+    const isMotoService = ['MOTORCYCLE', 'MOTORCYCLE_DELIVERY', 'MOTO'].includes(rideServiceType);
+    const isMotoDriver = driverVehicleType === 'MOTORCYCLE';
+
+    if (isMotoService !== isMotoDriver) {
+      this.logger.warn(
+        `[${traceId}] 🚫 Backend Dispatch Blocked: Mismatch between Ride Service [${rideServiceType}] and Driver Vehicle [${driverVehicleType}] for Driver [${driverId}]`
+      );
+      return;
+    }
+
     const tripsCount = ride.passenger?._count?.customerRides ?? 0;
     const expiresAt  = Date.now() + 25_000;
 
@@ -89,14 +112,14 @@ export class RealtimeDispatchListener {
       estimatedPrice: Number(ride.estimatedPrice),
     };
 
-    // Route to targeted driver room: driver:<userId>
-    const driverRoom = `driver:${driverId}`;
-    this.socketGateway.server.to(driverRoom).emit('ride.offer', payload, (ack: any) => {
-      if (ack?.status === 'ok') {
-        this.logger.log(`[${traceId}] ✅ Offer acknowledged by Driver [${driverId}]`);
-      } else {
-        this.logger.warn(`[${traceId}] ⚠️  No ACK from Driver [${driverId}]`);
-      }
-    });
+    // Route to targeted driver rooms: driver:<driverId>, driver:<Driver.id>, driver:<User.id>
+    const targetRooms = Array.from(new Set([
+      `driver:${driverId}`,
+      driver?.id ? `driver:${driver.id}` : null,
+      driver?.userId ? `driver:${driver.userId}` : null,
+    ].filter(Boolean))) as string[];
+
+    this.socketGateway.server.to(targetRooms).emit('ride.offer', payload);
+    this.logger.log(`[${traceId}] ✅ Offer emitted to rooms [${targetRooms.join(', ')}]`);
   }
 }
