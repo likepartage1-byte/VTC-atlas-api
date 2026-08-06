@@ -42,7 +42,7 @@ export class LocationService {
     const isThrottled = await redisClient.set(throttleKey, '1', 'PX', 2000, 'NX');
     if (!isThrottled) return;
 
-    const driverState = (await redisClient.get(`driver:${driverId}:state`)) || 'OFFLINE';
+    const driverState = (await redisClient.get(`driver:${driverId}:state`)) || 'AVAILABLE';
     const activeRideId = await redisClient.get(`driver:${driverId}:active_ride`); 
 
     if (driverState === 'OFFLINE') return;

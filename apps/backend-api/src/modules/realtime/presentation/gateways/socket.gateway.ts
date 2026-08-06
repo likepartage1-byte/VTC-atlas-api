@@ -97,6 +97,20 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       data: { status: dbStatus as any },
     });
 
+    try {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.userId },
+        select: { id: true },
+      });
+      if (driver) {
+        const redisClient = (this.presence as any).redis?.getClient();
+        if (redisClient) {
+          await redisClient.set(`driver:${driver.id}:state`, dbStatus);
+          await redisClient.set(`driver:${user.userId}:state`, dbStatus);
+        }
+      }
+    } catch (_) {}
+
     this.logger.log(`[Gateway] Driver ${user.userId} → status: ${dbStatus}`);
     return { status: 'ok', updated: dbStatus };
   }
