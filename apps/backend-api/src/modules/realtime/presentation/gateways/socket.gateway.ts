@@ -19,7 +19,6 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 
 @WebSocketGateway({
   cors: { origin: '*' },
-  namespace: '/',
 })
 export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
