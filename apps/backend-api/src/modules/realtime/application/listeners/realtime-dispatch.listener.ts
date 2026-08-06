@@ -119,7 +119,9 @@ export class RealtimeDispatchListener {
       driver?.userId ? `driver:${driver.userId}` : null,
     ].filter(Boolean))) as string[];
 
-    this.socketGateway.server.to(targetRooms).emit('ride.offer', payload);
+    for (const room of targetRooms) {
+      this.socketGateway.server.to(room).emit('ride.offer', payload);
+    }
     this.logger.log(`[${traceId}] ✅ Offer emitted to rooms [${targetRooms.join(', ')}]`);
   }
 }
