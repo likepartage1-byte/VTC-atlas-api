@@ -117,16 +117,12 @@ export class RealtimeDispatchListener {
       estimatedPrice: Number(ride.estimatedPrice),
     };
 
-    // Route to targeted driver rooms: driver:<driverId>, driver:<Driver.id>, driver:<User.id>
-    const targetRooms = Array.from(new Set([
-      `driver:${driverId}`,
-      driver?.id ? `driver:${driver.id}` : null,
-      driver?.userId ? `driver:${driver.userId}` : null,
-    ].filter(Boolean))) as string[];
-
-    for (const room of targetRooms) {
-      this.socketGateway.server.to(room).emit('ride.offer', payload);
+    // Route to targeted driver rooms using SocketGateway helper
+    const targetDriverId = driver?.userId || driverId;
+    this.socketGateway.sendToUser(targetDriverId, 'driver', 'ride.offer', payload);
+    if (driver?.id) {
+      this.socketGateway.sendToUser(driver.id, 'driver', 'ride.offer', payload);
     }
-    this.logger.log(`[${traceId}] ✅ Offer emitted to rooms [${targetRooms.join(', ')}]`);
+    this.logger.log(`[${traceId}] ✅ Offer emitted via sendToUser to Driver [${targetDriverId}]`);
   }
 }
