@@ -267,14 +267,31 @@ export class DispatchEngine {
       return 0
     `;
 
-    const result = await this.redis.getClient().eval(
-      luaScript, 2,
-      `dispatch:claim:${rideId}`,
-      `driver:claim:${dId}`,
-      dId,
-      uId,
-    );
-    return result === 1;
+    try {
+      const result = await this.redis.getClient().eval(
+        luaScript, 2,
+        `dispatch:claim:${rideId}`,
+        `driver:claim:${dId}`,
+        dId,
+        uId,
+      );
+      if (result === 1) return true;
+    } catch (e) {
+      this.logger.warn(`Lua script claim evaluation error: ${e.message}`);
+    }
+
+    // Fallback Gate: Check PostgreSQL DB if ride is still in REQUESTED state & unassigned
+    const ride = await this.prisma.ride.findUnique({
+      where: { id: rideId },
+      select: { status: true, driverId: true },
+    });
+
+    if (ride && ride.status === 'REQUESTED' && !ride.driverId) {
+      this.logger.log(`[SmartDispatch] Redis claim missing but Ride ${rideId} is REQUESTED & unassigned in DB — allowing acceptance.`);
+      return true;
+    }
+
+    return false;
   }
 
   async rejectClaim(rideId: string, driverId: string): Promise<void> {
