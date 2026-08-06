@@ -32,6 +32,7 @@ export class LocationIngestionService {
     // 4. WRITE TO REAL-TIME RADAR (Geospatial)
     // We update Redis GEO immediately after passing the throttle
     await redisClient.geoadd('drivers:location', lng, lat, driverId);
+    await redisClient.geoadd('geo:drivers:available', lng, lat, driverId);
 
     this.logger.log(`[Ingestion] Accepted update for Driver: ${driverId} @ [${lat}, ${lng}]`);
     
