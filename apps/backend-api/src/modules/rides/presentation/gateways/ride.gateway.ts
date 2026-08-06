@@ -45,8 +45,18 @@ export class RideGateway implements OnGatewayConnection {
   /**
    * Ride Status Sync
    */
+  @OnEvent('Ride.StatusChanged.*')
   @OnEvent('ride.status.changed')
-  handleRideStatusChanged(payload: any) {
-    this.server.to(`ride:${payload.rideId}`).emit('statusChanged', payload);
+  handleRideStatusChanged(event: any) {
+    const rideId = event?.aggregateId || event?.rideId || event?.payload?.rideId;
+    const status = event?.payload?.to || event?.payload?.status || event?.status;
+    const payload = {
+      rideId,
+      status,
+      from: event?.payload?.from,
+      timestamp: event?.occurredOn || event?.payload?.timestamp || new Date().toISOString(),
+    };
+    this.logger.log(`Broadcasting statusChanged for ride ${rideId} -> ${status} to room ride:${rideId}`);
+    this.server.to(`ride:${rideId}`).emit('statusChanged', payload);
   }
 }

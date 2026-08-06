@@ -18,7 +18,7 @@ import { GoogleMapsService } from './google-maps/google-maps.service';
 @Global()
 @Module({
   imports: [
-    EventEmitterModule.forRoot({ wildcard: false, delimiter: '.' }),
+    EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' }),
     ConfigModule.forRoot({ 
       isGlobal: true,
       validate,
