@@ -138,6 +138,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
   public sendToUser(userId: string, role: string, event: string, payload: any) {
     const roomName = `${role.toLowerCase()}:${userId}`;
+    this.logger.log(`[sendToUser] Emitting event "${event}" to room "${roomName}" (rideId: ${payload?.rideId || payload?.id})`);
     this.server.to(roomName).emit(event, payload);
   }
 }
