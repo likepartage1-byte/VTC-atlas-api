@@ -43,21 +43,25 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     const user = client.data.user;
     if (!user) return;
     await this.presence.setOnline(user.userId, client.id, user.role);
-    client.join(`${user.role.toLowerCase()}:${user.userId}`);
+    const userRoom = `${user.role.toLowerCase()}:${user.userId}`;
+    client.join(userRoom);
 
-    // If DRIVER, also join canonical room for Driver.id (resolves User.id vs Driver.id socket room mismatch)
+    let driverRoom: string | null = null;
     if (user.role === 'DRIVER') {
       const driver = await this.prisma.driver.findUnique({
         where: { userId: user.userId },
         select: { id: true },
       });
       if (driver) {
-        client.join(`driver:${driver.id}`);
-        this.logger.log(`[Gateway] DRIVER joined canonical rooms: driver:${user.userId} AND driver:${driver.id}`);
+        driverRoom = `driver:${driver.id}`;
+        client.join(driverRoom);
       }
     }
 
-    this.logger.log(`[Gateway] ${user.role} ${user.userId} connected (${client.id})`);
+    const currentRooms = Array.from(client.rooms);
+    this.logger.log(
+      `[DIAGNOSTIC SocketConnect] SocketId: ${client.id} | User.id: ${user.userId} | Role: ${user.role} | Joined Rooms: [${currentRooms.join(', ')}]`
+    );
   }
 
   async handleDisconnect(client: Socket) {
@@ -137,7 +141,12 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
   public sendToUser(userId: string, role: string, event: string, payload: any) {
     const roomName = `${role.toLowerCase()}:${userId}`;
-    this.logger.log(`[sendToUser] Emitting event "${event}" to room "${roomName}" (rideId: ${payload?.rideId || payload?.id})`);
+    const room = this.server?.sockets?.adapter?.rooms?.get(roomName);
+    const socketCount = room ? room.size : 0;
+    const socketIds = room ? Array.from(room) : [];
+    this.logger.log(
+      `[DIAGNOSTIC sendToUser] Event: "${event}" | Target Room: "${roomName}" | Active Sockets in Room: ${socketCount} [${socketIds.join(', ')}] | rideId: ${payload?.rideId || payload?.id}`
+    );
     this.server.to(roomName).emit(event, payload);
   }
 }
