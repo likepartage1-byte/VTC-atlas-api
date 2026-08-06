@@ -29,8 +29,8 @@ export class DriverEligibilityService {
     }
 
     // 2. DB Check
-    const driver = await this.prisma.driver.findUnique({
-      where: { id: driverId },
+    const driver = await this.prisma.driver.findFirst({
+      where: { OR: [{ id: driverId }, { userId: driverId }] },
     });
 
     if (!driver) return false;

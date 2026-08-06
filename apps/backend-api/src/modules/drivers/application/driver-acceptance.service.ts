@@ -33,8 +33,14 @@ export class DriverAcceptanceService extends BaseApplicationService {
    * Strong Consistency Pipeline.
    * Redis Claim → DB Atomic Transaction → GEO Sync → Event Emission
    */
-  async acceptRide(driverId: string, rideId: string): Promise<void> {
-    this.logger.log(`Driver [${driverId}] attempting ACCEPT for Ride [${rideId}]`);
+  async acceptRide(userIdOrDriverId: string, rideId: string): Promise<void> {
+    this.logger.log(`Driver [${userIdOrDriverId}] attempting ACCEPT for Ride [${rideId}]`);
+
+    const driver = await this.prisma.driver.findFirst({
+      where: { OR: [{ id: userIdOrDriverId }, { userId: userIdOrDriverId }] },
+    });
+    if (!driver) throw new ConflictException('Driver profile not found.');
+    const driverId = driver.id;
 
     // 0. Eligibility Check (Security Gate)
     const canAccept = await this.eligibility.canReceiveRides(driverId);
