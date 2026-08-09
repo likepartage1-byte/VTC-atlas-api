@@ -31,6 +31,7 @@ model User {
   language      String?
   city          String?
   address       String?
+  avatar        String?   // Profile photo URL
 
   customerRides Ride[]    @relation("PassengerRides")
   driverProfile Driver?
@@ -64,6 +65,7 @@ model Driver {
   lastLocationAt  DateTime?
   
   vehicleInfo     Json?        // Details: make, model, year, plate
+  avatar          String?      // Profile photo URL (updated on selfie upload)
   rating          Float        @default(5.0)
   
   verification    DriverVerification?
@@ -668,3 +670,97 @@ model VehicleModelSuggestion {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+// ─── AI Help Center & Support Domain ──────────────────────────────────────────
+
+model SupportConversation {
+  id              String           @id @default(uuid())
+  driverId        String
+  driverName      String
+  driverPhone     String?
+  language        String           @default("ar")
+  status          String           @default("AI_ACTIVE") // AI_ACTIVE, WAITING_HUMAN, HUMAN_RESPONDED, CLOSED
+  category        String?
+  subject         String?
+  deviceInfo      Json?
+  appVersion      String?
+  osVersion       String?
+  lastMessageText String?          @db.Text
+  lastMessageAt   DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  messages        SupportMessage[]
+  ticket          SupportTicket?
+
+  @@index([driverId])
+  @@index([status])
+}
+
+model SupportMessage {
+  id             String              @id @default(uuid())
+  conversationId String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderType     String              // DRIVER, AI, HUMAN_AGENT
+  senderName     String?
+  content        String              @db.Text
+  isSystemNotice Boolean             @default(false)
+  attachments    Json?
+  createdAt      DateTime            @default(now())
+
+  @@index([conversationId])
+}
+
+model SupportTicket {
+  id              String              @id @default(uuid())
+  conversationId String              @unique
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  driverId        String
+  driverName      String
+  driverPhone     String?
+  language        String              @default("ar")
+  category        String              @default("GENERAL")
+  status          String              @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority        String              @default("NORMAL") // NORMAL, HIGH, URGENT
+  assignedAgentId String?
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([driverId])
+  @@index([status])
+  @@index([priority])
+}
+
+model FAQCategory {
+  id        String       @id @default(uuid())
+  nameAr    String
+  nameFr    String
+  nameEn    String
+  nameEs    String
+  icon      String?
+  order     Int          @default(0)
+  articles  FAQArticle[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model FAQArticle {
+  id          String      @id @default(uuid())
+  categoryId  String
+  category    FAQCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  questionAr  String
+  questionFr  String
+  questionEn  String
+  questionEs  String
+  answerAr    String      @db.Text
+  answerFr    String      @db.Text
+  answerEn    String      @db.Text
+  answerEs    String      @db.Text
+  keywords    Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([categoryId])
+}
+

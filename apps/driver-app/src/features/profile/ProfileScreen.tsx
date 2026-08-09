@@ -13,10 +13,14 @@ import {
   Vibration,
   ActivityIndicator,
   Image,
+  I18nManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../store';
+import { syncKeepScreenOnNativeSetting } from '../../services/keepAwake.service';
 import {
   User,
   Star,
@@ -53,6 +57,7 @@ import {
 import { useTheme } from '../../theme/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../api/axios.instance';
+import { useAppModeStore } from '../../store/useAppModeStore';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 const STAT_CARD_W = (SCREEN_W - 32 - 10) / 2;
@@ -69,6 +74,68 @@ const LEVEL_COLORS: Record<string, string> = {
 
 // ─── Confetti color palette ───────────────────────────────────────────────────
 const CONFETTI_COLORS = ['#6366F1', '#F59E0B', '#22C55E', '#06B6D4', '#F43F5E', '#8B5CF6'];
+
+// ─── 4 Languages Notification & Language Modal Translations ─────────────────
+const NOTIF_TRANSLATIONS: any = {
+  ar: {
+    sheet_title: 'تفضيلات الإشعارات',
+    lang_sheet_title: 'تغيير اللغة',
+    save_btn: 'حفظ التفضيلات',
+    rides_title: 'إشعارات الرحلات والطلبات الجديدة',
+    rides_desc: 'تنبيهات فورية عند وصول طلب رحلة جديد',
+    wallet_title: 'إشعارات الشحن والرصيد والمحفظة',
+    wallet_desc: 'تنبيهات الخصومات والشحنات وحساب الرصيد',
+    achievements_title: 'إشعارات الإنجازات والعروض',
+    achievements_desc: 'تنبيهات عند الحصول على أوسمة ومكافآت',
+    sound_title: 'الصوت والاهتزاز',
+    sound_desc: 'تشغيل الصوت والاهتزاز عند استلام التنبيهات',
+  },
+  fr: {
+    sheet_title: 'Préférences de notifications',
+    lang_sheet_title: 'Changer la langue',
+    save_btn: 'Enregistrer les préférences',
+    rides_title: 'Alertes de nouvelles courses',
+    rides_desc: "Alertes instantanées lors d'une nouvelle demande de course",
+    wallet_title: 'Alertes portefeuille & solde',
+    wallet_desc: 'Alertes pour les commissions, recharges et solde',
+    achievements_title: 'Alertes de succès & promos',
+    achievements_desc: 'Notifications lorsque vous débloquez des trophées',
+    sound_title: 'Son & Vibration',
+    sound_desc: 'Jouer le son et vibrer lors de la réception des alertes',
+  },
+  es: {
+    sheet_title: 'Preferencias de notificaciones',
+    lang_sheet_title: 'Cambiar idioma',
+    save_btn: 'Guardar preferencias',
+    rides_title: 'Alertas de nuevos viajes',
+    rides_desc: 'Alertas instantáneas al recibir una nueva solicitud',
+    wallet_title: 'Alertas de billetera y saldo',
+    wallet_desc: 'Alertas para deducciones, recargas y saldo',
+    achievements_title: 'Alertas de logros y ofertas',
+    achievements_desc: 'Notificaciones al desbloquear insignias y recompensas',
+    sound_title: 'Sonido y Vibración',
+    sound_desc: 'Reproducir sonido y vibrar al recibir alertas',
+  },
+  en: {
+    sheet_title: 'Notification Preferences',
+    lang_sheet_title: 'Change Language',
+    save_btn: 'Save Preferences',
+    rides_title: 'New Ride & Order Alerts',
+    rides_desc: 'Instant alerts when a new ride request arrives',
+    wallet_title: 'Wallet & Balance Alerts',
+    wallet_desc: 'Alerts for deductions, top-ups and balance',
+    achievements_title: 'Achievements & Promo Alerts',
+    achievements_desc: 'Notifications when unlocking badges and rewards',
+    sound_title: 'Sound & Vibration',
+    sound_desc: 'Play sound and vibrate when receiving alerts',
+  },
+};
+
+const getNotifTr = (key: string, lang: string) => {
+  const activeLang = (lang || 'ar').toLowerCase().split('-')[0];
+  const langKey = (activeLang === 'fr' || activeLang === 'es' || activeLang === 'en') ? activeLang : 'ar';
+  return NOTIF_TRANSLATIONS[langKey][key] || NOTIF_TRANSLATIONS['ar'][key] || key;
+};
 
 // ─── Scoping Helpers ─────────────────────────────────────────────────────────
 const getWeekKey = (): string => {
@@ -102,7 +169,15 @@ const SectionRow = ({
         isRTL && styles.sectionRowRTL,
         !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
       ]}
-      onPress={onPress}
+      onPress={() => {
+        if (typeof onPress === 'function') {
+          try {
+            onPress();
+          } catch (e) {
+            console.error('[PROFILE] SectionRow onPress error:', e);
+          }
+        }
+      }}
       activeOpacity={onPress ? 0.65 : 1}
       disabled={!onPress && !rightElement}
       accessibilityRole={onPress ? 'button' : 'none'}
@@ -151,13 +226,29 @@ const SectionRow = ({
 // ─── Main ProfileScreen ───────────────────────────────────────────────────────
 export const ProfileScreen = () => {
   const navigation = useNavigation<any>();
+  const route      = useRoute<any>();
+  const dispatch   = useDispatch();
   const { t, i18n }            = useTranslation('profile');
   const { colors, isDarkMode, toggleTheme } = useTheme();
+  const { activeMode } = useAppModeStore();
   const isRTL = i18n.language === 'ar';
 
-  // ── API Live State ──
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  // ── API Live State (Optimistic instant render) ──
+  const [profile, setProfile] = useState<any>(() => {
+    const storeUser = useAppModeStore.getState().registeredUser;
+    const defaultName = storeUser.fullName || 'السائق الشريك';
+    return {
+      driver: {
+        name: defaultName,
+        rating: 5.0,
+        user: { fullName: defaultName, email: storeUser.email || '' },
+      },
+      statistics: { totalTrips: 0, completionRate: 100 },
+      weeklyChallenge: { currentLevel: 'SILVER', weekEnd: new Date().toISOString() },
+      benefits: {},
+    };
+  });
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -168,6 +259,61 @@ export const ProfileScreen = () => {
   const [verifyModalVisible,   setVerifyModalVisible]   = useState(false);
   const [platinumModalVisible, setPlatinumModalVisible] = useState(false);
   const [detailModalVisible,   setDetailModalVisible]   = useState(false);
+
+  // ── Language & Notifications Modals ──
+  const [langModalVisible, setLangModalVisible]   = useState(false);
+  const [notifModalVisible, setNotifModalVisible] = useState(false);
+  const [notifState, setNotifState] = useState({
+    rides: true,
+    wallet: true,
+    achievements: true,
+    sound: true,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      syncKeepScreenOnNativeSetting(false);
+    }, [])
+  );
+
+  useEffect(() => {
+    AsyncStorage.getItem('notif_settings').then((val) => {
+      if (val) setNotifState(JSON.parse(val));
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (route.params?.openNotif) {
+      setNotifModalVisible(true);
+    }
+  }, [route.params]);
+
+  const toggleNotif = async (key: keyof typeof notifState) => {
+    const updated = { ...notifState, [key]: !notifState[key] };
+    setNotifState(updated);
+    await AsyncStorage.setItem('notif_settings', JSON.stringify(updated));
+  };
+
+  const handleLangSelect = async (langCode: string) => {
+    setLangModalVisible(false);
+    await i18n.changeLanguage(langCode);
+    await AsyncStorage.setItem('user_language', langCode);
+    const nextIsRTL = langCode === 'ar';
+    if (I18nManager.isRTL !== nextIsRTL) {
+      I18nManager.allowRTL(nextIsRTL);
+      I18nManager.forceRTL(nextIsRTL);
+    }
+  };
+
+  const langName = useMemo(() => {
+    switch (i18n.language) {
+      case 'ar': return 'العربية 🇸🇦';
+      case 'fr': return 'Français 🇫🇷';
+      case 'es': return 'Español 🇪🇸';
+      case 'en': return 'English 🇬🇧';
+      default: return 'العربية 🇸🇦';
+    }
+  }, [i18n.language]);
 
   // ── Confetti particles ──
   const [confettiParticles, setConfettiParticles] = useState<
@@ -187,16 +333,35 @@ export const ProfileScreen = () => {
   // ── Verified badge pulse ──
   const badgePulse = useRef(new Animated.Value(1)).current;
 
-  // ─── Fetch profile from API ────────────────────────────────────────────────
+  // ─── Fetch profile from API with local caching & optimistic UI ────────────
   const fetchProfile = async (showLoadingIndicator = true) => {
-    if (showLoadingIndicator) setLoading(true);
+    // Only show full-screen spinner if we don't have any cached/loaded profile yet
+    if (showLoadingIndicator && !profile) {
+      setLoading(true);
+    }
     setErrorMsg(null);
     try {
-      const response = await api.get('/driver/profile');
-      setProfile(response.data);
+      const response = await api.get('/driver/profile', { timeout: 4000 });
+      if (response.data) {
+        setProfile(response.data);
+        await AsyncStorage.setItem('driver_profile_cache', JSON.stringify(response.data)).catch(() => {});
+      }
     } catch (err: any) {
-      console.error('[API] Error loading driver profile:', err);
-      setErrorMsg(err.message || 'Failed to connect to backend server.');
+      console.log('[API Fallback] Profile load notice:', err?.message);
+      if (!profile) {
+        const storedName = (await AsyncStorage.getItem('registered_full_name')) || 'Utilisateur Yalla VTC';
+        const storedEmail = (await AsyncStorage.getItem('registered_email')) || '';
+        setProfile({
+          driver: {
+            name: storedName,
+            rating: 5.0,
+            user: { fullName: storedName, email: storedEmail },
+          },
+          statistics: { totalTrips: 0, completionRate: 100 },
+          weeklyChallenge: { currentLevel: 'SILVER', weekEnd: new Date().toISOString() },
+          benefits: {},
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -205,9 +370,24 @@ export const ProfileScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchProfile();
+      // 1. Load cached profile immediately so the screen opens instantly
+      AsyncStorage.getItem('driver_profile_cache').then(cached => {
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.driver) {
+              setProfile(parsed);
+              setLoading(false);
+            }
+          } catch (_) {}
+        }
+      }).catch(() => {});
+
+      // 2. Fetch fresh profile silently in background
+      fetchProfile(false);
+
       // Fetch document badge count silently in background
-      api.get('/driver/documents').then(res => {
+      api.get('/driver/documents', { timeout: 4000 }).then(res => {
         const docs: any[] = res.data?.uploadedDocuments || [];
         const required: string[] = [
           ...(res.data?.basicRequired || []),
@@ -324,17 +504,24 @@ export const ProfileScreen = () => {
   };
 
   const handleLogout = () => {
-    Alert.alert(t('logout_title'), t('logout_confirm'), [
-      { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('logout'),
-        style: 'destructive',
-        onPress: async () => {
-          await AsyncStorage.multiRemove(['driver_access_token', 'driver_refresh_token']);
-          navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    Alert.alert(
+      t('logout_title', 'تسجيل الخروج'),
+      t('logout_confirm', 'هل أنت تأكد من أنك تريد تسجيل الخروج؟'),
+      [
+        { text: t('cancel', 'إلغاء'), style: 'cancel' },
+        {
+          text: t('logout', 'تسجيل الخروج'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove(['driver_access_token', 'driver_refresh_token']);
+            } catch (_) {}
+            dispatch(logout());
+            navigation.reset({ index: 0, routes: [{ name: 'PhoneAuth' }] });
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   const closePlatinumModal = () => {
@@ -352,19 +539,7 @@ export const ProfileScreen = () => {
       );
     });
 
-  const langName =
-    i18n.language === 'ar' ? 'العربية' :
-    i18n.language === 'fr' ? 'Français' :
-    i18n.language === 'es' ? 'Español' : 'English';
 
-  // ─── Loading State UI ────────────────────────────────────────────────────────
-  if (loading && !refreshing) {
-    return (
-      <SafeAreaView style={[styles.loadingCenter, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </SafeAreaView>
-    );
-  }
 
   // ─── Error State UI ──────────────────────────────────────────────────────────
   if (errorMsg) {
@@ -414,6 +589,7 @@ export const ProfileScreen = () => {
         <TouchableOpacity
           style={[styles.navBtn, styles.settingsBtnBg, { backgroundColor: colors.surfaceAlt }]}
           activeOpacity={0.7}
+          onPress={() => navigation.navigate('Settings')}
           accessibilityRole="button"
           accessibilityLabel="Settings"
         >
@@ -465,17 +641,25 @@ export const ProfileScreen = () => {
               <Text style={[styles.driverId, { color: colors.textMuted }]}>{driverData.id}</Text>
             </TouchableOpacity>
 
-            {/* Stars row */}
-            <View style={styles.ratingRow}>
-              <View style={styles.starsRow}>{renderStars(driverData.rating || 5.0)}</View>
-              <Text style={[styles.ratingText, { color: colors.textPrimary }]}>
-                {Number(driverData.rating || 5.0).toFixed(2)}
-              </Text>
-              <Text style={[styles.ratingDivider, { color: colors.textMuted }]}>·</Text>
-              <Text style={[styles.tripsText, { color: colors.textMuted }]} numberOfLines={1}>
-                {Number(statsData.completedRides || 0).toLocaleString()} {t('trips')}
-              </Text>
-            </View>
+            {/* Stars row — displayed for DRIVER mode only */}
+            {activeMode === 'DRIVER' ? (
+              <View style={styles.ratingRow}>
+                <View style={styles.starsRow}>{renderStars(driverData.rating || 4.96)}</View>
+                <Text style={[styles.ratingText, { color: colors.textPrimary }]}>
+                  {Number(driverData.rating || 4.96).toFixed(2)}
+                </Text>
+                <Text style={[styles.ratingDivider, { color: colors.textMuted }]}>·</Text>
+                <Text style={[styles.tripsText, { color: colors.textMuted }]} numberOfLines={1}>
+                  {Number(statsData.completedRides || 0).toLocaleString()} {t('trips')}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.ratingRow}>
+                <Text style={[styles.tripsText, { color: colors.textMuted }]} numberOfLines={1}>
+                  {Number(statsData.completedRides || 0).toLocaleString()} {t('trips')}
+                </Text>
+              </View>
+            )}
 
             {/* Verified Badge → opens info modal */}
             {driverData.verified && (
@@ -498,177 +682,182 @@ export const ProfileScreen = () => {
               </TouchableOpacity>
             )}
 
-            {/* ── Weekly Level Progress (Dynamic Backend Calculations) ── */}
-            <View style={[styles.levelWrap, { backgroundColor: colors.surfaceAlt }]}>
+            {/* ── Driver-only Level Progress Card ── */}
+            {activeMode === 'DRIVER' && (
+              <View style={[styles.levelWrap, { backgroundColor: colors.surfaceAlt }]}>
+                <View style={[styles.levelHeader, isRTL && styles.levelHeaderRTL]}>
+                  {isPlatinum
+                    ? <Crown size={16} color={LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM} />
+                    : <Award  size={16} color={levelColor} />
+                  }
+                  <Text style={[styles.levelLabel, { color: levelColor }]} numberOfLines={1}>
+                    {displayLevelLabel}
+                  </Text>
+                  {isPlatinum && (
+                    <View style={[styles.platinumBadgePill, { backgroundColor: (LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM) + '22' }]}>
+                      <Text style={[styles.platinumBadgeTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM }]}>✓ Premier</Text>
+                    </View>
+                  )}
+                </View>
 
-              <View style={[styles.levelHeader, isRTL && styles.levelHeaderRTL]}>
-                {isPlatinum
-                  ? <Crown size={16} color={LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM} />
-                  : <Award  size={16} color={levelColor} />
-                }
-                <Text style={[styles.levelLabel, { color: levelColor }]} numberOfLines={1}>
-                  {displayLevelLabel}
-                </Text>
-                {isPlatinum && (
-                  <View style={[styles.platinumBadgePill, { backgroundColor: (LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM) + '22' }]}>
-                    <Text style={[styles.platinumBadgeTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM }]}>✓ Premier</Text>
+                <View style={[styles.ridesCountRow, isRTL && styles.ridesCountRowRTL]}>
+                  <Text style={[styles.ridesCount, { color: levelColor }]}>
+                    {challengeData.completed || 0}
+                  </Text>
+                  <Text style={[styles.ridesTotal, { color: colors.textSecondary }]}>
+                    {' '}/ {challengeData.target || 30}{' '}
+                    {currentLevel === 'SILVER'
+                      ? t('weekly_rides_label_silver', 'completed')
+                      : t('weekly_rides_label')}
+                  </Text>
+                </View>
+
+                <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        width: `${(challengeData.progress || 0) * 100}%`,
+                        backgroundColor: levelColor,
+                      },
+                    ]}
+                  />
+                </View>
+
+                <View style={[styles.commissionDisplay, isRTL && styles.commissionDisplayRTL]}>
+                  <View style={styles.commissionPill}>
+                    <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
+                      {t('commission_label', 'Commission')}
+                    </Text>
+                    <Text style={[styles.commissionVal, { color: levelColor }]}>
+                      {benefitsData.commission}%
+                    </Text>
+                    <Text style={[styles.taxSubText, { color: colors.textMuted, marginTop: 2, fontSize: 8 }]}>
+                      {t('commission_tax_breakdown')}
+                    </Text>
                   </View>
+                  <View style={styles.priorityPill}>
+                    <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
+                      {t('priority_matching_label', 'Priority Matching')}
+                    </Text>
+                    <Text style={[styles.priorityVal, { color: benefitsData.priorityMatching ? colors.online : colors.textMuted }]}>
+                      {benefitsData.priorityMatching 
+                        ? t('priority_enabled', 'Enabled') 
+                        : t('priority_disabled', 'Disabled')}
+                    </Text>
+                  </View>
+                </View>
+
+                {isPlatinum ? (
+                  <Text style={[styles.ridesRemainingTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM, textAlign: isRTL ? 'right' : 'left' }]}>
+                    💎 {t('platinum_desc')}
+                  </Text>
+                ) : (
+                  <Text style={[styles.ridesRemainingTxt, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {(() => {
+                      const isSilver = currentLevel === 'SILVER';
+                      const remaining = challengeData.remaining || 0;
+                      const labelKey = isSilver
+                        ? (remaining === 1 ? 'rides_remaining_silver_label' : 'rides_remaining_silver_label')
+                        : (remaining === 1 ? 'ride_singular_label' : 'rides_remaining_label');
+                      return isRTL
+                        ? `${t(labelKey)} ${remaining}`
+                        : `${remaining} ${t(labelKey)}`;
+                    })()}
+                  </Text>
                 )}
-              </View>
 
-              <View style={[styles.ridesCountRow, isRTL && styles.ridesCountRowRTL]}>
-                <Text style={[styles.ridesCount, { color: levelColor }]}>
-                  {challengeData.completed || 0}
-                </Text>
-                <Text style={[styles.ridesTotal, { color: colors.textSecondary }]}>
-                  {' '}/ {challengeData.target || 30}{' '}
-                  {currentLevel === 'SILVER'
-                    ? t('weekly_rides_label_silver', 'completed')
-                    : t('weekly_rides_label')}
-                </Text>
-              </View>
-
-              <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${(challengeData.progress || 0) * 100}%`,
-                      backgroundColor: levelColor,
-                    },
-                  ]}
-                />
-              </View>
-
-              {/* Commission section inside challenge card */}
-              <View style={[styles.commissionDisplay, isRTL && styles.commissionDisplayRTL]}>
-                <View style={styles.commissionPill}>
-                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
-                    {t('commission_label', 'Commission')}
-                  </Text>
-                  <Text style={[styles.commissionVal, { color: levelColor }]}>
-                    {benefitsData.commission}%
-                  </Text>
-                  <Text style={[styles.taxSubText, { color: colors.textMuted, marginTop: 2, fontSize: 8 }]}>
-                    {t('commission_tax_breakdown')}
-                  </Text>
-                </View>
-                <View style={styles.priorityPill}>
-                  <Text style={[styles.commissionLabel, { color: colors.textSecondary }]}>
-                    {t('priority_matching_label', 'Priority Matching')}
-                  </Text>
-                  <Text style={[styles.priorityVal, { color: benefitsData.priorityMatching ? colors.online : colors.textMuted }]}>
-                    {benefitsData.priorityMatching 
-                      ? t('priority_enabled', 'Enabled') 
-                      : t('priority_disabled', 'Disabled')}
+                <View style={[styles.weekEndRow, isRTL && styles.weekEndRowRTL]}>
+                  <Clock size={11} color={colors.textMuted} />
+                  <Text style={[styles.weekEndTxt, { color: colors.textMuted }]}>
+                    {t('week_end_label')} : {weekEndDate}
                   </Text>
                 </View>
               </View>
-
-              {isPlatinum ? (
-                <Text style={[styles.ridesRemainingTxt, { color: LEVEL_COLORS.PREMIER || LEVEL_COLORS.PLATINUM, textAlign: isRTL ? 'right' : 'left' }]}>
-                  💎 {t('platinum_desc')}
-                </Text>
-              ) : (
-                <Text style={[styles.ridesRemainingTxt, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
-                  {(() => {
-                    const isSilver = currentLevel === 'SILVER';
-                    const remaining = challengeData.remaining || 0;
-                    const labelKey = isSilver
-                      ? (remaining === 1 ? 'rides_remaining_silver_label' : 'rides_remaining_silver_label')
-                      : (remaining === 1 ? 'ride_singular_label' : 'rides_remaining_label');
-                    return isRTL
-                      ? `${t(labelKey)} ${remaining}`
-                      : `${remaining} ${t(labelKey)}`;
-                  })()}
-                </Text>
-              )}
-
-              {/* Week countdown range */}
-              <View style={[styles.weekEndRow, isRTL && styles.weekEndRowRTL]}>
-                <Clock size={11} color={colors.textMuted} />
-                <Text style={[styles.weekEndTxt, { color: colors.textMuted }]}>
-                  {t('week_end_label')} : {weekEndDate}
-                </Text>
-              </View>
-            </View>
+            )}
           </View>
 
-          {/* ── Quick Stats ── */}
-          <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Wallet size={18} color={colors.primary} />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
-                {Number(statsData.totalEarnings || 0).toLocaleString()}
-                <Text style={[styles.statCurrency, { color: colors.textMuted }]}> DH</Text>
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
-                {t('total_earnings')}
-              </Text>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TrendingUp size={18} color={colors.online} />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
-                {Number(statsData.weekEarnings || 0).toLocaleString()}
-                <Text style={[styles.statCurrency, { color: colors.textMuted }]}> DH</Text>
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
-                {t('week_earnings')}
-              </Text>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <CheckCircle size={18} color={colors.online} />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>
-                {statsData.acceptanceRate || 0}
-                <Text style={[styles.statCurrency, { color: colors.textMuted }]}>%</Text>
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
-                {t('acceptance_rate')}
-              </Text>
-            </View>
-
-            <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <AlertTriangle size={18} color={colors.warning} />
-              <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>
-                {statsData.cancellationRate || 0}
-                <Text style={[styles.statCurrency, { color: colors.textMuted }]}>%</Text>
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
-                {t('cancel_rate')}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.statCardWide,
-                isRTL && styles.statCardWideRTL,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
-              <Clock size={18} color={colors.accent} />
-              <View style={styles.statCardWideText}>
-                <Text style={[styles.statValue, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
-                  {statsData.onlineHoursToday || 0}
-                  <Text style={[styles.statCurrency, { color: colors.textMuted }]}> h</Text>
+          {/* ── Driver-only Quick Stats ── */}
+          {activeMode === 'DRIVER' && (
+            <View style={styles.statsGrid}>
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <Wallet size={18} color={colors.primary} />
+                <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {Number(statsData.totalEarnings || 0).toLocaleString()}
+                  <Text style={[styles.statCurrency, { color: colors.textMuted }]}> DH</Text>
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
-                  {t('online_hours')}
+                <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
+                  {t('total_earnings')}
                 </Text>
               </View>
+
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <TrendingUp size={18} color={colors.online} />
+                <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1} adjustsFontSizeToFit>
+                  {Number(statsData.weekEarnings || 0).toLocaleString()}
+                  <Text style={[styles.statCurrency, { color: colors.textMuted }]}> DH</Text>
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
+                  {t('week_earnings')}
+                </Text>
+              </View>
+
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <CheckCircle size={18} color={colors.online} />
+                <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>
+                  {statsData.acceptanceRate || 0}
+                  <Text style={[styles.statCurrency, { color: colors.textMuted }]}>%</Text>
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
+                  {t('acceptance_rate')}
+                </Text>
+              </View>
+
+              <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <AlertTriangle size={18} color={colors.warning} />
+                <Text style={[styles.statValue, { color: colors.textPrimary }]} numberOfLines={1}>
+                  {statsData.cancellationRate || 0}
+                  <Text style={[styles.statCurrency, { color: colors.textMuted }]}>%</Text>
+                </Text>
+                <Text style={[styles.statLabel, { color: colors.textMuted }]} numberOfLines={2}>
+                  {t('cancel_rate')}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.statCardWide,
+                  isRTL && styles.statCardWideRTL,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <Clock size={18} color={colors.accent} />
+                <View style={styles.statCardWideText}>
+                  <Text style={[styles.statValue, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                    {statsData.onlineHoursToday || 0}
+                    <Text style={[styles.statCurrency, { color: colors.textMuted }]}> h</Text>
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={1}>
+                    {t('online_hours')}
+                  </Text>
+                </View>
+              </View>
             </View>
-          </View>
+          )}
 
           {/* ── Account Sections ── */}
           <Text style={[styles.sectionTitle, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
             {t('account')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={User}       label={t('personal_info')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('PersonalInfo')} />
-            <SectionRow icon={Car}        label={t('vehicle_info')}  isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('VehicleInfo')} />
-            <SectionRow icon={FileText}   label={t('documents')}     isRTL={isRTL} colors={colors} badge={docBadgeCount} onPress={() => navigation.navigate('Documents')} />
-            <SectionRow icon={CreditCard} label={t('payment_info')}  isRTL={isRTL} colors={colors} onPress={() => {}} isLast />
+            <SectionRow icon={User} label={t('personal_info')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('PersonalInfo')} isLast={activeMode === 'PASSENGER'} />
+            {activeMode === 'DRIVER' && (
+              <>
+                <SectionRow icon={Car}      label={t('vehicle_info')}  isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('VehicleInfo')} />
+                <SectionRow icon={FileText} label={t('documents')}     isRTL={isRTL} colors={colors} badge={docBadgeCount} onPress={() => navigation.navigate('Documents')} />
+                <SectionRow icon={Wallet}   label={t('wallet', 'المحفظة والدفع')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('Wallet')} isLast />
+              </>
+            )}
           </View>
 
           {/* ── Activity Sections ── */}
@@ -676,22 +865,25 @@ export const ProfileScreen = () => {
             {t('activity')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={Wallet} label={t('earnings')} isRTL={isRTL} colors={colors}
-              onPress={() => navigation.navigate('Wallet')} />
-            <SectionRow icon={Map}   label={t('trip_history')} isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow icon={Award} label={t('achievements')} isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow
-              icon={Layers}
-              label={t('driver_level')}
-              isRTL={isRTL}
-              colors={colors}
-              isLast
-              rightElement={
-                <View style={[styles.levelPill, { backgroundColor: levelColor + '22', borderColor: levelColor + '55' }]}>
-                  <Text style={[styles.levelPillTxt, { color: levelColor }]}>{currentLevel}</Text>
-                </View>
-              }
-            />
+            <SectionRow icon={Map} label={t('trip_history')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('TripHistory')} isLast={activeMode === 'PASSENGER'} />
+            {activeMode === 'DRIVER' && (
+              <>
+                <SectionRow icon={Award} label={t('achievements')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('Achievements')} />
+                <SectionRow
+                  icon={Layers}
+                  label={t('driver_level')}
+                  isRTL={isRTL}
+                  colors={colors}
+                  onPress={() => navigation.navigate('DriverLevel')}
+                  isLast
+                  rightElement={
+                    <View style={[styles.levelPill, { backgroundColor: levelColor + '22', borderColor: levelColor + '55' }]}>
+                      <Text style={[styles.levelPillTxt, { color: levelColor }]}>{currentLevel}</Text>
+                    </View>
+                  }
+                />
+              </>
+            )}
           </View>
 
           {/* ── Preferences Sections ── */}
@@ -699,8 +891,8 @@ export const ProfileScreen = () => {
             {t('preferences')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={Globe} label={t('language')} subtitle={langName} isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow icon={Bell}  label={t('notifications')} isRTL={isRTL} colors={colors} onPress={() => {}} />
+            <SectionRow icon={Globe} label={t('language')} subtitle={langName} isRTL={isRTL} colors={colors} onPress={() => setLangModalVisible(true)} />
+            <SectionRow icon={Bell}  label={t('notifications')} isRTL={isRTL} colors={colors} onPress={() => setNotifModalVisible(true)} />
             <SectionRow
               icon={Sun}
               label={t('appearance')}
@@ -725,9 +917,9 @@ export const ProfileScreen = () => {
             {t('support_section')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={HelpCircle}    label={t('help_center')}     isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow icon={MessageSquare} label={t('contact_support')} isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow icon={AlertTriangle} label={t('report_problem')}  isRTL={isRTL} colors={colors} onPress={() => {}} isLast />
+            <SectionRow icon={HelpCircle}    label={t('help_center')}     isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('HelpCenter')} />
+            <SectionRow icon={MessageSquare} label={t('contact_support')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('HelpCenter')} />
+            <SectionRow icon={AlertTriangle} label={t('report_problem')}  isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('HelpCenter')} isLast />
           </View>
 
           {/* ── Legal Sections ── */}
@@ -735,8 +927,8 @@ export const ProfileScreen = () => {
             {t('legal')}
           </Text>
           <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <SectionRow icon={Shield} label={t('privacy_policy')}   isRTL={isRTL} colors={colors} onPress={() => {}} />
-            <SectionRow icon={Scroll} label={t('terms_of_service')} isRTL={isRTL} colors={colors} onPress={() => {}} isLast />
+            <SectionRow icon={Shield} label={t('privacy_policy')}   isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('PrivacyPolicy')} />
+            <SectionRow icon={Scroll} label={t('terms_of_service')} isRTL={isRTL} colors={colors} onPress={() => navigation.navigate('TermsOfService')} isLast />
           </View>
 
           {/* ── Logout Button ── */}
@@ -1076,12 +1268,191 @@ export const ProfileScreen = () => {
         </Animated.View>
       </Modal>
 
+      {/* ── Language Selector Modal Sheet ── */}
+      <Modal
+        visible={langModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLangModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setLangModalVisible(false)}
+        >
+          <View style={[styles.sheetContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.sheetHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
+              <Text style={[styles.sheetTitleTxt, { color: colors.textPrimary }]}>
+                🌐 {getNotifTr('lang_sheet_title', i18n.language)}
+              </Text>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => setLangModalVisible(false)}
+              >
+                <X size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {[
+              { code: 'ar', label: 'العربية', flag: '🇸🇦' },
+              { code: 'fr', label: 'Français', flag: '🇫🇷' },
+              { code: 'es', label: 'Español', flag: '🇪🇸' },
+              { code: 'en', label: 'English', flag: '🇬🇧' },
+            ].map((langItem) => {
+              const isSelected = i18n.language === langItem.code;
+              return (
+                <TouchableOpacity
+                  key={langItem.code}
+                  activeOpacity={0.8}
+                  style={[
+                    styles.langItemRow,
+                    { backgroundColor: isSelected ? colors.primary + '14' : colors.surfaceAlt,
+                      borderColor: isSelected ? colors.primary : colors.border },
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
+                  onPress={() => handleLangSelect(langItem.code)}
+                >
+                  <Text style={{ fontSize: 22, marginHorizontal: 8 }}>{langItem.flag}</Text>
+                  <Text style={[styles.langItemLabel, { color: colors.textPrimary, flex: 1, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {langItem.label}
+                  </Text>
+                  {isSelected && <CheckCircle size={20} color={colors.primary} fill={colors.primary} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Notifications Preferences Modal Sheet ── */}
+      <Modal
+        visible={notifModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setNotifModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setNotifModalVisible(false)}
+        >
+          <View style={[styles.sheetContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.sheetHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
+              <Text style={[styles.sheetTitleTxt, { color: colors.textPrimary }]}>
+                🔔 {getNotifTr('sheet_title', i18n.language)}
+              </Text>
+              <TouchableOpacity
+                style={[styles.sheetCloseBtn, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => setNotifModalVisible(false)}
+              >
+                <X size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {[
+              { key: 'rides', label: getNotifTr('rides_title', i18n.language), desc: getNotifTr('rides_desc', i18n.language) },
+              { key: 'wallet', label: getNotifTr('wallet_title', i18n.language), desc: getNotifTr('wallet_desc', i18n.language) },
+              { key: 'achievements', label: getNotifTr('achievements_title', i18n.language), desc: getNotifTr('achievements_desc', i18n.language) },
+              { key: 'sound', label: getNotifTr('sound_title', i18n.language), desc: getNotifTr('sound_desc', i18n.language) },
+            ].map((nItem) => {
+              const val = notifState[nItem.key as keyof typeof notifState];
+              return (
+                <View
+                  key={nItem.key}
+                  style={[
+                    styles.notifItemRow,
+                    { borderBottomColor: colors.border },
+                    isRTL && { flexDirection: 'row-reverse' },
+                  ]}
+                >
+                  <View style={{ flex: 1, marginHorizontal: 6, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                    <Text style={[styles.notifItemTitle, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
+                      {nItem.label}
+                    </Text>
+                    <Text style={[styles.notifItemDesc, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
+                      {nItem.desc}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={val}
+                    onValueChange={() => toggleNotif(nItem.key as keyof typeof notifState)}
+                    trackColor={{ false: colors.border, true: colors.primaryGlow }}
+                    thumbColor={val ? colors.primary : colors.textMuted}
+                  />
+                </View>
+              );
+            })}
+
+            <TouchableOpacity
+              style={[styles.notifDoneBtn, { backgroundColor: colors.primary }]}
+              onPress={() => setNotifModalVisible(false)}
+            >
+              <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '700' }}>{getNotifTr('save_btn', i18n.language)}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  sheetContainer: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sheetTitleTxt: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  langItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  langItemLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  notifItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  notifItemTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  notifItemDesc: {
+    fontSize: 11.5,
+  },
+  notifDoneBtn: {
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 18,
+  },
   safe:   { flex: 1 },
   header: {
     flexDirection: 'row',

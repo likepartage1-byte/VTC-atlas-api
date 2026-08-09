@@ -68,8 +68,8 @@ export class ProfileService {
             documents: {
               where: {
                 type: 'PROFILE_PHOTO',
-                status: 'APPROVED',
               },
+              orderBy: { version: 'desc' },
               take: 1,
             },
           },
@@ -135,108 +135,101 @@ export class ProfileService {
 
     const startOfWeek = this.getStartOfWeek();
     const endOfWeek = this.getEndOfWeek();
-
-    // 2. Load system configurations with fallbacks
-    const silverCommission  = Number(await this.getSystemSetting('silver_commission', 15));
-    const goldCommission    = Number(await this.getSystemSetting('gold_commission', 10));
-    const premierCommission = Number(await this.getSystemSetting('premier_commission', 8));
-    const priorityEnabled   = Boolean(await this.getSystemSetting('priority_enabled', true));
-
-    // 3. Count total completed rides
-    const completedRides = await this.prisma.ride.count({
-      where: {
-        driverId: driver.id,
-        status: 'COMPLETED',
-      },
-    });
-
-    // 4. Count weekly completed rides (since Monday 00:00)
-    const weeklyCompletedRides = await this.prisma.ride.count({
-      where: {
-        driverId: driver.id,
-        status: 'COMPLETED',
-        completedAt: {
-          gte: startOfWeek,
-        },
-      },
-    });
-
-    // 5. Calculate total earnings (sum of driverEarnings in RideLedger or account totalEarned)
-    const totalEarnings = driver.account ? Number(driver.account.totalEarned) : 0;
-
-    // 6. Calculate current week's earnings
-    const weeklyLedgers = await this.prisma.rideLedger.aggregate({
-      where: {
-        driverId: driver.id,
-        status: 'PROCESSED',
-        createdAt: {
-          gte: startOfWeek,
-        },
-      },
-      _sum: {
-        driverEarnings: true,
-      },
-    });
-    const weekEarnings = weeklyLedgers._sum.driverEarnings ? Number(weeklyLedgers._sum.driverEarnings) : 0;
-
-    // 7. Calculate Acceptance and Cancellation rates dynamically
-    const totalOffers = await this.prisma.negotiation.count({
-      where: { driverId: driver.id },
-    });
-    const acceptedOffers = await this.prisma.negotiation.count({
-      where: { driverId: driver.id, status: 'ACCEPTED' },
-    });
-    const acceptanceRate = totalOffers > 0 ? Math.round((acceptedOffers / totalOffers) * 100) : 94; // fallback
-
-    const totalDriverRides = await this.prisma.ride.count({
-      where: { driverId: driver.id },
-    });
-    const cancelledCount = await this.prisma.ride.count({
-      where: { driverId: driver.id, status: 'CANCELLED' },
-    });
-    const cancellationRate = totalDriverRides > 0 ? Math.round((cancelledCount / totalDriverRides) * 100) : 3; // fallback
-
-    // 8. Calculate Online Hours Today
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const locationHistory = await this.prisma.driverLocationHistory.findMany({
-      where: {
-        driverId: driver.id,
-        timestamp: {
-          gte: startOfToday,
+    // 2. Load system configurations & driver statistics in parallel
+    const [
+      silverCommSetting,
+      goldCommSetting,
+      premierCommSetting,
+      priorityEnabledSetting,
+      premierWeeklyTargetSetting,
+      completedRides,
+      weeklyCompletedRides,
+      weeklyLedgers,
+      totalOffers,
+      acceptedOffers,
+      totalDriverRides,
+      cancelledCount,
+      locMinMax,
+    ] = await Promise.all([
+      this.getSystemSetting('silver_commission', 15),
+      this.getSystemSetting('gold_commission', 10),
+      this.getSystemSetting('premier_commission', 8),
+      this.getSystemSetting('priority_enabled', true),
+      this.getSystemSetting('premier_weekly_target', 30),
+      this.prisma.ride.count({
+        where: { driverId: driver.id, status: 'COMPLETED' },
+      }),
+      this.prisma.ride.count({
+        where: {
+          driverId: driver.id,
+          status: 'COMPLETED',
+          completedAt: { gte: startOfWeek },
         },
-      },
-      orderBy: {
-        timestamp: 'asc',
-      },
-    });
+      }),
+      this.prisma.rideLedger.aggregate({
+        where: {
+          driverId: driver.id,
+          status: 'PROCESSED',
+          createdAt: { gte: startOfWeek },
+        },
+        _sum: { driverEarnings: true },
+      }),
+      this.prisma.negotiation.count({
+        where: { driverId: driver.id },
+      }),
+      this.prisma.negotiation.count({
+        where: { driverId: driver.id, status: 'ACCEPTED' },
+      }),
+      this.prisma.ride.count({
+        where: { driverId: driver.id },
+      }),
+      this.prisma.ride.count({
+        where: { driverId: driver.id, status: 'CANCELLED' },
+      }),
+      this.prisma.driverLocationHistory.aggregate({
+        where: {
+          driverId: driver.id,
+          timestamp: { gte: startOfToday },
+        },
+        _min: { timestamp: true },
+        _max: { timestamp: true },
+      }),
+    ]);
 
+    const silverCommission  = Number(silverCommSetting);
+    const goldCommission    = Number(goldCommSetting);
+    const premierCommission = Number(premierCommSetting);
+    const priorityEnabled   = Boolean(priorityEnabledSetting);
+    const premierWeeklyTarget = Number(premierWeeklyTargetSetting);
+
+    // 5. Calculate total earnings
+    const totalEarnings = driver.account ? Number(driver.account.totalEarned) : 0;
+    const weekEarnings = weeklyLedgers._sum.driverEarnings ? Number(weeklyLedgers._sum.driverEarnings) : 0;
+
+    // 7. Calculate Acceptance and Cancellation rates dynamically
+    const acceptanceRate = totalOffers > 0 ? Math.round((acceptedOffers / totalOffers) * 100) : 94;
+    const cancellationRate = totalDriverRides > 0 ? Math.round((cancelledCount / totalDriverRides) * 100) : 3;
+
+    // 8. Calculate Online Hours Today using fast _min and _max aggregates
     let onlineHoursToday = 0;
-    if (locationHistory.length > 1) {
-      const start = locationHistory[0].timestamp.getTime();
-      const end = locationHistory[locationHistory.length - 1].timestamp.getTime();
-      onlineHoursToday = Number(((end - start) / (1000 * 60 * 60)).toFixed(1));
-    } else if (locationHistory.length === 1) {
-      onlineHoursToday = 0.1;
+    if (locMinMax._min?.timestamp && locMinMax._max?.timestamp) {
+      const start = locMinMax._min.timestamp.getTime();
+      const end = locMinMax._max.timestamp.getTime();
+      const diffHours = (end - start) / (1000 * 60 * 60);
+      onlineHoursToday = diffHours > 0 ? Number(diffHours.toFixed(1)) : 0.1;
     }
 
-    // 9. Extract profile photo URL
+    // 9. Extract profile photo URL — prefer driver.avatar (updated on upload), then latest document
     const docPhoto = driver.verification?.documents?.[0];
-    const profilePhoto = docPhoto?.url || (docPhoto?.storageKey ? `/uploads/${docPhoto.storageKey}` : null);
+    const profilePhoto = (driver as any).avatar
+      || docPhoto?.url
+      || (docPhoto?.storageKey ? `/uploads/${docPhoto.storageKey}` : null);
 
     // 10. Verification status & driver tier
     const isVerified = driver.verification?.status === 'APPROVED';
-
-    // ── Tier Logic ─────────────────────────────────────────────────────────────
-    // Gold & Silver are PERMANENT (based on total lifetime rides):
-    //   🥈 Silver  : total < 3
-    //   🥇 Gold    : total >= 3
-    //
-    // Premier is WEEKLY (based on rides completed this week Mon–Sun 23:59):
-    //   💎 Premier : weeklyCompletedRides >= premierWeeklyTarget (default 30)
-    //   Resets every Monday. Falls back to Gold/Silver baseline automatically.
-    const premierWeeklyTarget = Number(await this.getSystemSetting('premier_weekly_target', 30));
 
     let currentLevel: string;
     let challengeTarget: number;    // rides required to reach next tier
@@ -297,6 +290,8 @@ export class ProfileService {
         })(),
         verified: isVerified,
         badge: currentLevel,
+        vehicleType: (driver.vehicleInfo as any)?.type || 'CAR',
+        vehicle_type: (driver.vehicleInfo as any)?.type || 'CAR',
       },
       personalInfo: {
         firstName: driver.user.firstName || '',
@@ -377,11 +372,32 @@ export class ProfileService {
     if (data.address !== undefined) fields.address = data.address;
 
     const metadata = (verification.metadata as any) || {};
-    metadata.profileUpdateRequest = {
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      fields,
-    };
+
+    // Check if this is the initial profile name setup for a "New User"
+    const currentFullName = driver.user?.fullName;
+    const isInitialSetup = !currentFullName || currentFullName === 'New User' || currentFullName.trim() === '';
+
+    if (isInitialSetup && fields.fullName && fields.fullName !== 'New User') {
+      // Direct update for initial name setup — no admin approval needed to exit "New User" status
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          firstName: fields.firstName ?? driver.user?.firstName,
+          lastName: fields.lastName ?? driver.user?.lastName,
+          fullName: fields.fullName,
+          email: fields.email ?? driver.user?.email,
+          city: fields.city ?? driver.user?.city,
+        },
+      });
+      // Remove any pending state since initial setup is approved immediately
+      delete metadata.profileUpdateRequest;
+    } else {
+      metadata.profileUpdateRequest = {
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+        fields,
+      };
+    }
 
     await this.prisma.driverVerification.update({
       where: { id: verification.id },
@@ -478,16 +494,12 @@ export class ProfileService {
     }
 
     const metadata = (verification.metadata as any) || {};
-    const existingReq = metadata.vehicleUpdateRequest;
-    if (existingReq && existingReq.status === 'PENDING') {
-      throw new BadRequestException('You already have a pending vehicle update request');
-    }
 
     const fields: any = {};
     if (data.type !== undefined) fields.type = data.type;
-    if (data.manufacturer !== undefined) fields.manufacturer = data.manufacturer;
-    if (data.brand !== undefined) fields.brand = data.brand;
-    if (data.model !== undefined) fields.model = data.model;
+    if (data.manufacturer !== undefined) fields.manufacturer = String(data.manufacturer).trim().substring(0, 30);
+    if (data.brand !== undefined) fields.brand = String(data.brand).trim().substring(0, 30);
+    if (data.model !== undefined) fields.model = String(data.model).trim().substring(0, 30);
     if (data.year !== undefined) {
       const yearVal = Number(data.year);
       if (yearVal) {
@@ -504,10 +516,7 @@ export class ProfileService {
 
         if (vehicleAge > backendStrictLimit) {
           throw new BadRequestException(
-            `❌ This vehicle is not eligible to operate on Yalla VTC because it exceeds the maximum allowed vehicle age of ${ageLimit} years.\n\n` +
-            `❌ هذه المركبة غير مؤهلة للعمل على Yalla VTC لأنها تتجاوز الحد الأقصى لعمر المركبة (${ageLimit} سنة).\n\n` +
-            `❌ Ce véhicule n'est pas éligible pour travailler sur Yalla VTC car il dépasse l'âge maximal autorisé de ${ageLimit} ans.\n\n` +
-            `❌ Este vehículo no es apto para operar en Yalla VTC porque supera la antigüedad máxima permitida de ${ageLimit} años.`
+            `❌ This vehicle is not eligible to operate on Yalla VTC because it exceeds the maximum allowed vehicle age of ${ageLimit} years.`
           );
         }
       }
@@ -520,7 +529,6 @@ export class ProfileService {
     if (data.plateNumber !== undefined) fields.plateNumber = data.plateNumber;
     if (data.registrationNumber !== undefined) fields.registrationNumber = data.registrationNumber;
 
-    // VIN is view-only, retrieve from existing configuration.
     const currentVIN = (driver.vehicleInfo as any)?.vin || '';
     fields.vin = currentVIN;
 
@@ -530,11 +538,29 @@ export class ProfileService {
     };
 
     metadata.vehicleUpdateRequest = {
-      status: 'PENDING',
+      status: 'APPROVED',
       createdAt: new Date().toISOString(),
       fields,
       photos,
     };
+
+    // Save directly to driver.vehicleInfo so changes take effect immediately
+    const currentVehicleInfo = (driver.vehicleInfo as any) || {};
+    const updatedVehicleInfo = {
+      ...currentVehicleInfo,
+      ...fields,
+      photos: {
+        ...(currentVehicleInfo.photos || {}),
+        ...photos,
+      },
+    };
+
+    await this.prisma.driver.update({
+      where: { id: driver.id },
+      data: {
+        vehicleInfo: updatedVehicleInfo,
+      },
+    });
 
     await this.prisma.driverVerification.update({
       where: { id: verification.id },
@@ -586,18 +612,27 @@ export class ProfileService {
     }
 
     const isUuid = manufacturerNameOrId.length === 36 && manufacturerNameOrId.includes('-');
-    const whereClause = isUuid
-      ? { manufacturerId: manufacturerNameOrId }
-      : {
-          manufacturer: {
-            name: {
-              equals: manufacturerNameOrId,
-            },
-          },
-        };
+    if (isUuid) {
+      return this.prisma.vehicleModel.findMany({
+        where: { manufacturerId: manufacturerNameOrId },
+        orderBy: { name: 'asc' },
+      });
+    }
+
+    const manufacturers = await this.prisma.manufacturer.findMany();
+    const queryLower = manufacturerNameOrId.toLowerCase().trim();
+    const matchedMfr = manufacturers.find(
+      (m) => m.name.toLowerCase().trim() === queryLower || m.name.toLowerCase().includes(queryLower) || queryLower.includes(m.name.toLowerCase())
+    );
+
+    if (matchedMfr) {
+      return this.prisma.vehicleModel.findMany({
+        where: { manufacturerId: matchedMfr.id },
+        orderBy: { name: 'asc' },
+      });
+    }
 
     return this.prisma.vehicleModel.findMany({
-      where: whereClause,
       orderBy: { name: 'asc' },
     });
   }

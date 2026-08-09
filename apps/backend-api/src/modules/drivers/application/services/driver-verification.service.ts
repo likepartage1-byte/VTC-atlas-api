@@ -161,9 +161,9 @@ export class DriverVerificationService {
       throw new NotFoundException('Verification record not initialized');
     }
 
-    // Requirement: Cannot upload KYC if name is default or empty
+    // Requirement: Cannot upload KYC if name is default or empty (except PROFILE_PHOTO)
     const fullName = verification.driver?.user?.fullName;
-    if (!fullName || fullName === 'New User' || fullName.trim() === '') {
+    if (type !== DocumentType.PROFILE_PHOTO && (!fullName || fullName === 'New User' || fullName.trim() === '')) {
       throw new BadRequestException('KYC submission requires a real name. Please update your profile from "New User" before uploading documents.');
     }
 
@@ -175,6 +175,9 @@ export class DriverVerificationService {
     const storageKey = `drivers/${driverId}/${type.toLowerCase()}_v${newVersionNumber}${ext}`;
 
     const { url, storageKey: finalKey } = await this.storage.uploadFile(file, storageKey);
+
+    const isProfilePhoto = type === DocumentType.PROFILE_PHOTO;
+    const initialStatus = isProfilePhoto ? DocumentStatus.APPROVED : DocumentStatus.PENDING;
 
     return await this.prisma.$transaction(async (tx) => {
       // 1. Mark previous version as not current
@@ -190,7 +193,7 @@ export class DriverVerificationService {
         data: {
           verificationId: verification.id,
           type,
-          status: DocumentStatus.PENDING,
+          status: initialStatus,
           storageProvider: 'LOCAL',
           storageKey: finalKey,
           url,
@@ -201,7 +204,21 @@ export class DriverVerificationService {
         },
       });
 
-      // 3. Update verification status if it was REJECTED
+      // 3. Update avatar in Driver & User tables immediately if PROFILE_PHOTO
+      if (isProfilePhoto) {
+        await tx.driver.update({
+          where: { id: driverId },
+          data: { avatar: url },
+        });
+        if (verification.driver?.userId) {
+          await tx.user.update({
+            where: { id: verification.driver.userId },
+            data: { avatar: url },
+          }).catch(() => null);
+        }
+      }
+
+      // 4. Update verification status if it was REJECTED
       if (verification.status === DriverVerificationStatus.REJECTED) {
         await tx.driverVerification.update({
           where: { id: verification.id },

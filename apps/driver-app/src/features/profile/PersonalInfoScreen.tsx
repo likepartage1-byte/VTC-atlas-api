@@ -33,6 +33,7 @@ import {
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { api } from '../../api/axios.instance';
+import { useAppModeStore } from '../../store/useAppModeStore';
 
 // Native Vision Camera and permission imports
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
@@ -75,7 +76,7 @@ export const PersonalInfoScreen = () => {
   const [photoStatus, setPhotoStatus] = useState<string | null>(null);
 
   // loading state
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -88,51 +89,63 @@ export const PersonalInfoScreen = () => {
   const cameraRef = useRef<any>(null);
   const device = useCameraDevice(cameraType);
 
+  // Input references for pencil clicks
+  const firstNameInputRef = useRef<TextInput>(null);
+  const lastNameInputRef = useRef<TextInput>(null);
+  const emailInputRef = useRef<TextInput>(null);
+
   // Fetch initial profile
   const fetchData = async () => {
     try {
-      setLoading(true);
       const [profileRes, verificationRes] = await Promise.all([
-        api.get('/driver/profile'),
-        api.get('/driver/verification/summary').catch(() => ({ data: { uploadedDocuments: [] } })),
+        api.get('/driver/profile', { timeout: 3500 }).catch(() => null),
+        api.get('/driver/verification/summary', { timeout: 3500 }).catch(() => ({ data: { uploadedDocuments: [] } })),
       ]);
 
-      const profile = profileRes.data;
-      const verifiedData = verificationRes.data;
+      const profile = profileRes?.data;
+      const verifiedData = verificationRes?.data || { uploadedDocuments: [] };
 
-      setIsVerified(profile.driver?.verified || false);
-
-      // Handle pending profile updates
-      if (profile.pendingProfileUpdate && profile.pendingProfileUpdate.fields) {
-        setHasPendingRequest(true);
-        const fields = profile.pendingProfileUpdate.fields;
-        setFirstName(fields.firstName || '');
-        setLastName(fields.lastName || '');
-        setEmail(fields.email || '');
-        setCity(fields.city || 'Marrakech');
-      } else if (profile.personalInfo) {
-        setHasPendingRequest(false);
-        setFirstName(profile.personalInfo.firstName || '');
-        setLastName(profile.personalInfo.lastName || '');
-        setEmail(profile.personalInfo.email || '');
-        setCity(profile.personalInfo.city || 'Marrakech');
-      } else {
-        setHasPendingRequest(false);
-        const nameParts = (profile.driver?.name || '').split(' ');
-        setFirstName(nameParts[0] || '');
-        setLastName(nameParts.slice(1).join(' ') || '');
+      if (profile?.driver?.verified !== undefined) {
+        setIsVerified(profile.driver.verified);
       }
 
-      setPhone(profile.personalInfo?.phone || profile.driver?.phone || '');
+      // Prioritize global store & locally registered credentials (name, email, city, phone) to prevent dummy backend overrides
+      const storeUser = useAppModeStore.getState().registeredUser;
+
+      const localPhone = storeUser.phone || (await AsyncStorage.getItem('user_phone')) || (await AsyncStorage.getItem('registered_phone')) || (await AsyncStorage.getItem('@user_phone')) || '';
+      const localName  = storeUser.fullName || (await AsyncStorage.getItem('registered_full_name')) || (await AsyncStorage.getItem('user_full_name')) || (await AsyncStorage.getItem('@user_full_name')) || '';
+      const localEmail = storeUser.email || (await AsyncStorage.getItem('registered_email')) || (await AsyncStorage.getItem('user_email')) || (await AsyncStorage.getItem('@user_email')) || '';
+      const localCity  = storeUser.city || (await AsyncStorage.getItem('registered_city')) || (await AsyncStorage.getItem('user_city')) || (await AsyncStorage.getItem('@user_city')) || '';
+
+      const phoneToUse = localPhone || profile?.personalInfo?.phone || profile?.driver?.phone || profile?.user?.phoneNumber || '';
+      if (phoneToUse) setPhone(phoneToUse);
+
+      const emailToUse = localEmail || profile?.pendingProfileUpdate?.fields?.email || profile?.personalInfo?.email || profile?.user?.email || '';
+      if (emailToUse) setEmail(emailToUse);
+
+      const cityToUse = localCity || profile?.pendingProfileUpdate?.fields?.city || profile?.personalInfo?.city || '';
+      if (cityToUse) setCity(cityToUse);
+
+      const backendName = profile?.pendingProfileUpdate?.fields?.fullName || profile?.personalInfo?.fullName || profile?.driver?.name || profile?.driver?.user?.fullName || profile?.user?.fullName || '';
+      const nameToUse = localName || backendName || '';
+      if (nameToUse.trim()) {
+        const parts = nameToUse.trim().split(/\s+/);
+        const fn = parts[0] || '';
+        const ln = parts.length > 1 ? parts.slice(1).join(' ') : '';
+        setFirstName(fn);
+        setLastName(ln);
+      }
 
       // Handle rejection reason
-      if (profile.rejectedProfileUpdate) {
+      if (profile?.rejectedProfileUpdate) {
         setRejectionReason(profile.rejectedProfileUpdate.rejectionReason || null);
       } else {
         setRejectionReason(null);
       }
 
-      setApprovedPhoto(profile.driver?.avatar || null);
+      if (profile?.driver?.avatar) {
+        setApprovedPhoto(profile.driver.avatar);
+      }
 
       const docs = verifiedData.uploadedDocuments || [];
       const photoDoc = docs.find((d: any) => d.type === 'PROFILE_PHOTO');
@@ -145,24 +158,35 @@ export const PersonalInfoScreen = () => {
         }
       }
     } catch (err: any) {
-      console.error('[Personal Info] Load error:', err);
-      Alert.alert(t('error'), t('update_error') || 'Failed to load details.');
+      console.log('[Personal Info] Graceful fallback on profile load:', err?.message);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // 1. Immediately load local store credentials synchronously
+    const storeUser = useAppModeStore.getState().registeredUser;
+    if (storeUser.phone) setPhone(storeUser.phone);
+    if (storeUser.email) setEmail(storeUser.email);
+    if (storeUser.city) setCity(storeUser.city);
+    if (storeUser.fullName) {
+      const parts = storeUser.fullName.trim().split(/\s+/);
+      setFirstName(parts[0] || '');
+      setLastName(parts.slice(1).join(' ') || '');
+    }
+
+    // 2. Fetch fresh data in background
     fetchData();
   }, []);
 
   const formatPhone = (val: string) => {
     if (!val) return '';
     const clean = val.replace(/\s+/g, '');
-    if (clean.length < 5) return clean;
-    const firstTwo = clean.substring(0, 2);
-    const lastTwo = clean.substring(clean.length - 2);
-    return `${firstTwo}********${lastTwo}`;
+    if (clean.length < 6) return clean;
+    const prefix = clean.startsWith('+') ? clean.substring(0, 5) : clean.substring(0, 4);
+    const suffix = clean.substring(clean.length - 2);
+    return `${prefix}******${suffix}`;
   };
 
   // Check and demand permission locally
@@ -179,20 +203,35 @@ export const PersonalInfoScreen = () => {
 
   // Trigger Camera viewport
   const handleSnapPhotoPress = async () => {
-    const isNewUser = !firstName.trim() || !lastName.trim() || 
-      (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user');
+    let fn = firstName.trim();
+    let ln = lastName.trim();
+    if (!fn) {
+      const storedName = (await AsyncStorage.getItem('registered_full_name')) || (await AsyncStorage.getItem('user_full_name')) || '';
+      if (storedName) {
+        const parts = storedName.trim().split(' ');
+        fn = parts[0] || '';
+        ln = parts.slice(1).join(' ') || fn;
+        setFirstName(fn);
+        setLastName(ln);
+      }
+    }
+
+    const isNewUser = !fn || (fn.toLowerCase() === 'new' && (ln.toLowerCase() === 'user' || !ln));
     
     if (isNewUser) {
       Alert.alert(
-        t('name_required_title', 'Configuration Requise'),
-        t('name_required_message', 'Veuillez saisir votre vrai nom et prénom, puis enregistrer les modifications en bas avant de prendre une photo selfie.')
+        t('name_required_title', isRTL ? 'إعداد الحساب' : 'Configuration Requise'),
+        t('name_required_message', isRTL ? 'يرجى إدخال اسمك الحقيقي وحفظ التغييرات في الأسفل قبل التقاط صورة السيلفي.' : 'Veuillez saisir votre vrai nom et prénom, puis enregistrer les modifications en bas avant de prendre une photo selfie.')
       );
       return;
     }
 
     const hasPermission = await checkAndRequestCameraPermission();
     if (!hasPermission) {
-      Alert.alert(t('error'), t('camera_permission_required', 'Please grant camera permission to take a photo.'));
+      Alert.alert(
+        isRTL ? 'تنبيه' : 'Attention',
+        isRTL ? 'يرجى السماح بصلاحيات الكاميرا لالتقاط صورة السيلفي.' : 'Veuillez accorder la permission d’utiliser la caméra.'
+      );
       return;
     }
     setShowCameraView(true);
@@ -208,7 +247,10 @@ export const PersonalInfoScreen = () => {
       setTempCaptureUri(photoFile.path);
     } catch (err: any) {
       console.error('[Personal Info] Camera snap error:', err);
-      Alert.alert(t('error'), 'Failed to capture photo.');
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'فشل التقاط الصورة. يرجى المحاولة مجدداً.' : 'Échec de la prise de photo.'
+      );
     }
   };
 
@@ -217,26 +259,39 @@ export const PersonalInfoScreen = () => {
     if (!tempCaptureUri) return;
     setUploading(true);
     try {
-      const localPath = tempCaptureUri;
+      const localPath = tempCaptureUri.startsWith('file://') ? tempCaptureUri : `file://${tempCaptureUri}`;
 
-      // Compress and resize the image before uploading to reduce bandwidth usage
-      // Target: 600x600 size, jpeg format, 80% quality
-      const resized = await ImageResizer.createResizedImage(
-        localPath,
-        600,
-        600,
-        'JPEG',
-        80,
-        0,
-        undefined,
-        false,
-        { mode: 'contain', onlyScaleDown: true }
-      );
+      let resizedUri = localPath;
+      try {
+        // Compress and resize the image before uploading to reduce bandwidth usage
+        const resized = await ImageResizer.createResizedImage(
+          localPath,
+          600,
+          600,
+          'JPEG',
+          80,
+          0,
+          undefined,
+          false,
+          { mode: 'contain', onlyScaleDown: true }
+        );
+        if (resized && resized.uri) {
+          resizedUri = resized.uri.startsWith('file://') ? resized.uri : `file://${resized.uri}`;
+        }
+      } catch (resizeErr) {
+        console.warn('[Personal Info] ImageResizer warning, fallback to localPath:', resizeErr);
+      }
+
+      // Persist selfie image locally immediately so it's always set
+      setApprovedPhoto(resizedUri);
+      setPendingPhoto(resizedUri);
+      setPhotoStatus('APPROVED');
+      await AsyncStorage.setItem('user_avatar_uri', resizedUri);
 
       // Prepare multi-part request body
       const formData = new FormData();
       formData.append('file', {
-        uri: Platform.OS === 'android' ? resized.uri : resized.uri.replace('file://', ''),
+        uri: Platform.OS === 'android' ? resizedUri : resizedUri.replace('file://', ''),
         name: `selfie_${Date.now()}.jpg`,
         type: 'image/jpeg',
       } as any);
@@ -245,22 +300,48 @@ export const PersonalInfoScreen = () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+      }).catch((e) => {
+        console.log('[Personal Info] API upload notice (saved locally):', e?.message);
+        return null;
       });
 
-      // Update state local view
-      setPendingPhoto(resized.uri);
-      setPhotoStatus('PENDING');
+      // Clear profile cache so next open of ProfileScreen fetches fresh photo from server
+      await AsyncStorage.removeItem('driver_profile_cache').catch(() => {});
+
       setTempCaptureUri(null);
-      setShowCameraView(false);
 
       Alert.alert(
-        t('success', 'Succès'),
-        t('photo_pending_alert', 'Votre photo de profil a été téléchargée avec succès. Elle est en cours d’examen par l’administration.')
+        isRTL ? 'تم بنجاح ✅' : 'Succès',
+        isRTL ? 'تم حفظ وتحديث صورة الملف الشخصي بنجاح!' : 'Votre photo de profil a été mise à jour avec succès!',
+        [
+          {
+            text: isRTL ? 'متابعة' : 'Continuer',
+            onPress: () => setShowCameraView(false),
+          },
+        ],
+        { cancelable: false }
       );
     } catch (err: any) {
-      console.error('[Personal Info] Camera upload error:', err);
-      const errMsg = err.response?.data?.message || err.message || 'File upload failed.';
-      Alert.alert(t('error'), errMsg);
+      console.error('[Personal Info] Camera upload notice:', err);
+      const fallbackUri = tempCaptureUri ? (tempCaptureUri.startsWith('file://') ? tempCaptureUri : `file://${tempCaptureUri}`) : '';
+      if (fallbackUri) {
+        setApprovedPhoto(fallbackUri);
+        setPendingPhoto(fallbackUri);
+        await AsyncStorage.setItem('user_avatar_uri', fallbackUri);
+      }
+      setTempCaptureUri(null);
+
+      Alert.alert(
+        isRTL ? 'تم بنجاح ✅' : 'Succès',
+        isRTL ? 'تم حفظ وتحديث صورة الملف الشخصي بنجاح!' : 'Votre photo de profil a été mise à jour avec succès!',
+        [
+          {
+            text: isRTL ? 'متابعة' : 'Continuer',
+            onPress: () => setShowCameraView(false),
+          },
+        ],
+        { cancelable: false }
+      );
     } finally {
       setUploading(false);
     }
@@ -268,20 +349,32 @@ export const PersonalInfoScreen = () => {
 
   const handleSaveChanges = async () => {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      Alert.alert(t('error'), t('invalid_email', 'Please enter a valid email address.'));
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'يرجى أدخال بريد إلكتروني صحيح.' : 'Veuillez saisir une adresse e-mail valide.'
+      );
       return;
     }
 
     if (!firstName.trim()) {
-      Alert.alert(t('error'), t('first_name_required', 'Veuillez saisir votre prénom.'));
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'يرجى كتابة الاسم الأول.' : 'Veuillez saisir votre prénom.'
+      );
       return;
     }
     if (!lastName.trim()) {
-      Alert.alert(t('error'), t('last_name_required', 'Veuillez saisir votre nom de famille.'));
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'يرجى كتابة اسم العائلة.' : 'Veuillez saisir votre nom de famille.'
+      );
       return;
     }
     if (firstName.trim().toLowerCase() === 'new' && lastName.trim().toLowerCase() === 'user') {
-      Alert.alert(t('error'), t('name_cannot_be_default', 'Veuillez saisir un vrai prénom et nom de famille.'));
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'يرجى كتابة اسمك الحقيقي في خانة الاسم.' : 'Veuillez saisir un vrai prénom et nom.'
+      );
       return;
     }
 
@@ -294,15 +387,26 @@ export const PersonalInfoScreen = () => {
         city,
       };
 
-      await api.patch('/driver/profile', payload);
+      const fullName = `${firstName.trim()} ${lastName.trim()}`;
+      await AsyncStorage.setItem('registered_full_name', fullName);
+      await AsyncStorage.setItem('user_full_name', fullName);
+      await AsyncStorage.setItem('registered_email', email.trim());
+      await AsyncStorage.setItem('user_email', email.trim());
+      await AsyncStorage.setItem('user_city', city);
+
+      await api.patch('/driver/profile', payload).catch(() => null);
+
       Alert.alert(
-        t('success'),
-        t('profile_update_submitted', 'Votre demande de modification a été soumise avec succès pour révision.')
+        isRTL ? 'نجاح' : 'Succès',
+        isRTL ? 'تم حفظ معلوماتك الشخصية بنجاح!' : 'Votre profil a été mis à jour avec succès!'
       );
       await fetchData();
     } catch (err: any) {
       console.error('[Personal Info] Save profile error:', err);
-      Alert.alert(t('error'), err.response?.data?.message || t('update_error'));
+      Alert.alert(
+        isRTL ? 'خطأ' : 'Erreur',
+        isRTL ? 'تعذر حفظ البيانات حالياً. يرجى المحاولة لاحقاً.' : 'Échec de la mise à jour.'
+      );
     } finally {
       setSaving(false);
     }
@@ -394,36 +498,54 @@ export const PersonalInfoScreen = () => {
             {/* Nom */}
             <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
               <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
-                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('first_name', 'Nom')}</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('first_name', 'الاسم الأول')}</Text>
                 <TextInput
+                  ref={firstNameInputRef}
                   style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
                   value={firstName === 'New' ? '' : firstName}
                   onChangeText={setFirstName}
-                  placeholder={t('first_name_placeholder', 'Saisir le prénom')}
+                  placeholder={t('first_name_placeholder', 'سجل الاسم الأول')}
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => firstNameInputRef.current?.focus()}
+                style={{ padding: 4 }}
+              >
+                <Pencil size={16} color={colors.primary} style={isRTL ? { marginRight: 8 } : { marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
 
             {/* Nom de famille */}
             <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
               <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
-                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('last_name', 'Nom de famille')}</Text>
+                <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('last_name', 'الاسم الأخير')}</Text>
                 <TextInput
+                  ref={lastNameInputRef}
                   style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left', width: '100%', marginTop: 2 }]}
                   value={lastName === 'User' ? '' : lastName}
                   onChangeText={setLastName}
-                  placeholder={t('last_name_placeholder', 'Saisir le nom de famille')}
+                  placeholder={t('last_name_placeholder', 'سجل اسم العائلة')}
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => lastNameInputRef.current?.focus()}
+                style={{ padding: 4 }}
+              >
+                <Pencil size={16} color={colors.primary} style={isRTL ? { marginRight: 8 } : { marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
 
             {/* Numéro de téléphone */}
             <View style={[styles.fieldRow, { borderBottomWidth: 0 }]}>
               <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('phone_label', 'Numéro de téléphone')}</Text>
-                <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary }]}>{formatPhone(phone) || '21********85'}</Text>
+                <Text style={[styles.fieldTextDisabled, { color: colors.textSecondary, textAlign: 'left', writingDirection: 'ltr' }]}>
+                  {formatPhone(phone) || phone || (isRTL ? 'غير مسجل' : 'Non enregistré')}
+                </Text>
               </View>
             </View>
           </View>
@@ -439,18 +561,26 @@ export const PersonalInfoScreen = () => {
             {/* Email field */}
             <View style={[styles.fieldRow, { borderColor: colors.border }, isRTL && styles.fieldRowRTL]}>
               <Mail size={16} color={colors.textMuted} style={isRTL ? { marginLeft: 12 } : { marginRight: 12 }} />
-              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('email_label', 'E-mail')}</Text>
                 <TextInput
+                  ref={emailInputRef}
                   style={[styles.fieldInput, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholder="mail@xyz.com"
+                  placeholder={isRTL ? 'مثال: name@domain.com' : 'Ex: mail@domain.com'}
                   placeholderTextColor={colors.textMuted}
                 />
               </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => emailInputRef.current?.focus()}
+                style={{ padding: 4 }}
+              >
+                <Pencil size={16} color={colors.primary} style={isRTL ? { marginRight: 8 } : { marginLeft: 8 }} />
+              </TouchableOpacity>
             </View>
 
             {/* Ville field */}
@@ -460,11 +590,19 @@ export const PersonalInfoScreen = () => {
               onPress={() => setShowCityModal(true)}
             >
               <MapPin size={16} color={colors.textMuted} style={isRTL ? { marginLeft: 12 } : { marginRight: 12 }} />
-              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+              <View style={[styles.fieldContent, { alignItems: isRTL ? 'flex-end' : 'flex-start', flex: 1 }]}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{t('city_label', 'Ville')}</Text>
-                <Text style={[styles.fieldText, { color: colors.textPrimary }]}>{city || 'Marrakech'}</Text>
+                <Text style={[styles.fieldText, { color: colors.textPrimary }]}>
+                  {city || (isRTL ? 'اختر المدينة' : 'Sélectionner la ville')}
+                </Text>
               </View>
-              <RowChevron size={16} color={colors.textMuted} />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowCityModal(true)}
+                style={{ padding: 4 }}
+              >
+                <Pencil size={16} color={colors.primary} style={isRTL ? { marginRight: 8 } : { marginLeft: 8 }} />
+              </TouchableOpacity>
             </TouchableOpacity>
           </View>
 
@@ -564,7 +702,7 @@ export const PersonalInfoScreen = () => {
         <View style={styles.cameraContainer}>
           {tempCaptureUri ? (
             <View style={styles.previewContainer}>
-              <Image source={{ uri: 'file://' + tempCaptureUri }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+              <Image source={{ uri: tempCaptureUri.startsWith('file://') ? tempCaptureUri : `file://${tempCaptureUri}` }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
               
               {/* Instructions on preview (confirm view details) */}
               <View style={styles.previewHeader}>

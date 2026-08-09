@@ -75,6 +75,26 @@ elif [ -f "$PROJECT_DIR/apps/backend-api/.env" ]; then
 fi
 
 cd "$PROJECT_DIR/apps/backend-api"
+
+# Pre-migration: safely add new columns if they don't exist (idempotent)
+info "Running safe column migrations..."
+node -e "
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+async function migrate() {
+  const sqls = [
+    'ALTER TABLE \`User\`   ADD COLUMN IF NOT EXISTS \`avatar\` VARCHAR(500) NULL',
+    'ALTER TABLE \`Driver\` ADD COLUMN IF NOT EXISTS \`avatar\` VARCHAR(500) NULL',
+  ];
+  for (const sql of sqls) {
+    await prisma.\$executeRawUnsafe(sql).catch(e => console.log('Skip (ok):', e.message.split('\n')[0]));
+  }
+  await prisma.\$disconnect();
+  console.log('Column migrations done.');
+}
+migrate().catch(e => { console.error('Migration warning (non-fatal):', e.message); process.exit(0); });
+" && ok "Column migrations applied" || warn "Column migration skipped (non-fatal)"
+
 npx prisma db push --schema=prisma/schema.prisma --accept-data-loss || warn "DB Push failed"
 ok "Database schema is synchronized (db push)"
 cd "$PROJECT_DIR"

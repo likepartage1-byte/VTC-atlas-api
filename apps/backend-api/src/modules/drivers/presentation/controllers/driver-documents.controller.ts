@@ -25,7 +25,7 @@ import { DocumentType, DocumentStatus, DriverVerificationStatus } from '@prisma/
 
 @Controller('driver/documents')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('DRIVER')
+@Roles('DRIVER', 'PASSENGER')
 export class DriverDocumentsController {
   constructor(
     private readonly verificationService: DriverVerificationService,
@@ -36,10 +36,18 @@ export class DriverDocumentsController {
     let driverId: string | null = null;
     
     if (userId) {
-      const driver = await this.prisma.driver.findUnique({
+      let driver = await this.prisma.driver.findUnique({
         where: { userId },
         select: { id: true },
       });
+      if (!driver) {
+        try {
+          driver = await this.prisma.driver.create({
+            data: { userId, status: 'OFFLINE', rating: 5.0, vehicleInfo: {} },
+            select: { id: true },
+          });
+        } catch (_) {}
+      }
       driverId = driver?.id || null;
     }
 
@@ -280,7 +288,7 @@ export class DriverDocumentsController {
       }
     });
 
-    if (existingApproved) {
+    if (existingApproved && type !== DocumentType.PROFILE_PHOTO) {
       throw new BadRequestException('Cannot replace an already APPROVED document. Please contact support.');
     }
 
