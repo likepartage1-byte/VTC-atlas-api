@@ -383,24 +383,32 @@ export const PersonalInfoScreen = () => {
       const payload: any = {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
         email: email.trim(),
         city,
       };
 
+      // 1. Save locally immediately
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
       await AsyncStorage.setItem('registered_full_name', fullName);
       await AsyncStorage.setItem('user_full_name', fullName);
       await AsyncStorage.setItem('registered_email', email.trim());
       await AsyncStorage.setItem('user_email', email.trim());
       await AsyncStorage.setItem('user_city', city);
+      await AsyncStorage.removeItem('driver_profile_cache'); // clear cache so ProfileScreen reloads fresh
 
-      await api.patch('/driver/profile', payload).catch(() => null);
+      // 2. Send to server (silently, non-blocking)
+      api.patch('/driver/profile', payload, { timeout: 5000 }).catch(e => {
+        console.warn('[Personal Info] Profile update silently failed:', e?.message);
+      });
 
+      // 3. Show success and go back immediately
       Alert.alert(
-        isRTL ? 'نجاح' : 'Succès',
-        isRTL ? 'تم حفظ معلوماتك الشخصية بنجاح!' : 'Votre profil a été mis à jour avec succès!'
+        isRTL ? 'تم الحفظ ✅' : 'Succès',
+        isRTL ? 'تم حفظ معلوماتك الشخصية بنجاح!' : 'Votre profil a été mis à jour avec succès!',
+        [{ text: isRTL ? 'حسناً' : 'OK', onPress: () => navigation.goBack() }],
+        { cancelable: false }
       );
-      await fetchData();
     } catch (err: any) {
       console.error('[Personal Info] Save profile error:', err);
       Alert.alert(

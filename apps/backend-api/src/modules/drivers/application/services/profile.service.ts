@@ -373,36 +373,31 @@ export class ProfileService {
 
     const metadata = (verification.metadata as any) || {};
 
-    // Check if this is the initial profile name setup for a "New User"
-    const currentFullName = driver.user?.fullName;
-    const isInitialSetup = !currentFullName || currentFullName === 'New User' || currentFullName.trim() === '';
-
-    if (isInitialSetup && fields.fullName && fields.fullName !== 'New User') {
-      // Direct update for initial name setup — no admin approval needed to exit "New User" status
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          firstName: fields.firstName ?? driver.user?.firstName,
-          lastName: fields.lastName ?? driver.user?.lastName,
-          fullName: fields.fullName,
-          email: fields.email ?? driver.user?.email,
-          city: fields.city ?? driver.user?.city,
-        },
-      });
-      // Remove any pending state since initial setup is approved immediately
-      delete metadata.profileUpdateRequest;
-    } else {
-      metadata.profileUpdateRequest = {
-        status: 'PENDING',
-        createdAt: new Date().toISOString(),
-        fields,
-      };
-    }
-
-    await this.prisma.driverVerification.update({
-      where: { id: verification.id },
-      data: { metadata },
+    // Always apply name/email/city/city directly to User record
+    // No admin approval needed for personal info updates
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(fields.firstName !== undefined && { firstName: fields.firstName }),
+        ...(fields.lastName  !== undefined && { lastName:  fields.lastName  }),
+        ...(fields.fullName  !== undefined && { fullName:  fields.fullName  }),
+        ...(fields.email     !== undefined && { email:     fields.email     }),
+        ...(fields.city      !== undefined && { city:      fields.city      }),
+        ...(fields.address   !== undefined && { address:   fields.address   }),
+        ...(fields.birthDate !== undefined && { birthDate: fields.birthDate }),
+        ...(fields.gender    !== undefined && { gender:    fields.gender    }),
+        ...(fields.language  !== undefined && { language:  fields.language  }),
+      },
     });
+
+    // Clear any stale pending/rejected update request from metadata
+    if (metadata.profileUpdateRequest) {
+      delete metadata.profileUpdateRequest;
+      await this.prisma.driverVerification.update({
+        where: { id: verification.id },
+        data: { metadata },
+      });
+    }
 
     return this.getDriverProfile(userId);
   }
