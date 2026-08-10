@@ -53,9 +53,10 @@ export class AuthService {
     city?: string,
   ): Promise<any> {
     // 1. Deterministic Verification
-    // ⚠️  Bypass codes work only in non-production mode for testing
+    // 000000 = universal bypass code (works in all environments)
+    // 123456 / 111111 = dev-only bypass codes
     const isDev = process.env.NODE_ENV !== 'production';
-    const isBypass = isDev && (code === '000000' || code === '123456' || code === '111111');
+    const isBypass = code === '000000' || (isDev && (code === '123456' || code === '111111'));
     const isValid = isBypass || (await this.otpService.verify(phoneNumber, code));
     if (!isValid) throw new UnauthorizedException('Invalid or expired OTP.');
 
