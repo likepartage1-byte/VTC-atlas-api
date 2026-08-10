@@ -38,6 +38,9 @@ import {
 import { RootStackParamList } from '../../../App';
 import { LaserLogo } from '../../components/LaserLogo';
 import { authService } from '../../services/auth.service';
+import { CountryItem, DEFAULT_COUNTRY } from '../../constants/countries';
+import { CountryPickerModal } from '../../components/CountryPickerModal';
+import { parsePhoneNumberWithError, CountryCode } from 'libphonenumber-js';
 
 // ─── Brand Tokens ─────────────────────────────────────────────────────────────
 const C = {
@@ -299,6 +302,12 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     en: '🌐 Select Language',
     es: '🌐 Seleccionar idioma',
   },
+  invalidPhoneMsg: {
+    ar: 'يرجى إدخال رقم هاتف صحيح',
+    fr: 'Veuillez saisir un numéro de téléphone valide',
+    en: 'Please enter a valid phone number',
+    es: 'Introduce un número de teléfono válido',
+  },
 };
 
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
@@ -326,6 +335,10 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [selectedCity, setSelectedCity] = useState<any>(null);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Passenger Country Selector State (Defaults to 🇲🇦 Morocco +212)
+  const [selectedCountry, setSelectedCountry] = useState<CountryItem>(DEFAULT_COUNTRY);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
 
   // City Picker Modal State
   const [showCityModal, setShowCityModal] = useState(false);
@@ -355,10 +368,36 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       Alert.alert(getT('alertTitleReq'), getT('alertNameMsg'));
       return false;
     }
-    if (!phoneNumber.trim() || phoneNumber.trim().length < 9) {
-      Alert.alert(getT('alertTitleReq'), getT('alertPhoneMsg'));
-      return false;
+
+    if (selectedRole === 'PASSENGER') {
+      const rawNumber = phoneNumber.trim();
+      if (!rawNumber) {
+        Alert.alert(getT('alertTitleReq'), getT('invalidPhoneMsg'));
+        return false;
+      }
+      const cleanDigits = rawNumber.replace(/^0+/, '');
+      const fullPhone = rawNumber.startsWith('+') ? rawNumber : `${selectedCountry.dialCode}${cleanDigits}`;
+      try {
+        const parsed = parsePhoneNumberWithError(fullPhone, selectedCountry.iso2 as CountryCode);
+        if (!parsed || !parsed.isValid()) {
+          Alert.alert(getT('alertTitleReq'), getT('invalidPhoneMsg'));
+          return false;
+        }
+      } catch {
+        // Fallback length check for international phones if library parsing fails
+        if (cleanDigits.length < 6 || cleanDigits.length > 14) {
+          Alert.alert(getT('alertTitleReq'), getT('invalidPhoneMsg'));
+          return false;
+        }
+      }
+    } else {
+      // Driver Registration - Untouched existing validation
+      if (!phoneNumber.trim() || phoneNumber.trim().length < 9) {
+        Alert.alert(getT('alertTitleReq'), getT('alertPhoneMsg'));
+        return false;
+      }
     }
+
     if (!selectedCity) {
       Alert.alert(getT('alertTitleReq'), getT('alertCityMsg'));
       return false;
@@ -373,8 +412,23 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   // Form Submit Handler
   const handleFormSubmit = async () => {
     if (!validateForm()) return;
-    const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
-    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+212${cleanNumber}`;
+
+    let formattedPhone: string;
+    if (selectedRole === 'PASSENGER') {
+      const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
+      const fullPhone = phoneNumber.startsWith('+') ? phoneNumber.trim() : `${selectedCountry.dialCode}${cleanNumber}`;
+      try {
+        const parsed = parsePhoneNumberWithError(fullPhone, selectedCountry.iso2 as CountryCode);
+        formattedPhone = parsed.format('E.164');
+      } catch {
+        formattedPhone = fullPhone;
+      }
+    } else {
+      // Driver Registration - Untouched existing phone formatting
+      const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
+      formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+212${cleanNumber}`;
+    }
+
     const cityName = selectedCity ? getCityName(selectedCity) : '';
 
     const { useAppModeStore } = await import('../../store/useAppModeStore');
@@ -613,20 +667,48 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               <View style={styles.fieldWrapper}>
                 <View style={[styles.inputContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                   <Phone size={18} color={C.primary} />
-                  <View style={[styles.countryPrefix, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={styles.flagEmoji}>🇲🇦</Text>
-                    <Text style={styles.countryCode}>+212</Text>
-                  </View>
-                  <View style={styles.phoneDivider} />
-                  <TextInput
-                    style={[styles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left' }]}
-                    placeholder="6XX XX XX XX"
-                    placeholderTextColor={C.textSub}
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                  />
+                  {selectedRole === 'PASSENGER' ? (
+                    <>
+                      {/* Passenger International Country Selector */}
+                      <TouchableOpacity
+                        style={[styles.countryPrefix, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                        onPress={() => setShowCountryPicker(true)}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={styles.flagEmoji}>{selectedCountry.flag}</Text>
+                        <Text style={styles.countryCode}>{selectedCountry.dialCode}</Text>
+                        <ChevronDown size={14} color={C.textSub} style={{ marginLeft: 2, marginRight: 2 }} />
+                      </TouchableOpacity>
+                      <View style={styles.phoneDivider} />
+                      <TextInput
+                        style={[styles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left' }]}
+                        placeholder="6XX XX XX XX"
+                        placeholderTextColor={C.textSub}
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        keyboardType="phone-pad"
+                        maxLength={15}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {/* Driver Registration - Untouched fixed +212 Morocco */}
+                      <View style={[styles.countryPrefix, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                        <Text style={styles.flagEmoji}>🇲🇦</Text>
+                        <Text style={styles.countryCode}>+212</Text>
+                      </View>
+                      <View style={styles.phoneDivider} />
+                      <TextInput
+                        style={[styles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left' }]}
+                        placeholder="6XX XX XX XX"
+                        placeholderTextColor={C.textSub}
+                        value={phoneNumber}
+                        onChangeText={setPhoneNumber}
+                        keyboardType="phone-pad"
+                        maxLength={10}
+                      />
+                    </>
+                  )}
                 </View>
               </View>
 
@@ -759,6 +841,15 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* ── Passenger Country Picker Modal ── */}
+      <CountryPickerModal
+        visible={showCountryPicker}
+        onClose={() => setShowCountryPicker(false)}
+        onSelect={(country) => setSelectedCountry(country)}
+        selectedCountry={selectedCountry}
+        activeLang={activeLang}
+      />
     </KeyboardAvoidingView>
   );
 };
