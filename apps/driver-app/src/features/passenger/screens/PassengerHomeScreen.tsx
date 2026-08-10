@@ -283,12 +283,7 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
   const lang = rawLang.startsWith('ar') ? 'ar' : rawLang.startsWith('es') ? 'es' : rawLang.startsWith('en') ? 'en' : 'fr';
   const isRTL = lang === 'ar';
 
-  // Automatically enforce Light Mode on Passenger Screen
-  useEffect(() => {
-    if (isDarkMode) {
-      setMode(false);
-    }
-  }, [isDarkMode, setMode]);
+
 
   const {
     status,
