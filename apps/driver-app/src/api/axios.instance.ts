@@ -3,11 +3,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { navigateToLogin } from '../navigation/navigationRef';
 import { tokenManager } from '../services/token.manager';
 
-// Production Hostinger Server IP (Active since deployment is complete)
-export const BASE_URL = 'http://187.124.34.118/api/v1';
+// Local Development Server (with adb reverse tcp:3000 tcp:3000)
+export const BASE_URL = 'http://localhost:3000/api/v1';
 
-// Local Development Server (Use http://10.0.2.2:3000/api/v1 for Android Emulator, or http://localhost:3000/api/v1 with adb reverse)
-// export const BASE_URL = 'http://10.0.2.2:3000/api/v1';
+// Production Hostinger Server IP (Uncomment when VPS is active)
+// export const BASE_URL = 'http://187.124.34.118/api/v1';
 
 /**
  * Primary API client.
