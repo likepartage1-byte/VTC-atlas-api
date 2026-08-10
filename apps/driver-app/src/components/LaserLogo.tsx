@@ -1,151 +1,217 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Platform } from 'react-native';
-import { Colors } from '../theme/colors';
+import { View, Text, StyleSheet, Animated, Easing, I18nManager } from 'react-native';
+import Svg, { Path, Circle, G } from 'react-native-svg';
 
 interface LaserLogoProps {
   fontSize?: number;
   showTagline?: boolean;
+  taglineText?: string;
+  subTaglineText?: string;
+  theme?: 'dark' | 'light';
+  variant?: 'primary' | 'hero';
 }
 
-export const LaserLogo = ({ fontSize = 42, showTagline = true }: LaserLogoProps) => {
+export const LaserLogo: React.FC<LaserLogoProps> = ({
+  fontSize = 38,
+  showTagline = true,
+  taglineText = 'DRIVER PARTNER',
+  subTaglineText,
+  theme = 'dark',
+  variant = 'primary',
+}) => {
   const sweepAnim = useRef(new Animated.Value(0)).current;
-  const textGlowAnim = useRef(new Animated.Value(0.4)).current;
-  
-  const containerWidth = fontSize * 7.8; 
-  const containerHeight = fontSize * 1.6;
 
   useEffect(() => {
-    // F1 Style sequence: 
-    // 1. Fast sweep (600ms) + Ignite text glow.
-    // 2. Keep text fully glowing/illuminated (3.0s pause).
-    // 3. Dim text glow down (800ms) + Pause (1.0s) before next sweep.
-    
-    const triggerF1Animation = () => {
-      // Reset sweep to start position
+    const triggerLaserSequence = () => {
       sweepAnim.setValue(0);
-      
-      Animated.sequence([
-        // Phase 1: High speed laser/flash sweep and simultaneous text ignite
-        Animated.parallel([
-          Animated.timing(sweepAnim, {
-            toValue: 1,
-            duration: 650,
-            easing: Easing.bezier(0.16, 1, 0.3, 1), // ultra-fast deceleration like F1 braking
-            useNativeDriver: true,
-          }),
-          Animated.timing(textGlowAnim, {
-            toValue: 1.0,
-            duration: 400,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-        
-        // Phase 2: Laser sweeps out but text remains FULLY glowing/lit up ("يقف مضيء")
-        Animated.delay(2800),
-        
-        // Phase 3: Slowly dim the glow down to prepare for the next lightning flash
-        Animated.timing(textGlowAnim, {
-          toValue: 0.3,
-          duration: 900,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        
-        // Short rest/dim phase
-        Animated.delay(800),
-      ]).start(() => {
-        // Loop again
-        triggerF1Animation();
+      Animated.timing(sweepAnim, {
+        toValue: 1,
+        duration: 1200,
+        easing: Easing.bezier(0.25, 1, 0.5, 1),
+        useNativeDriver: true,
+      }).start(() => {
+        setTimeout(() => {
+          triggerLaserSequence();
+        }, 3500);
       });
     };
 
-    triggerF1Animation();
+    triggerLaserSequence();
+    return () => sweepAnim.stopAnimation();
+  }, [sweepAnim]);
 
-    return () => {
-      sweepAnim.stopAnimation();
-      textGlowAnim.stopAnimation();
-    };
-  }, [sweepAnim, textGlowAnim]);
-
-  // Interpolate sweep position from offscreen-left to offscreen-right
   const laserX = sweepAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [-60, containerWidth + 60],
+    outputRange: [-100, fontSize * 8],
   });
 
-  // Fade out laser beam as it approaches the end of sequence
   const laserOpacity = sweepAnim.interpolate({
-    inputRange: [0, 0.05, 0.75, 1],
+    inputRange: [0, 0.1, 0.8, 1],
     outputRange: [0, 1, 1, 0],
   });
 
-  // Skew text for a high-velocity F01/sporty aerodynamic racing look (-12 degrees)
-  const skewAngle = '-12deg';
+  const isDark = theme === 'dark';
+  const textColor = isDark ? '#FFFFFF' : '#683EE6';
+  const vtcColor = '#683EE6';
+  const dotColor = isDark ? '#0F1117' : '#FFFFFF';
+
+  // SVG Y-Road Mark Vector matching ICON1.png
+  const renderYRoadIcon = (width: number, height: number) => (
+    <Svg width={width} height={height} viewBox="0 0 500 500">
+      {/* 1. Left Location Pin (Teardrop with vector hole cutout) */}
+      <Path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M 148 45 C 105.5 45, 73 77.5, 73 120 C 73 165, 148 230, 148 230 C 148 230, 223 165, 223 120 C 223 77.5, 190.5 45, 148 45 Z M 148 94 A 26 26 0 1 0 148 146 A 26 26 0 1 0 148 94 Z"
+        fill="#683EE6"
+      />
+
+      {/* 2. Right Location Pin (Teardrop with vector hole cutout) */}
+      <Path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M 352 45 C 309.5 45, 277 77.5, 277 120 C 277 165, 352 230, 352 230 C 352 230, 427 165, 427 120 C 427 77.5, 394.5 45, 352 45 Z M 352 94 A 26 26 0 1 0 352 146 A 26 26 0 1 0 352 94 Z"
+        fill="#683EE6"
+      />
+
+      {/* 3. Left Branch Road Ribbon */}
+      <Path
+        d="M 125 210 C 135 285, 205 340, 255 365"
+        stroke="#683EE6"
+        strokeWidth="54"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+
+      {/* 4. Right Main Stem Road Ribbon */}
+      <Path
+        d="M 378 190 C 340 260, 248 320, 235 465"
+        stroke="#683EE6"
+        strokeWidth="54"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+
+      {/* 5. Left Road Dashed Center Lane Markings */}
+      <Path
+        d="M 125 210 C 135 285, 205 340, 255 365"
+        stroke={dotColor}
+        strokeWidth="12"
+        strokeDasharray="20 16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+
+      {/* 6. Right Main Stem Dashed Center Lane Markings */}
+      <Path
+        d="M 378 190 C 340 260, 248 320, 235 465"
+        stroke={dotColor}
+        strokeWidth="12"
+        strokeDasharray="20 16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+
+  // Guarantee Physical LTR Ordering on Android/iOS in both RTL & LTR modes
+  const isRTL = I18nManager.isRTL;
+  const ltrRowFlexDirection = isRTL ? 'row-reverse' : 'row';
+
+  // Hero Variant: Large stacked icon on top
+  if (variant === 'hero') {
+    const heroIconSize = fontSize * 2.2;
+    return (
+      <View style={styles.wrapper}>
+        {/* Large Standalone Y-Road Icon */}
+        <View style={{ width: heroIconSize, height: heroIconSize, marginBottom: 8 }}>
+          {renderYRoadIcon(heroIconSize, heroIconSize)}
+        </View>
+
+        {/* Title Text (Physical LTR: ALLA then VTC) */}
+        <View style={styles.textWrapper}>
+          <View style={[styles.brandRowContainer, { flexDirection: ltrRowFlexDirection }]}>
+            <Text style={[styles.brandTitleText, { fontSize, color: textColor, fontWeight: '900', letterSpacing: 1.5 }]}>
+              YALLA
+            </Text>
+            <Text style={[styles.brandTitleText, { fontSize, color: vtcColor, fontWeight: '800', letterSpacing: 1.0, marginLeft: 6 }]}>
+              VTC
+            </Text>
+          </View>
+        </View>
+
+        {/* Tagline */}
+        {showTagline && (subTaglineText || taglineText !== 'DRIVER PARTNER') && (
+          <View style={styles.taglineWrapper}>
+            {subTaglineText ? (
+              <Text style={[styles.subTaglineText, { color: '#000000' }]}>
+                {subTaglineText}
+              </Text>
+            ) : null}
+            {taglineText && taglineText !== 'DRIVER PARTNER' ? (
+              <Text style={[styles.taglineText, { fontSize: Math.max(11, fontSize * 0.32) }]}>
+                {taglineText}
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  // Primary Official Logo: Physical LTR [Y Icon] then ALLA then VTC
+  const iconWidth = fontSize * 1.25;
+  const iconHeight = fontSize * 1.45;
 
   return (
-    <View style={[styles.wrapper, { width: containerWidth }]}>
-      
-      {/* 1. Underlying Pulsing Glow layer: Creates neon radiating backdrop */}
-      <Animated.View 
-        style={[
-          styles.textWrapper, 
-          { 
-            height: containerHeight, 
-            opacity: textGlowAnim,
-            transform: [
-              { skewX: skewAngle },
-              { scale: textGlowAnim.interpolate({ inputRange: [0.3, 1], outputRange: [0.98, 1.02] }) }
-            ] 
-          }
-        ]}
-      >
-        <Text style={[styles.logoBase, { fontSize }]}>
-          <Text style={styles.yallaText}>YALLA</Text>
-          <Text style={styles.vtcText}> VTC</Text>
-        </Text>
-      </Animated.View>
+    <View style={styles.wrapper}>
+      {/* ── Strict Physical LTR Brand Row: [Y Icon] -> ALLA -> VTC ── */}
+      <View style={styles.textWrapper}>
+        <View style={[styles.brandRowContainer, { flexDirection: ltrRowFlexDirection }]}>
+          {/* 1. FIRST ELEMENT (FAR LEFT): Y-Road Icon */}
+          <View style={[styles.inlineIconContainer, { width: iconWidth, height: iconHeight }]}>
+            {renderYRoadIcon(iconWidth, iconHeight)}
+          </View>
 
-      {/* 2. Sharp foreground sharp layer */}
-      <View style={[styles.textWrapper, styles.absolute, { height: containerHeight, transform: [{ skewX: skewAngle }] }]}>
-        <Text style={[styles.logoText, { fontSize }]}>
-          <Text style={styles.yallaText}>YALLA</Text>
-          <Text style={styles.vtcText}> VTC</Text>
-        </Text>
-      </View>
+          {/* 2. SECOND ELEMENT (MIDDLE): ALLA */}
+          <Text style={[styles.brandTitleText, { fontSize, color: textColor, fontWeight: '900', letterSpacing: 1.5, marginLeft: 4 }]}>
+            YALLA
+          </Text>
 
-      {/* 3. Laser Sweep Overlay inside text boundaries */}
-      <View style={[styles.laserMask, styles.absolute, { height: containerHeight, width: containerWidth, transform: [{ skewX: skewAngle }] }]}>
-        
-        {/* Animated Laser Speed Beam */}
+          {/* 3. THIRD ELEMENT (FAR RIGHT): VTC */}
+          <Text style={[styles.brandTitleText, { fontSize, color: vtcColor, fontWeight: '800', letterSpacing: 1.0, marginLeft: 6 }]}>
+            VTC
+          </Text>
+        </View>
+
+        {/* Laser Sweep Flash Overlay */}
         <Animated.View
           style={[
-            styles.laserBeamContainer,
+            styles.laserOverlay,
             {
-              transform: [
-                { translateX: laserX },
-                { rotate: '30deg' } // Diagonal flare angle
-              ],
+              transform: [{ translateX: laserX }],
               opacity: laserOpacity,
             },
           ]}
-        >
-          {/* F1 White Core */}
-          <View style={styles.laserCore} />
-          
-          {/* Inner Light Turquoise Glow */}
-          <View style={styles.laserGlowTurquoise} />
-
-          {/* Outer Light Blue Flare Wing */}
-          <View style={styles.laserGlowBlue} />
-        </Animated.View>
+        />
       </View>
 
-      {/* 4. Subtitle tag line with sleek spacing */}
+      {/* ── Subtitle / Taglines ── */}
       {showTagline && (
-        <Text style={[styles.tagline, { fontSize: fontSize * 0.28 }]}>
-          DRIVER PARTNER
-        </Text>
+        <View style={styles.taglineWrapper}>
+          {subTaglineText ? (
+            <Text style={[styles.subTaglineText, { color: '#000000' }]}>
+              {subTaglineText}
+            </Text>
+          ) : null}
+          <Text style={[styles.taglineText, { fontSize: Math.max(11, fontSize * 0.32) }]}>
+            {taglineText}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -155,109 +221,55 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: 15,
-  },
-  textWrapper: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginVertical: 10,
     width: '100%',
   },
-  absolute: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-  logoBase: {
-    fontWeight: '900',
-    letterSpacing: 4,
-    color: '#3FD1EA', // Medium Turquoise glow backing
-    ...Platform.select({
-      ios: {
-        shadowColor: '#29E9F6', // Light Turquoise shadow glow
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 1.0,
-        shadowRadius: 22,
-      },
-      android: {
-        elevation: 12,
-      },
-    }),
-  },
-  logoText: {
-    fontWeight: '900',
-    letterSpacing: 4,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
-  },
-  yallaText: {
-    color: '#FFFFFF',
-  },
-  vtcText: {
-    color: '#29E9F6', // Light Turquoise branding
-    fontWeight: '955',
-  },
-  laserMask: {
-    overflow: 'hidden',
+  textWrapper: {
+    position: 'relative',
+    alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: 8,
   },
-  laserBeamContainer: {
-    position: 'absolute',
-    height: '180%',
-    width: 32, // Wider glare line like formula 1 headlight flash
+  brandRowContainer: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  laserCore: {
-    width: 4,
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    zIndex: 4,
-    shadowColor: '#FFF',
-    shadowOpacity: 1,
-    shadowRadius: 8,
-    elevation: 8,
+  inlineIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 2,
   },
-  laserGlowTurquoise: {
+  brandTitleText: {
+    fontFamily: 'System',
+    transform: [{ skewX: '-10deg' }],
+  },
+  laserOverlay: {
     position: 'absolute',
-    width: 14,
-    height: '100%',
-    backgroundColor: '#29E9F6', // Light Turquoise inner beam
-    opacity: 0.8,
-    borderRadius: 7,
-    zIndex: 2,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#29E9F6',
-        shadowOpacity: 1,
-        shadowRadius: 10,
-      },
-    }),
+    width: 25,
+    height: '180%',
+    backgroundColor: 'rgba(104, 62, 230, 0.45)',
+    transform: [{ rotate: '30deg' }],
   },
-  laserGlowBlue: {
-    position: 'absolute',
-    width: 30,
-    height: '100%',
-    backgroundColor: '#2F8EF3', // Light Blue outer flare trail
-    opacity: 0.45,
-    borderRadius: 15,
-    zIndex: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#2F8EF3',
-        shadowOpacity: 0.9,
-        shadowRadius: 15,
-      },
-    }),
+  taglineWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    width: '100%',
   },
-  tagline: {
-    color: Colors.textSecondary,
+  taglineText: {
+    color: '#683EE6',
     fontWeight: '800',
-    letterSpacing: 6,
-    marginTop: 8,
-    fontStyle: 'italic',
+    letterSpacing: 4,
     textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  subTaglineText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#000000',
+    marginBottom: 3,
+    textAlign: 'center',
+    alignSelf: 'center',
   },
 });
