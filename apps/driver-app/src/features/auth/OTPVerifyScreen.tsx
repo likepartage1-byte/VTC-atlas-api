@@ -75,10 +75,16 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     es: 'Código de verificación',
   },
   codePlaceholder: {
-    ar: '• • • • • •',
-    fr: '• • • • • •',
-    en: '• • • • • •',
-    es: '• • • • • •',
+    ar: '000000',
+    fr: '000000',
+    en: '000000',
+    es: '000000',
+  },
+  testCodeHint: {
+    ar: '💡 رمز الدخول التجريبي المباشر: 000000',
+    fr: '💡 Code d\'accès direct : 000000',
+    en: '💡 Direct login code: 000000',
+    es: '💡 Código de acceso directo: 000000',
   },
   confirmBtn: {
     ar: 'تأكيد والدخول',
@@ -341,6 +347,10 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
             onBlur={() => setIsFocused(false)}
           />
 
+          <View style={styles.testCodeBadge}>
+            <Text style={styles.testCodeText}>{getT('testCodeHint')}</Text>
+          </View>
+
           {/* Resend */}
           <View style={styles.resendRow}>
             {timer > 0 ? (
@@ -549,5 +559,21 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 16,
     fontWeight: '800',
+  },
+  testCodeBadge: {
+    backgroundColor: '#F3F0FF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#D8D0FA',
+  },
+  testCodeText: {
+    color: '#683EE6',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

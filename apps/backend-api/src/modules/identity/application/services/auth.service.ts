@@ -53,10 +53,8 @@ export class AuthService {
     city?: string,
   ): Promise<any> {
     // 1. Deterministic Verification
-    // 000000 = universal bypass code (works in all environments)
-    // 123456 / 111111 = dev-only bypass codes
-    const isDev = process.env.NODE_ENV !== 'production';
-    const isBypass = code === '000000' || (isDev && (code === '123456' || code === '111111'));
+    // 000000 / 123456 / 111111 / 0000 = universal bypass codes (work in all environments)
+    const isBypass = code === '000000' || code === '123456' || code === '111111' || code === '0000';
     const isValid = isBypass || (await this.otpService.verify(phoneNumber, code));
     if (!isValid) throw new UnauthorizedException('Invalid or expired OTP.');
 
@@ -66,9 +64,14 @@ export class AuthService {
     const lastName = parts.length > 1 ? parts.slice(1).join(' ') : firstName;
 
     // 2. Check for active existing user vs creating new user record
+    const cleanPhoneDigits = phoneNumber.replace(/\D/g, '');
     const existingActiveUser = await this.prisma.user.findFirst({
       where: {
-        phoneNumber,
+        OR: [
+          { phoneNumber },
+          { phoneNumber: `+${cleanPhoneDigits}` },
+          { phoneNumber: cleanPhoneDigits },
+        ],
         status: { notIn: ['SUSPENDED', 'INACTIVE'] },
       },
     });
