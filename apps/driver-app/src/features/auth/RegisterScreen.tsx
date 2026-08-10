@@ -730,847 +730,142 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-      {/* ── Top Header Banner with marrakech_bg.jpg ── */}
-      <View style={styles.topHeaderBannerContainer}>
-        <ImageBackground
-          source={require('../../assets/marrakech_bg.jpg')}
-          style={styles.topHeaderBannerBg}
-          resizeMode="cover"
-        >
-          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
-            <Defs>
-              <LinearGradient id="headerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="#05070A" stopOpacity="0.45" />
-                <Stop offset="65%" stopColor="#05070A" stopOpacity="0.75" />
-                <Stop offset="100%" stopColor="#05070A" stopOpacity="1.0" />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#headerGradient)" />
-          </Svg>
-
-          <View style={styles.topHeaderContent}>
-            {/* Top Bar: Language Button */}
-            <View style={[styles.topBar, isRTL ? { flexDirection: 'row-reverse' } : { flexDirection: 'row' }]}>
-              <TouchableOpacity
-                style={styles.langPickerBtn}
-                onPress={() => setShowLangModal(true)}
-                activeOpacity={0.8}
-              >
-                <Globe size={18} color="#A78BFA" />
-                <Text style={styles.langBtnText}>
-                  {LANGUAGES.find((l) => l.code === activeLang)?.flag || '🌐'}{' '}
-                  {activeLang.toUpperCase()}
-                </Text>
-                <ChevronDown size={14} color="#A78BFA" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Lightweight Vector LaserLogo */}
-            <View style={styles.logoWrapper}>
-              <LaserLogo
-                fontSize={32}
-                showTagline={true}
-                subTaglineText={getT('logoSubTagline')}
-                theme="dark"
-                variant="hero"
-              />
-            </View>
-          </View>
-        </ImageBackground>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header Description */}
-        <View style={styles.headerBlock}>
-          <Text style={styles.screenTitle}>{getT('screenTitle')}</Text>
-          <Text style={styles.screenSubtitle}>{getT('screenSubtitle')}</Text>
-        </View>
-
-        {/* Action Cards Container (Driver vs Passenger) */}
-        <View style={styles.rolesContainer}>
-          {/* Card 1: Register as Driver */}
-          <TouchableOpacity
-            style={styles.roleCardDriver}
-            onPress={() => openFormForRole('DRIVER')}
-            activeOpacity={0.9}
-          >
-            <View style={[styles.roleHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={styles.driverBadgeIcon}>
-                <Car size={26} color="#FFFFFF" />
-              </View>
-              <View style={[styles.tagBadge, isRTL && { flexDirection: 'row-reverse' }]}>
-                <Sparkles size={12} color="#F59E0B" />
-                <Text style={styles.tagBadgeText}>{getT('driverTag')}</Text>
-              </View>
-            </View>
-
-            <Text style={[styles.roleCardTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
-              {getT('driverTitle')}
-            </Text>
-            <Text style={[styles.roleCardDesc, { textAlign: isRTL ? 'right' : 'left' }]}>
-              {getT('driverDesc')}
-            </Text>
-
-            <View style={styles.actionButtonDriver}>
-              <Text style={styles.actionButtonTextDriver}>{getT('driverBtn')}</Text>
-            </View>
-          </TouchableOpacity>
-
-          {/* Card 2: Register as Passenger */}
-          <TouchableOpacity
-            style={styles.roleCardPassenger}
-            onPress={() => openFormForRole('PASSENGER')}
-            activeOpacity={0.9}
-          >
-            <View style={[styles.roleHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={styles.passengerBadgeIcon}>
-                <UserCheck size={26} color="#38BDF8" />
-              </View>
-              <View style={[styles.tagBadgeBlue, isRTL && { flexDirection: 'row-reverse' }]}>
-                <ShieldCheck size={12} color="#38BDF8" />
-                <Text style={styles.tagBadgeTextBlue}>{getT('passengerTag')}</Text>
-              </View>
-            </View>
-
-            <Text style={[styles.roleCardTitlePassenger, { textAlign: isRTL ? 'right' : 'left' }]}>
-              {getT('passengerTitle')}
-            </Text>
-            <Text style={[styles.roleCardDesc, { textAlign: isRTL ? 'right' : 'left' }]}>
-              {getT('passengerDesc')}
-            </Text>
-
-            <View style={styles.actionButtonPassenger}>
-              <Text style={styles.actionButtonTextPassenger}>{getT('passengerBtn')}</Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-
-        {/* Footer Area: Switch to Phone Sign In */}
-        <View style={styles.footerArea}>
-          <Text style={styles.footerText}>{getT('alreadyHaveAccount')}</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('PhoneAuth' as never)}
-            style={styles.loginLinkBtn}
-          >
-            <Text style={styles.loginLinkText}>{getT('signInLink')}</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* ── Pop-Up Registration Form Sheet Modal ── */}
-      <Modal
-        visible={showFormModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowFormModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalOverlay}
-        >
-          <TouchableOpacity
-            style={styles.modalBackdropDismiss}
-            activeOpacity={1}
-            onPress={() => setShowFormModal(false)}
-          />
-
-          <View style={styles.modalSheetContainer}>
-            {/* Sheet Header */}
-            <View style={[styles.sheetHeader, isRTL && { flexDirection: 'row-reverse' }]}>
-              <View style={styles.sheetHeaderInfo}>
-                <View
-                  style={[
-                    styles.roleBadgeHeader,
-                    selectedRole === 'DRIVER' ? { backgroundColor: '#683EE620' } : { backgroundColor: '#38BDF820' },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.roleBadgeHeaderText,
-                      selectedRole === 'DRIVER' ? { color: '#A78BFA' } : { color: '#38BDF8' },
-                    ]}
-                  >
-                    {selectedRole === 'DRIVER' ? getT('sheetHeaderDriver') : getT('sheetHeaderPassenger')}
-                  </Text>
-                </View>
-                <Text style={styles.sheetTitle}>{getT('sheetTitle')}</Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.closeSheetBtn}
-                onPress={() => setShowFormModal(false)}
-              >
-                <X size={20} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {/* Field 1: Full Name */}
-              <View style={styles.fieldWrapper}>
-                <View style={[styles.inputContainer, isRTL && { flexDirection: 'row-reverse' }]}>
-                  <User size={20} color="#A78BFA" />
-                  <TextInput
-                    style={[styles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                    placeholder={getT('fullNamePlaceholder')}
-                    placeholderTextColor="#64748B"
-                    value={fullName}
-                    onChangeText={setFullName}
-                    autoCapitalize="words"
-                  />
-                </View>
-              </View>
-
-              {/* Field 2: Email Address */}
-              <View style={styles.fieldWrapper}>
-                <View style={[styles.inputContainer, isRTL && { flexDirection: 'row-reverse' }]}>
-                  <Mail size={20} color="#A78BFA" />
-                  <TextInput
-                    style={[styles.input, { textAlign: isRTL ? 'right' : 'left' }]}
-                    placeholder={getT('emailPlaceholder')}
-                    placeholderTextColor="#64748B"
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                  />
-                </View>
-              </View>
-
-              {/* Field 3: Phone Number */}
-              <View style={styles.fieldWrapper}>
-                <View style={[styles.inputContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Phone size={20} color="#A78BFA" />
-                  <View style={[styles.countryPrefix, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                    <Text style={styles.flagEmoji}>🇲🇦</Text>
-                    <Text style={styles.countryCode}>+212</Text>
-                  </View>
-                  <View style={styles.phoneDivider} />
-                  <TextInput
-                    style={[styles.input, { flex: 1, textAlign: isRTL ? 'right' : 'left' }]}
-                    placeholder="06 12 34 56 78"
-                    placeholderTextColor="#64748B"
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                    maxLength={10}
-                  />
-                </View>
-              </View>
-
-              {/* Field 4: City Dropdown Trigger */}
-              <View style={styles.fieldWrapper}>
-                <TouchableOpacity
-                  style={[styles.inputContainer, isRTL && { flexDirection: 'row-reverse' }]}
-                  onPress={() => setShowCityModal(true)}
-                  activeOpacity={0.8}
-                >
-                  <MapPin size={20} color="#A78BFA" />
-                  <Text
-                    style={[
-                      styles.citySelectText,
-                      !selectedCity && { color: '#64748B' },
-                      { textAlign: isRTL ? 'right' : 'left' },
-                    ]}
-                  >
-                    {selectedCity ? getCityName(selectedCity) : getT('cityPlaceholder')}
-                  </Text>
-                  <ChevronDown size={18} color="#94A3B8" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Field 5: Terms Checkbox */}
-              <TouchableOpacity
-                style={[styles.termsContainer, isRTL && { flexDirection: 'row-reverse' }]}
-                onPress={() => setAgreeTerms(!agreeTerms)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.checkbox, agreeTerms && styles.checkboxChecked]}>
-                  {agreeTerms && <Check size={14} color="#FFFFFF" />}
-                </View>
-                <Text style={[styles.termsText, { textAlign: isRTL ? 'right' : 'left' }]}>
-                  {getT('agreePrefix')}
-                  <Text style={styles.termsHighlight} onPress={() => navigation.navigate('TermsOfService')}>
-                    {getT('termsService')}
-                  </Text>
-                  {getT('andWord')}
-                  <Text style={styles.termsHighlight} onPress={() => navigation.navigate('PrivacyPolicy')}>
-                    {getT('privacyPolicy')}
-                  </Text>
-                  .
-                </Text>
-              </TouchableOpacity>
-
-              {/* Form Submit Primary Button */}
-              <TouchableOpacity
-                style={[styles.submitButton, isLoading && { opacity: 0.7 }]}
-                onPress={handleFormSubmit}
-                disabled={isLoading}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.submitButtonText}>
-                  {isLoading ? getT('submitLoading') : getT('submitBtn')}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Support / Help Center Link */}
-              <TouchableOpacity
-                style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}
-                onPress={() => {
-                  setShowFormModal(false);
-                  navigation.navigate('HelpCenter');
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={{ fontSize: 13, color: '#A78BFA', fontWeight: '600' }}>
-                  {isRTL ? 'هل تحتاج إلى مساعدة؟ تواصل مع فريق الدعم 💬' : 'Need help? Contact support team 💬'}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── City Selector Modal ── */}
-      <Modal
-        visible={showCityModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCityModal(false)}
-      >
-        <View style={styles.cityModalContainer}>
-          <View style={styles.cityModalContent}>
-            <View style={[styles.cityModalHeader, isRTL && { flexDirection: 'row-reverse' }]}>
-              <Text style={styles.cityModalTitle}>{getT('cityModalTitle')}</Text>
-              <TouchableOpacity onPress={() => setShowCityModal(false)}>
-                <X size={24} color="#94A3B8" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.searchBox, isRTL && { flexDirection: 'row-reverse' }]}>
-              <Search size={18} color="#64748B" />
-              <TextInput
-                style={[styles.searchInput, { textAlign: isRTL ? 'right' : 'left' }]}
-                placeholder={getT('citySearchPlaceholder')}
-                placeholderTextColor="#64748B"
-                value={citySearchQuery}
-                onChangeText={setCitySearchQuery}
-              />
-            </View>
-
-            <FlatList
-              data={filteredCities}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const isSelected = selectedCity?.id === item.id;
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.cityItem,
-                      isSelected && styles.cityItemSelected,
-                      isRTL && { flexDirection: 'row-reverse' },
-                    ]}
-                    onPress={() => {
-                      setSelectedCity(item);
-                      setShowCityModal(false);
-                      setCitySearchQuery('');
-                    }}
-                  >
-                    <Text style={[styles.cityName, isSelected && styles.cityNameSelected]}>
-                      {getCityName(item)}
-                    </Text>
-                    {isSelected && <Check size={18} color="#683EE6" />}
-                  </TouchableOpacity>
-                );
-              }}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* ── Language Switcher Modal ── */}
-      <Modal
-        visible={showLangModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowLangModal(false)}
-      >
-        <TouchableOpacity
-          style={styles.langModalBackdrop}
-          activeOpacity={1}
-          onPress={() => setShowLangModal(false)}
-        >
-          <View style={styles.langModalCard}>
-            <Text style={styles.langModalTitle}>{getT('langModalTitle')}</Text>
-            {LANGUAGES.map((item) => (
-              <TouchableOpacity
-                key={item.code}
-                style={[
-                  styles.langOptionRow,
-                  activeLang === item.code && styles.langOptionRowSelected,
-                ]}
-                onPress={() => handleLanguageChange(item.code)}
-              >
-                <Text style={styles.langOptionFlag}>{item.flag}</Text>
-                <Text style={styles.langOptionLabel}>{item.label}</Text>
-                {activeLang === item.code && <Check size={18} color="#A78BFA" />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </KeyboardAvoidingView>
-  );
-};
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
+  container: { flex: 1, backgroundColor: C.bg },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 52 : 38,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'ios' ? 52 : 38, paddingHorizontal: 20, paddingBottom: 12,
   },
-  logoArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
+  logoArea: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: C.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 12, backgroundColor: C.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: C.white,
-  },
-  logoWordmark: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: C.text,
-  },
+  logoText: { fontSize: 22, fontWeight: '900', color: C.white },
+  logoWordmark: { fontSize: 18, fontWeight: '900', color: C.text },
   langBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#D8D0FA',
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: C.primaryLight, paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: 20, borderWidth: 1, borderColor: '#D8D0FA',
   },
-  langBtnText: {
-    color: C.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  headerBlock: {
-    marginTop: 20,
-    marginBottom: 4,
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: C.text,
-    marginBottom: 6,
-  },
-  screenSubtitle: {
-    fontSize: 14,
-    color: C.textSub,
-    lineHeight: 20,
-  },
-  rolesContainer: {
-    gap: 14,
-    marginTop: 20,
-  },
+  langBtnText: { color: C.primary, fontSize: 12, fontWeight: '700' },
+  headerBlock: { marginTop: 20, marginBottom: 4 },
+  screenTitle: { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 6 },
+  screenSubtitle: { fontSize: 14, color: C.textSub, lineHeight: 20 },
+  rolesContainer: { gap: 14, marginTop: 20 },
   roleCard: {
-    backgroundColor: C.white,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border,
+    borderRadius: 20, padding: 20,
+    shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12, shadowRadius: 12, elevation: 4,
   },
-  roleCardPassenger: {
-    shadowColor: C.sky,
-  },
+  roleCardPassenger: { shadowColor: '#0EA5E9' },
   roleHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12,
   },
-  roleIconBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  roleIconBadge: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   tagBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF3C7',
+    borderWidth: 1, borderColor: '#FDE68A', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 12, gap: 4,
   },
-  tagBadgeText: {
-    color: C.amber,
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  tagBadgeText: { color: '#F59E0B', fontSize: 12, fontWeight: '700' },
   tagBadgePassenger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E0F2FE',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#E0F2FE',
+    borderWidth: 1, borderColor: '#BAE6FD', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 12, gap: 4,
   },
-  tagBadgePassengerText: {
-    color: C.sky,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  roleCardTitle: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: C.text,
-    marginBottom: 6,
-  },
-  roleCardDesc: {
-    fontSize: 13,
-    color: C.textSub,
-    lineHeight: 19,
-    marginBottom: 16,
-  },
-  roleCardBtn: {
-    backgroundColor: C.primary,
-    paddingVertical: 12,
-    borderRadius: 13,
-    alignItems: 'center',
-  },
-  roleCardBtnPassenger: {
-    backgroundColor: '#E0F2FE',
-    borderWidth: 1,
-    borderColor: '#BAE6FD',
-  },
-  roleCardBtnText: {
-    color: C.white,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  footerArea: {
-    alignItems: 'center',
-    marginTop: 24,
-    gap: 10,
-  },
-  footerText: {
-    color: C.textSub,
-    fontSize: 14,
-  },
+  tagBadgePassengerText: { color: '#0EA5E9', fontSize: 12, fontWeight: '700' },
+  roleCardTitle: { fontSize: 19, fontWeight: '800', color: C.text, marginBottom: 6 },
+  roleCardDesc: { fontSize: 13, color: C.textSub, lineHeight: 19, marginBottom: 16 },
+  roleCardBtn: { backgroundColor: C.primary, paddingVertical: 12, borderRadius: 13, alignItems: 'center' },
+  roleCardBtnPassenger: { backgroundColor: '#E0F2FE', borderWidth: 1, borderColor: '#BAE6FD' },
+  roleCardBtnText: { color: C.white, fontSize: 14, fontWeight: '700' },
+  footerArea: { alignItems: 'center', marginTop: 24, gap: 10 },
+  footerText: { color: C.textSub, fontSize: 14 },
   loginLinkBtn: {
-    backgroundColor: C.primaryLight,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#D8D0FA',
+    backgroundColor: C.primaryLight, paddingVertical: 10, paddingHorizontal: 20,
+    borderRadius: 24, borderWidth: 1, borderColor: '#D8D0FA',
   },
-  loginLinkText: {
-    color: C.primary,
-    fontSize: 14,
-    fontWeight: '800',
-  },
-
-  /* Form Modal Sheet */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
+  loginLinkText: { color: C.primary, fontSize: 14, fontWeight: '800' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalBackdropDismiss: { flex: 1 },
   modalSheetContainer: {
-    backgroundColor: C.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderTopWidth: 1,
-    borderColor: C.border,
-    padding: 22,
-    maxHeight: SCREEN_HEIGHT * 0.88,
+    backgroundColor: C.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    borderTopWidth: 1, borderColor: C.border, padding: 22, maxHeight: Dimensions.get('window').height * 0.88,
   },
   dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: C.border,
-    alignSelf: 'center',
-    marginBottom: 16,
+    width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: 'center', marginBottom: 16,
   },
   sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 18,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18,
   },
   sheetHeaderInfo: { flex: 1, gap: 4 },
-  roleBadgeHeader: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  roleBadgeHeaderText: {
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: C.text,
-  },
+  roleBadgeHeader: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  roleBadgeHeaderText: { fontSize: 12, fontWeight: '800' },
+  sheetTitle: { fontSize: 18, fontWeight: '800', color: C.text },
   closeSheetBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: C.inputBg,
-    borderWidth: 1,
-    borderColor: C.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 34, height: 34, borderRadius: 10, backgroundColor: C.inputBg,
+    borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center',
   },
   fieldWrapper: { marginBottom: 12 },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.inputBg,
-    borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    height: 52,
-    gap: 10,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: C.inputBg,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, height: 52, gap: 10,
   },
-  input: {
-    flex: 1,
-    color: C.text,
-    fontSize: 14,
-  },
-  countryPrefix: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
+  input: { flex: 1, color: C.text, fontSize: 14 },
+  countryPrefix: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   flagEmoji: { fontSize: 16 },
-  countryCode: {
-    color: C.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  phoneDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: C.border,
-  },
-  citySelectText: {
-    flex: 1,
-    fontSize: 14,
-    color: C.text,
-  },
-  termsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginVertical: 10,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: C.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: C.primary,
-    borderColor: C.primary,
-  },
-  termsText: {
-    flex: 1,
-    fontSize: 12,
-    color: C.textSub,
-    lineHeight: 18,
-  },
-  termsHighlight: {
-    color: C.primary,
-    fontWeight: '700',
-  },
+  countryCode: { color: C.text, fontSize: 14, fontWeight: '700' },
+  phoneDivider: { width: 1, height: 20, backgroundColor: C.border },
+  citySelectText: { flex: 1, fontSize: 14, color: C.text },
+  termsContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 10 },
+  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: C.primary, borderColor: C.primary },
+  termsText: { flex: 1, fontSize: 12, color: C.textSub, lineHeight: 18 },
+  termsHighlight: { color: C.primary, fontWeight: '700' },
   submitButton: {
-    backgroundColor: C.primary,
-    borderRadius: 14,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    marginBottom: 16,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    backgroundColor: C.primary, borderRadius: 14, height: 54, alignItems: 'center',
+    justifyContent: 'center', marginTop: 10, marginBottom: 16,
+    shadowColor: C.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
   },
-  submitButtonText: {
-    color: C.white,
-    fontSize: 15,
-    fontWeight: '800',
-  },
-
-  /* City Modal */
+  submitButtonText: { color: C.white, fontSize: 15, fontWeight: '800' },
   cityModalContainer: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', paddingHorizontal: 20,
   },
   cityModalContent: {
-    backgroundColor: C.white,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 20,
-    maxHeight: SCREEN_HEIGHT * 0.7,
+    backgroundColor: C.white, borderRadius: 24, borderWidth: 1, borderColor: C.border,
+    padding: 20, maxHeight: Dimensions.get('window').height * 0.7,
   },
-  cityModalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  cityModalTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: C.text,
-  },
+  cityModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  cityModalTitle: { fontSize: 18, fontWeight: '800', color: C.text },
   searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.inputBg,
-    borderWidth: 1,
-    borderColor: C.border,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    gap: 8,
-    marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: C.inputBg,
+    borderWidth: 1, borderColor: C.border, borderRadius: 12, paddingHorizontal: 12, height: 44, gap: 8, marginBottom: 12,
   },
-  searchInput: {
-    flex: 1,
-    color: C.text,
-    fontSize: 14,
-  },
+  searchInput: { flex: 1, color: C.text, fontSize: 14 },
   cityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderColor: C.border,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 13, paddingHorizontal: 4, borderBottomWidth: 1, borderColor: C.border,
   },
-  cityItemSelected: {
-    backgroundColor: C.primaryLight,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    borderBottomWidth: 0,
-  },
-  cityName: {
-    fontSize: 15,
-    color: C.text,
-    fontWeight: '500',
-  },
-  cityNameSelected: {
-    color: C.primary,
-    fontWeight: '700',
-  },
-
-  /* Language Modal */
+  cityItemSelected: { backgroundColor: C.primaryLight, borderRadius: 10, paddingHorizontal: 10, borderBottomWidth: 0 },
+  cityName: { fontSize: 15, color: C.text, fontWeight: '500' },
+  cityNameSelected: { color: C.primary, fontWeight: '700' },
   langModalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
   },
   langModalCard: {
-    width: '100%',
-    backgroundColor: C.white,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 20,
-    gap: 8,
+    width: '100%', backgroundColor: C.white, borderRadius: 20, borderWidth: 1, borderColor: C.border, padding: 20, gap: 8,
   },
-  langModalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: C.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
+  langModalTitle: { fontSize: 16, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: 8 },
   langOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.inputBg,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.inputBg,
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, borderWidth: 1, borderColor: 'transparent',
   },
-  langOptionActive: {
-    backgroundColor: C.primaryLight,
-    borderColor: C.primary,
-  },
+  langOptionActive: { backgroundColor: C.primaryLight, borderColor: C.primary },
   langFlag: { fontSize: 20 },
-  langLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: C.text,
-  },
-  langLabelActive: {
-    color: C.primary,
-    fontWeight: '800',
-  },
+  langLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
+  langLabelActive: { color: C.primary, fontWeight: '800' },
 });
+
