@@ -9,11 +9,10 @@ import {
   Alert,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
-  ImageBackground,
+  ScrollView,
   I18nManager,
+  ActivityIndicator,
 } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { setAuthenticated } from '../../store';
@@ -26,45 +25,62 @@ import { authService } from '../../services/auth.service';
 import { api } from '../../api/axios.instance';
 import { useAppModeStore } from '../../store/useAppModeStore';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+// ─── Brand Tokens ─────────────────────────────────────────────────────────────
+const C = {
+  bg:          '#FFFFFF',
+  primary:     '#683EE6',
+  primaryLight:'#F3F0FF',
+  primaryMid:  '#EDE9FF',
+  text:        '#111827',
+  textSub:     '#6B7280',
+  border:      '#E5E7EB',
+  inputBg:     '#FAFAFA',
+  success:     '#10B981',
+  error:       '#EF4444',
+  white:       '#FFFFFF',
+};
 
 type OTPVerifyScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OTPVerify'>;
 type OTPVerifyScreenRouteProp = RouteProp<RootStackParamList, 'OTPVerify'>;
-
 interface Props {
   navigation: OTPVerifyScreenNavigationProp;
   route: OTPVerifyScreenRouteProp;
 }
 
-// ── Pure Multilingual Dictionary ─────────────────────────────────────────────
 const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = {
   screenTitle: {
-    ar: 'التحقق من الهوية',
-    fr: 'Vérification OTP',
-    en: 'OTP Verification',
-    es: 'Verificación OTP',
+    ar: 'التحقق من رقم الهاتف',
+    fr: 'Vérification du numéro',
+    en: 'Phone Verification',
+    es: 'Verificación de teléfono',
   },
   screenSubtitle: {
-    ar: 'تم إرسال رمز التحقق المكوّن من 6 أرقام إلى رقمك',
-    fr: 'Le code de vérification à 6 chiffres a été envoyé à',
-    en: 'The 6-digit verification code was sent to',
-    es: 'El código de verificación de 6 dígitos fue enviado a',
+    ar: 'أرسلنا رمز التحقق المكوّن من 6 أرقام إلى',
+    fr: 'Nous avons envoyé le code à 6 chiffres au',
+    en: 'We sent the 6-digit code to',
+    es: 'Enviamos el código de 6 dígitos al',
   },
   codeLabel: {
-    ar: 'أدخل رمز التحقق',
-    fr: 'Entrez le code de vérification',
-    en: 'Enter Verification Code',
-    es: 'Ingrese el código de verificación',
+    ar: 'رمز التحقق',
+    fr: 'Code de vérification',
+    en: 'Verification Code',
+    es: 'Código de verificación',
+  },
+  codePlaceholder: {
+    ar: '• • • • • •',
+    fr: '• • • • • •',
+    en: '• • • • • •',
+    es: '• • • • • •',
   },
   confirmBtn: {
-    ar: 'تأكيد والدخول ➔',
-    fr: 'Confirmer et se connecter ➔',
-    en: 'Confirm & Sign In ➔',
-    es: 'Confirmar e iniciar sesión ➔',
+    ar: 'تأكيد والدخول',
+    fr: 'Confirmer et se connecter',
+    en: 'Confirm & Sign In',
+    es: 'Confirmar e iniciar sesión',
   },
   loadingBtn: {
     ar: 'جارٍ التحقق...',
-    fr: 'Vérification en cours...',
+    fr: 'Vérification...',
     en: 'Verifying...',
     es: 'Verificando...',
   },
@@ -75,10 +91,10 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     es: 'Reenviar en',
   },
   resendOTP: {
-    ar: '🔄 إعادة إرسال الرمز',
-    fr: '🔄 Renvoyer le code',
-    en: '🔄 Resend Code',
-    es: '🔄 Reenviar código',
+    ar: 'إعادة إرسال الرمز',
+    fr: 'Renvoyer le code',
+    en: 'Resend Code',
+    es: 'Reenviar código',
   },
   successTitle: {
     ar: 'تم بنجاح',
@@ -90,7 +106,7 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     ar: 'تم إعادة إرسال رمز التحقق بنجاح',
     fr: 'Le code a été renvoyé avec succès',
     en: 'Verification code resent successfully',
-    es: 'Código de verificación reenviado con éxito',
+    es: 'Código reenviado con éxito',
   },
   errorTitle: {
     ar: 'خطأ في التحقق',
@@ -102,13 +118,13 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     ar: 'رمز التحقق غير صحيح أو منتهي الصلاحية. يرجى المحاولة مجدداً.',
     fr: 'Code invalide ou expiré. Veuillez réessayer.',
     en: 'Invalid or expired code. Please try again.',
-    es: 'Código inválido o expirado. Intente de nuevo.',
+    es: 'Código inválido o expirado. Inténtelo de nuevo.',
   },
   resendError: {
     ar: 'فشل إعادة إرسال الرمز. حاول مجدداً.',
-    fr: 'Échec du renvoi du code. Réessayez.',
-    en: 'Failed to resend code. Try again.',
-    es: 'Error al reenviar el código. Inténtelo de nuevo.',
+    fr: 'Échec du renvoi. Réessayez.',
+    en: 'Failed to resend. Try again.',
+    es: 'Error al reenviar. Inténtelo de nuevo.',
   },
   seconds: {
     ar: 'ث',
@@ -131,13 +147,14 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(60);
+  const [isFocused, setIsFocused] = useState(false);
 
   const getT = (key: string): string =>
     TRANSLATIONS[key]?.[activeLang] || TRANSLATIONS[key]?.['ar'] || '';
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimer(prev => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -148,7 +165,7 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
       await authService.requestOtp(phoneNumber);
       setTimer(60);
       Alert.alert(getT('successTitle'), getT('resentMsg'));
-    } catch (error: any) {
+    } catch {
       Alert.alert(getT('errorTitle'), getT('resendError'));
     }
   };
@@ -160,17 +177,9 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
       const regName  = route.params?.fullName || (await AsyncStorage.getItem('registered_full_name')) || undefined;
       const regEmail = route.params?.email    || (await AsyncStorage.getItem('registered_email'))     || undefined;
       const regCity  = route.params?.city     || (await AsyncStorage.getItem('registered_city'))      || undefined;
-      const targetRole = (route.params?.role || (await AsyncStorage.getItem('registered_role')) || 'PASSENGER') as 'DRIVER' | 'PASSENGER';
+      const targetRole = (route.params?.role  || (await AsyncStorage.getItem('registered_role'))      || 'PASSENGER') as 'DRIVER' | 'PASSENGER';
 
-      const response = await authService.verifyOtp(
-        phoneNumber,
-        code,
-        'unique-device-id',
-        regName,
-        regEmail,
-        regCity,
-        targetRole,
-      );
+      const response = await authService.verifyOtp(phoneNumber, code, 'unique-device-id', regName, regEmail, regCity, targetRole);
       const resData = response.data as any;
       const { accessToken, refreshToken, role: returnedRole } = resData;
 
@@ -198,15 +207,11 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
         await AsyncStorage.setItem('@user_full_name', clean);
         if (regEmail) await AsyncStorage.setItem('registered_email', regEmail);
         if (regCity) await AsyncStorage.setItem('user_city', regCity);
-
         const parts = clean.split(' ');
         const fn = parts[0] || 'User';
         const ln = parts.slice(1).join(' ') || fn;
         await api.patch('/driver/profile', {
-          firstName: fn,
-          lastName: ln,
-          fullName: clean,
-          name: clean,
+          firstName: fn, lastName: ln, fullName: clean, name: clean,
           ...(regEmail ? { email: regEmail } : {}),
           ...(regCity  ? { city: regCity }   : {}),
         }).catch(() => {});
@@ -220,7 +225,6 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
         navigation.replace('PassengerHome');
       } else {
         await useAppModeStore.getState().setActiveMode('DRIVER');
-        // Do NOT blindly set isDriverEligible to true if this is a brand new driver registration
         if (route.params?.isRegistration) {
           useAppModeStore.getState().setDriverEligible(false);
           navigation.replace('SelectVehicleType');
@@ -236,117 +240,103 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
     }
   };
 
+  const canConfirm = code.length >= 6 && !isLoading;
+
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
 
-      {/* ── Top Header Banner ────────────────────────────────────────────── */}
-      <View style={styles.topBannerContainer}>
-        <ImageBackground
-          source={require('../../assets/marrakech_bg.jpg')}
-          style={styles.topBannerBg}
-          resizeMode="cover"
-        >
-          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
-            <Defs>
-              <LinearGradient id="otpGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%"   stopColor="#2D2D2D" stopOpacity="0.3" />
-                <Stop offset="65%"  stopColor="#3A3A3A" stopOpacity="0.55" />
-                <Stop offset="100%" stopColor="#404040" stopOpacity="0.85"  />
-              </LinearGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#otpGrad)" />
-          </Svg>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Back Button */}
+        <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.75}
+          >
+            {isRTL
+              ? <ArrowRight size={20} color={C.text} />
+              : <ArrowLeft  size={20} color={C.text} />
+            }
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.topBannerContent}>
-            {/* Back Button */}
-            <TouchableOpacity
-              style={styles.backBtn}
-              onPress={() => navigation.goBack()}
-              activeOpacity={0.8}
-            >
-              {isRTL
-                ? <ArrowRight size={20} color="#FFFFFF" />
-                : <ArrowLeft  size={20} color="#FFFFFF" />
-              }
-            </TouchableOpacity>
-
-            {/* Shield Icon + Title */}
-            <View style={styles.heroCenter}>
-              <View style={styles.shieldBadge}>
-                <ShieldCheck size={40} color="#A78BFA" />
-              </View>
-              <Text style={[styles.heroTitle, { textAlign: 'center' }]}>
-                {getT('screenTitle')}
-              </Text>
-              <Text style={[styles.heroSubtitle, { textAlign: 'center' }]}>
-                {getT('screenSubtitle')}
-              </Text>
-              <Text style={[styles.phoneChip]}>
-                {phoneNumber}
-              </Text>
-            </View>
+        {/* Shield Icon + Title */}
+        <View style={styles.heroArea}>
+          <View style={styles.shieldBadge}>
+            <ShieldCheck size={32} color={C.primary} />
           </View>
-        </ImageBackground>
-      </View>
-
-      {/* ── Form Card ────────────────────────────────────────────────────── */}
-      <View style={styles.formCard}>
-        {/* Label */}
-        <Text style={[styles.codeLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
-          {getT('codeLabel')}
-        </Text>
-
-        {/* OTP Input */}
-        <TextInput
-          style={styles.otpInput}
-          placeholder="● ● ● ● ● ●"
-          placeholderTextColor="#334155"
-          keyboardType="number-pad"
-          maxLength={6}
-          value={code}
-          onChangeText={setCode}
-          autoFocus
-          textAlign="center"
-        />
-
-        {/* Timer / Resend */}
-        <TouchableOpacity
-          style={styles.resendRow}
-          onPress={handleResendOTP}
-          disabled={timer > 0}
-          activeOpacity={0.7}
-        >
-          {timer > 0 ? (
-            <Text style={styles.timerText}>
-              {getT('resendIn')} {timer}{getT('seconds')}
-            </Text>
-          ) : (
-            <View style={styles.resendActiveRow}>
-              <RefreshCw size={15} color="#A78BFA" />
-              <Text style={styles.resendActiveText}>{getT('resendOTP')}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        {/* Confirm Button */}
-        <TouchableOpacity
-          style={[
-            styles.confirmBtn,
-            (code.length < 6 || isLoading) && styles.confirmBtnDisabled,
-          ]}
-          onPress={handleVerify}
-          disabled={code.length < 6 || isLoading}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.confirmBtnText}>
-            {isLoading ? getT('loadingBtn') : getT('confirmBtn')}
+          <Text style={[styles.heroTitle, { textAlign: isRTL ? 'right' : 'center' }]}>
+            {getT('screenTitle')}
           </Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={[styles.heroSubtitle, { textAlign: 'center' }]}>
+            {getT('screenSubtitle')}
+          </Text>
+          <Text style={styles.phoneChip}>{phoneNumber}</Text>
+        </View>
+
+        {/* OTP Form Card */}
+        <View style={styles.card}>
+          <Text style={[styles.inputLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
+            {getT('codeLabel')}
+          </Text>
+
+          <TextInput
+            style={[
+              styles.otpInput,
+              { textAlign: 'center' },
+              isFocused && styles.otpInputFocused,
+              code.length === 6 && styles.otpInputFilled,
+            ]}
+            value={code}
+            onChangeText={v => setCode(v.replace(/\D/g, '').slice(0, 6))}
+            keyboardType="number-pad"
+            maxLength={6}
+            placeholder={getT('codePlaceholder')}
+            placeholderTextColor={C.border}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+          />
+
+          {/* Resend */}
+          <View style={styles.resendRow}>
+            {timer > 0 ? (
+              <Text style={styles.timerText}>
+                {getT('resendIn')} {timer}{getT('seconds')}
+              </Text>
+            ) : (
+              <TouchableOpacity
+                style={styles.resendBtn}
+                onPress={handleResendOTP}
+                activeOpacity={0.75}
+              >
+                <RefreshCw size={14} color={C.primary} />
+                <Text style={styles.resendBtnText}>{getT('resendOTP')}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Confirm Button */}
+          <TouchableOpacity
+            style={[styles.primaryBtn, !canConfirm && styles.primaryBtnDisabled]}
+            onPress={handleVerify}
+            activeOpacity={0.85}
+            disabled={!canConfirm}
+          >
+            {isLoading
+              ? <ActivityIndicator color={C.white} size="small" />
+              : <Text style={styles.primaryBtnText}>{getT('confirmBtn')}</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -354,146 +344,150 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(60, 60, 60, 0.55)',
+    backgroundColor: C.bg,
   },
-
-  /* Top banner */
-  topBannerContainer: {
-    height: 280,
-    width: '100%',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
-  topBannerBg: {
-    width: '100%',
-    height: '100%',
-  },
-  topBannerContent: {
-    flex: 1,
-    paddingHorizontal: 20,
+  topBar: {
     paddingTop: Platform.OS === 'ios' ? 52 : 38,
-    paddingBottom: 16,
+    marginBottom: 8,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1E1B4B80',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: C.inputBg,
     borderWidth: 1,
-    borderColor: '#683EE660',
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
   },
-  heroCenter: {
-    flex: 1,
+  heroArea: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    paddingVertical: 28,
+    gap: 10,
   },
   shieldBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#683EE620',
-    borderWidth: 1,
-    borderColor: '#683EE660',
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: C.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#D8D0FA',
     marginBottom: 4,
   },
   heroTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: C.text,
   },
   heroSubtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
+    fontSize: 14,
+    color: C.textSub,
+    lineHeight: 20,
   },
   phoneChip: {
-    backgroundColor: '#683EE620',
-    borderWidth: 1,
-    borderColor: '#683EE660',
-    color: '#A78BFA',
-    fontSize: 14,
+    backgroundColor: C.primaryLight,
+    color: C.primary,
+    fontSize: 15,
     fontWeight: '800',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     borderRadius: 20,
-    marginTop: 4,
-    letterSpacing: 1,
+    borderWidth: 1,
+    borderColor: '#D8D0FA',
     overflow: 'hidden',
+    letterSpacing: 1,
   },
-
-  /* Form card */
-  formCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.07)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 24,
-    padding: 22,
-    gap: 14,
+  card: {
+    backgroundColor: C.white,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 24,
+    gap: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  codeLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#CBD5E1',
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: C.text,
   },
   otpInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.09)',
+    backgroundColor: C.inputBg,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: C.border,
     borderRadius: 16,
     height: 72,
-    fontSize: 30,
-    color: '#FFFFFF',
+    fontSize: 28,
+    color: C.text,
     fontWeight: '900',
-    letterSpacing: 10,
+    letterSpacing: 12,
+  },
+  otpInputFocused: {
+    borderColor: C.primary,
+    backgroundColor: C.primaryLight,
+  },
+  otpInputFilled: {
+    borderColor: C.success,
+    backgroundColor: '#F0FDF4',
   },
   resendRow: {
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   timerText: {
-    color: '#64748B',
+    color: C.textSub,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  resendActiveRow: {
+  resendBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    backgroundColor: C.primaryLight,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#D8D0FA',
   },
-  resendActiveText: {
-    color: '#A78BFA',
+  resendBtnText: {
+    color: C.primary,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  confirmBtn: {
-    backgroundColor: '#683EE6',
-    borderRadius: 16,
+  primaryBtn: {
+    backgroundColor: C.primary,
+    borderRadius: 14,
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
     marginTop: 4,
   },
-  confirmBtnDisabled: {
+  primaryBtnDisabled: {
     opacity: 0.4,
+    shadowOpacity: 0,
+    elevation: 0,
   },
-  confirmBtnText: {
-    color: '#FFFFFF',
+  primaryBtnText: {
+    color: C.white,
     fontSize: 16,
     fontWeight: '800',
+    letterSpacing: 0.3,
   },
 });
