@@ -16,6 +16,7 @@ export const BASE_URL = 'http://187.124.34.118/api/v1';
  */
 export const api = axios.create({
   baseURL: BASE_URL,
+  timeout: 4000,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -59,8 +60,8 @@ api.interceptors.response.use(
       const newAccessToken = await tokenManager.refresh();
 
       if (!newAccessToken) {
-        console.error(
-          `❌ [Auth] Refresh failed — clearing session and redirecting to Login`
+        console.warn(
+          `⚠️ [Auth] Refresh failed — clearing session and redirecting to Login`
         );
         await clearSessionAndLogout();
         return Promise.reject(error);
