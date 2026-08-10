@@ -10,35 +10,25 @@ import {
   Platform,
   StatusBar,
   Alert,
+  ImageBackground,
   ActivityIndicator,
   Modal,
   I18nManager,
-  Image,
 } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { Phone, Globe, ChevronDown, Check, UserPlus } from 'lucide-react-native';
+import { Phone, ArrowRight, ArrowLeft, Globe, ChevronDown, Check } from 'lucide-react-native';
 import { RootStackParamList } from '../../../App';
+import { LaserLogo } from '../../components/LaserLogo';
 import { authService } from '../../services/auth.service';
 
 type PhoneAuthScreenNavigationProp = StackNavigationProp<RootStackParamList, 'PhoneAuth'>;
-interface Props { navigation: PhoneAuthScreenNavigationProp; }
 
-// ─── Brand Tokens ─────────────────────────────────────────────────────────────
-const C = {
-  bg:          '#FFFFFF',
-  primary:     '#683EE6',
-  primaryLight:'#F3F0FF',
-  primaryMid:  '#EDE9FF',
-  text:        '#111827',
-  textSub:     '#6B7280',
-  border:      '#E5E7EB',
-  inputBg:     '#FAFAFA',
-  success:     '#10B981',
-  error:       '#EF4444',
-  white:       '#FFFFFF',
-};
+interface Props {
+  navigation: PhoneAuthScreenNavigationProp;
+}
 
 const LANGUAGES = [
   { code: 'ar', label: 'العربية', flag: '🇲🇦' },
@@ -48,17 +38,29 @@ const LANGUAGES = [
 ];
 
 const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = {
-  welcome: {
-    ar: 'مرحباً بك في Yalla VTC',
-    fr: 'Bienvenue sur Yalla VTC',
-    en: 'Welcome to Yalla VTC',
-    es: 'Bienvenido a Yalla VTC',
+  logoTagline: {
+    ar: 'تسجيل الدخول ومصادقة الحساب',
+    fr: 'AUTHENTIFICATION DU COMPTE',
+    en: 'ACCOUNT AUTHENTICATION',
+    es: 'AUTENTICACIÓN DE LA CUENTA',
   },
-  tagline: {
-    ar: 'تنقّل بسهولة وأمان في مراكش',
-    fr: 'Déplacez-vous facilement et en sécurité à Marrakech',
-    en: 'Travel easily and safely in Marrakech',
-    es: 'Viaja fácil y seguro en Marrakech',
+  logoSubTagline: {
+    ar: 'رحلتك تبدأ هنا',
+    fr: 'Votre voyage commence ici',
+    en: 'Your journey starts here',
+    es: 'Tu viaje comienza aquí',
+  },
+  mainTitle: {
+    ar: 'تسجيل الدخول برقم الهاتف',
+    fr: 'Connexion par téléphone',
+    en: 'Sign In with Phone',
+    es: 'Iniciar sesión con teléfono',
+  },
+  subTitle: {
+    ar: 'يرجى إدخال رقم هاتفك للمتابعة وتلقي رمز التحقق عبر SMS.',
+    fr: 'Veuillez saisir votre numéro de téléphone pour recevoir le code de vérification SMS.',
+    en: 'Please enter your phone number to receive the SMS verification code.',
+    es: 'Por favor ingrese su número de teléfono para recibir el código de verificación SMS.',
   },
   phoneLabel: {
     ar: 'رقم الهاتف',
@@ -66,35 +68,29 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     en: 'Phone Number',
     es: 'Número de teléfono',
   },
-  phonePlaceholder: {
-    ar: '6XX XX XX XX',
-    fr: '6XX XX XX XX',
-    en: '6XX XX XX XX',
-    es: '6XX XX XX XX',
-  },
   continueBtn: {
-    ar: 'متابعة',
-    fr: 'Continuer',
-    en: 'Continue',
-    es: 'Continuar',
+    ar: 'متابعة وإرسال الرمز ➔',
+    fr: 'Continuer et envoyer ➔',
+    en: 'Continue & Send Code ➔',
+    es: 'Continuar y enviar código ➔',
   },
   loadingBtn: {
-    ar: 'جاري الإرسال...',
-    fr: 'Envoi en cours...',
-    en: 'Sending...',
-    es: 'Enviando...',
+    ar: 'جاري إرسال الرمز...',
+    fr: 'Envoi du code...',
+    en: 'Sending code...',
+    es: 'Enviando código...',
   },
   newToApp: {
-    ar: 'ليس لديك حساب؟',
-    fr: 'Pas encore de compte ?',
-    en: "Don't have an account?",
-    es: '¿No tienes cuenta?',
+    ar: 'ليس لديك حساب على Yalla VTC بعد؟',
+    fr: 'Nouveau sur Yalla VTC ?',
+    en: 'New to Yalla VTC?',
+    es: '¿Nuevo en Yalla VTC?',
   },
   createAccountLink: {
-    ar: 'إنشاء حساب جديد',
-    fr: 'Créer un compte',
-    en: 'Create Account',
-    es: 'Crear cuenta',
+    ar: 'إنشاء حساب جديد الآن ⚡',
+    fr: 'Créer un compte maintenant ⚡',
+    en: 'Create an account now ⚡',
+    es: 'Crear una cuenta ahora ⚡',
   },
   alertTitle: {
     ar: 'تنبيه',
@@ -109,10 +105,10 @@ const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = 
     es: 'Por favor ingrese un número de teléfono válido de al menos 9 dígitos.',
   },
   langModalTitle: {
-    ar: 'اختر اللغة',
-    fr: 'Choisir la langue',
-    en: 'Select Language',
-    es: 'Seleccionar idioma',
+    ar: '🌐 اختر اللغة',
+    fr: '🌐 Choisir la langue',
+    en: '🌐 Select Language',
+    es: '🌐 Seleccionar idioma',
   },
 };
 
@@ -128,8 +124,9 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
   const [showLangModal, setShowLangModal] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const getT = (key: string): string =>
-    TRANSLATIONS[key]?.[activeLang] || TRANSLATIONS[key]?.['ar'] || '';
+  const getT = (key: string): string => {
+    return TRANSLATIONS[key]?.[activeLang] || TRANSLATIONS[key]?.['ar'] || '';
+  };
 
   const handleLanguageChange = async (langCode: string) => {
     await i18n.changeLanguage(langCode);
@@ -153,13 +150,16 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleContinue = async () => {
     if (!validatePhone()) return;
+
     const cleanNumber = phoneNumber.trim().replace(/^0+/, '');
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+212${cleanNumber}`;
+
     setIsLoading(true);
     try {
       await authService.requestOtp(formattedPhone);
-    } catch (_) {}
-    finally {
+    } catch (_) {
+      // Continue gracefully to OTP screen
+    } finally {
       setIsLoading(false);
       navigation.navigate('OTPVerify', { phoneNumber: formattedPhone, isRegistration: false });
     }
@@ -170,21 +170,63 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Language Picker — top right */}
-      <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <TouchableOpacity
-          style={styles.langBtn}
-          onPress={() => setShowLangModal(true)}
-          activeOpacity={0.75}
+      {/* ── Top Header Banner with marrakech_bg.jpg & LaserLogo ── */}
+      <View style={styles.topHeaderBannerContainer}>
+        <ImageBackground
+          source={require('../../assets/marrakech_bg.jpg')}
+          style={styles.topHeaderBannerBg}
+          resizeMode="cover"
         >
-          <Globe size={15} color={C.primary} />
-          <Text style={styles.langBtnText}>
-            {LANGUAGES.find(l => l.code === activeLang)?.flag} {activeLang.toUpperCase()}
-          </Text>
-          <ChevronDown size={13} color={C.primary} />
-        </TouchableOpacity>
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="headerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#1E1B4B" stopOpacity="0.45" />
+                <Stop offset="65%" stopColor="#0F172A" stopOpacity="0.75" />
+                <Stop offset="100%" stopColor="#F8FAFC" stopOpacity="1.0" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#headerGradient)" />
+          </Svg>
+
+          <View style={styles.topHeaderContent}>
+            {/* Top Bar: Back & Language */}
+            <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.8}
+              >
+                {isRTL ? <ArrowRight size={20} color="#FFFFFF" /> : <ArrowLeft size={20} color="#FFFFFF" />}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.langPickerBtn, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                onPress={() => setShowLangModal(true)}
+                activeOpacity={0.8}
+              >
+                <Globe size={16} color="#C4B5FD" />
+                <Text style={styles.langBtnText}>
+                  {LANGUAGES.find((l) => l.code === activeLang)?.flag || '🌐'}{' '}
+                  {activeLang.toUpperCase()}
+                </Text>
+                <ChevronDown size={14} color="#C4B5FD" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Vector LaserLogo Header */}
+            <View style={styles.logoWrapper}>
+              <LaserLogo
+                fontSize={32}
+                showTagline={true}
+                subTaglineText={getT('logoSubTagline')}
+                theme="dark"
+                variant="hero"
+              />
+            </View>
+          </View>
+        </ImageBackground>
       </View>
 
       <ScrollView
@@ -192,20 +234,16 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Logo */}
-        <View style={styles.logoArea}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>Y</Text>
+        {/* ── Main Form Card (Clean White Theme) ── */}
+        <View style={styles.formCard}>
+          <View style={styles.headerTextBlock}>
+            <Text style={[styles.mainTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {getT('mainTitle')}
+            </Text>
+            <Text style={[styles.subTitle, { textAlign: isRTL ? 'right' : 'left' }]}>
+              {getT('subTitle')}
+            </Text>
           </View>
-          <Text style={styles.logoWordmark}>Yalla VTC</Text>
-          <Text style={styles.logoTagline}>{getT('tagline')}</Text>
-        </View>
-
-        {/* Card */}
-        <View style={styles.card}>
-          <Text style={[styles.welcome, { textAlign: isRTL ? 'right' : 'left' }]}>
-            {getT('welcome')}
-          </Text>
 
           {/* Phone Input */}
           <View style={styles.inputGroup}>
@@ -213,25 +251,24 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
               {getT('phoneLabel')}
             </Text>
             <View style={[
-              styles.phoneRow,
+              styles.phoneInputRow,
               { flexDirection: isRTL ? 'row-reverse' : 'row' },
-              isFocused && styles.phoneRowFocused,
+              isFocused && styles.phoneInputRowFocused,
             ]}>
-              {/* Country badge */}
-              <View style={[styles.countryBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={styles.flag}>🇲🇦</Text>
-                <Text style={styles.countryCode}>+212</Text>
+              <Phone size={18} color="#683EE6" />
+              <View style={[styles.countryCodeBadge, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                <Text style={styles.flagEmoji}>🇲🇦</Text>
+                <Text style={styles.countryCodeText}>+212</Text>
               </View>
-              <View style={styles.divider} />
-              <Phone size={16} color={isFocused ? C.primary : C.textSub} style={{ marginHorizontal: 6 }} />
+              <View style={styles.phoneDivider} />
               <TextInput
-                style={[styles.textInput, { textAlign: isRTL ? 'right' : 'left' }]}
-                placeholder={getT('phonePlaceholder')}
-                placeholderTextColor={C.textSub}
+                style={[styles.textInput, { flex: 1, textAlign: isRTL ? 'right' : 'left' }]}
+                placeholder="6XX XX XX XX"
+                placeholderTextColor="#94A3B8"
+                keyboardType="phone-pad"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
-                keyboardType="phone-pad"
-                maxLength={12}
+                maxLength={10}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
               />
@@ -240,49 +277,60 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
 
           {/* Continue Button */}
           <TouchableOpacity
-            style={[styles.primaryBtn, isLoading && styles.primaryBtnLoading]}
+            style={[styles.continueBtn, isLoading && { opacity: 0.7 }]}
             onPress={handleContinue}
             activeOpacity={0.85}
             disabled={isLoading}
           >
-            {isLoading
-              ? <ActivityIndicator color={C.white} size="small" />
-              : <Text style={styles.primaryBtnText}>{getT('continueBtn')}</Text>
-            }
+            {isLoading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.continueBtnText}>{getT('continueBtn')}</Text>
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>{getT('newToApp')}</Text>
+        {/* Footer Link */}
+        <View style={styles.footerBlock}>
+          <Text style={styles.footerLinkBase}>{getT('newToApp')}</Text>
           <TouchableOpacity
-            style={styles.footerLinkBtn}
+            style={styles.footerLinkTouch}
             onPress={() => navigation.navigate('Register')}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
           >
-            <UserPlus size={15} color={C.primary} />
-            <Text style={styles.footerLink}>{getT('createAccountLink')}</Text>
+            <Text style={styles.footerLinkHighlight}>{getT('createAccountLink')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Language Modal */}
-      <Modal visible={showLangModal} transparent animationType="fade" onRequestClose={() => setShowLangModal(false)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowLangModal(false)}>
+      <Modal
+        visible={showLangModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.langModalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowLangModal(false)}
+        >
           <View style={styles.langModalCard}>
             <Text style={styles.langModalTitle}>{getT('langModalTitle')}</Text>
-            {LANGUAGES.map(lang => (
+            {LANGUAGES.map((item) => (
               <TouchableOpacity
-                key={lang.code}
-                style={[styles.langOption, lang.code === activeLang && styles.langOptionActive]}
-                onPress={() => handleLanguageChange(lang.code)}
-                activeOpacity={0.75}
+                key={item.code}
+                style={[
+                  styles.langOptionRow,
+                  activeLang === item.code && styles.langOptionRowSelected,
+                ]}
+                onPress={() => handleLanguageChange(item.code)}
               >
-                <Text style={styles.langFlag}>{lang.flag}</Text>
-                <Text style={[styles.langLabel, lang.code === activeLang && styles.langLabelActive]}>
-                  {lang.label}
+                <Text style={styles.langOptionFlag}>{item.flag}</Text>
+                <Text style={[styles.langOptionLabel, activeLang === item.code && { color: '#683EE6' }]}>
+                  {item.label}
                 </Text>
-                {lang.code === activeLang && <Check size={16} color={C.primary} />}
+                {activeLang === item.code && <Check size={18} color="#683EE6" />}
               </TouchableOpacity>
             ))}
           </View>
@@ -295,229 +343,232 @@ export const PhoneAuthScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: '#F8FAFC',
+  },
+  topHeaderBannerContainer: {
+    height: 235,
+    width: '100%',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topHeaderBannerBg: {
+    width: '100%',
+    height: '100%',
+  },
+  topHeaderContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 38,
+    justifyContent: 'space-between',
+    paddingBottom: 16,
   },
   topBar: {
-    paddingTop: Platform.OS === 'ios' ? 52 : 38,
-    paddingHorizontal: 20,
-    justifyContent: 'flex-end',
-  },
-  langBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
+    justifyContent: 'space-between',
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     borderWidth: 1,
-    borderColor: '#D8D0FA',
-  },
-  langBtnText: {
-    color: C.primary,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-    paddingTop: 12,
-  },
-  logoArea: {
-    alignItems: 'center',
-    paddingVertical: 32,
-    gap: 10,
-  },
-  logoBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 22,
-    backgroundColor: C.primary,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: '900',
-    color: C.white,
-    letterSpacing: -1,
-  },
-  logoWordmark: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: C.text,
-    letterSpacing: -0.5,
-  },
-  logoTagline: {
-    fontSize: 14,
-    color: C.textSub,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  card: {
-    backgroundColor: C.white,
-    borderRadius: 20,
+  langPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  langBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  logoWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  formCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 24,
     padding: 24,
     gap: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowColor: '#683EE6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  welcome: {
-    fontSize: 20,
+  headerTextBlock: {
+    gap: 6,
+  },
+  mainTitle: {
+    fontSize: 22,
     fontWeight: '800',
-    color: C.text,
+    color: '#0F172A',
+  },
+  subTitle: {
+    fontSize: 14,
+    color: '#64748B',
+    lineHeight: 20,
   },
   inputGroup: {
     gap: 8,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: C.text,
+    fontWeight: '700',
+    color: '#334155',
   },
-  phoneRow: {
+  phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: C.inputBg,
+    backgroundColor: '#FAFAFA',
     borderWidth: 1.5,
-    borderColor: C.border,
-    borderRadius: 14,
+    borderColor: '#E2E8F0',
+    borderRadius: 16,
     paddingHorizontal: 14,
     height: 54,
+    gap: 10,
   },
-  phoneRowFocused: {
-    borderColor: C.primary,
-    backgroundColor: C.primaryLight,
+  phoneInputRowFocused: {
+    borderColor: '#683EE6',
+    backgroundColor: '#F3F0FF',
   },
-  countryBadge: {
+  countryCodeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  flag: { fontSize: 18 },
-  countryCode: {
-    color: C.text,
+  flagEmoji: {
+    fontSize: 16,
+  },
+  countryCodeText: {
+    color: '#0F172A',
     fontSize: 14,
     fontWeight: '700',
   },
-  divider: {
+  phoneDivider: {
     width: 1,
     height: 22,
-    backgroundColor: C.border,
-    marginHorizontal: 10,
+    backgroundColor: '#CBD5E1',
   },
   textInput: {
     flex: 1,
-    color: C.text,
+    color: '#0F172A',
     fontSize: 16,
     fontWeight: '600',
   },
-  primaryBtn: {
-    backgroundColor: C.primary,
-    borderRadius: 14,
+  continueBtn: {
+    backgroundColor: '#683EE6',
+    borderRadius: 16,
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: C.primary,
+    marginTop: 6,
+    shadowColor: '#683EE6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
   },
-  primaryBtnLoading: {
-    opacity: 0.7,
-  },
-  primaryBtnText: {
-    color: C.white,
+  continueBtnText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.3,
   },
-  footer: {
+  footerBlock: {
     alignItems: 'center',
-    marginTop: 28,
-    gap: 10,
+    marginTop: 24,
+    gap: 6,
   },
-  footerText: {
-    color: C.textSub,
+  footerLinkBase: {
+    color: '#64748B',
     fontSize: 14,
   },
-  footerLinkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: C.primaryLight,
-    paddingHorizontal: 18,
+  footerLinkTouch: {
+    backgroundColor: '#F3F0FF',
     paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: '#D8D0FA',
   },
-  footerLink: {
-    color: C.primary,
+  footerLinkHighlight: {
+    color: '#683EE6',
     fontSize: 14,
     fontWeight: '800',
   },
 
   /* Language Modal */
-  modalBackdrop: {
+  langModalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
   langModalCard: {
     width: '100%',
-    backgroundColor: C.white,
-    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: '#E2E8F0',
     padding: 20,
-    gap: 8,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
   },
   langModalTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: C.text,
+    color: '#0F172A',
     textAlign: 'center',
     marginBottom: 8,
   },
-  langOption: {
+  langOptionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.inputBg,
-    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    gap: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: '#E2E8F0',
   },
-  langOptionActive: {
-    backgroundColor: C.primaryLight,
-    borderColor: C.primary,
+  langOptionRowSelected: {
+    backgroundColor: '#F3F0FF',
+    borderColor: '#683EE6',
   },
-  langFlag: { fontSize: 20 },
-  langLabel: {
+  langOptionFlag: {
+    fontSize: 20,
+  },
+  langOptionLabel: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
-    color: C.text,
-  },
-  langLabelActive: {
-    color: C.primary,
-    fontWeight: '800',
+    fontWeight: '700',
+    color: '#0F172A',
   },
 });

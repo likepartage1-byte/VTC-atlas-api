@@ -12,7 +12,9 @@ import {
   ScrollView,
   I18nManager,
   ActivityIndicator,
+  ImageBackground,
 } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
 import { setAuthenticated } from '../../store';
@@ -21,19 +23,19 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../../App';
 import { ArrowLeft, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react-native';
+import { LaserLogo } from '../../components/LaserLogo';
 import { authService } from '../../services/auth.service';
 import { api } from '../../api/axios.instance';
 import { useAppModeStore } from '../../store/useAppModeStore';
 
-// ─── Brand Tokens ─────────────────────────────────────────────────────────────
 const C = {
-  bg:          '#FFFFFF',
+  bg:          '#F8FAFC',
   primary:     '#683EE6',
   primaryLight:'#F3F0FF',
   primaryMid:  '#EDE9FF',
-  text:        '#111827',
-  textSub:     '#6B7280',
-  border:      '#E5E7EB',
+  text:        '#0F172A',
+  textSub:     '#64748B',
+  border:      '#E2E8F0',
   inputBg:     '#FAFAFA',
   success:     '#10B981',
   error:       '#EF4444',
@@ -48,6 +50,12 @@ interface Props {
 }
 
 const TRANSLATIONS: Record<string, Record<'ar' | 'fr' | 'en' | 'es', string>> = {
+  logoSubTagline: {
+    ar: 'رحلتك تبدأ هنا',
+    fr: 'Votre voyage commence ici',
+    en: 'Your journey starts here',
+    es: 'Tu viaje comienza aquí',
+  },
   screenTitle: {
     ar: 'التحقق من رقم الهاتف',
     fr: 'Vérification du numéro',
@@ -247,43 +255,71 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* ── Top Header Banner with marrakech_bg.jpg & LaserLogo ── */}
+      <View style={styles.topHeaderBannerContainer}>
+        <ImageBackground
+          source={require('../../assets/marrakech_bg.jpg')}
+          style={styles.topHeaderBannerBg}
+          resizeMode="cover"
+        >
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="headerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#1E1B4B" stopOpacity="0.45" />
+                <Stop offset="65%" stopColor="#0F172A" stopOpacity="0.75" />
+                <Stop offset="100%" stopColor="#F8FAFC" stopOpacity="1.0" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#headerGradient)" />
+          </Svg>
+
+          <View style={styles.topHeaderContent}>
+            {/* Top Bar: Back Button */}
+            <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={() => navigation.goBack()}
+                activeOpacity={0.8}
+              >
+                {isRTL
+                  ? <ArrowRight size={20} color="#FFFFFF" />
+                  : <ArrowLeft  size={20} color="#FFFFFF" />
+                }
+              </TouchableOpacity>
+            </View>
+
+            {/* Vector LaserLogo Header */}
+            <View style={styles.logoWrapper}>
+              <LaserLogo
+                fontSize={32}
+                showTagline={true}
+                subTaglineText={getT('logoSubTagline')}
+                theme="dark"
+                variant="hero"
+              />
+            </View>
+          </View>
+        </ImageBackground>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Back Button */}
-        <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-            activeOpacity={0.75}
-          >
-            {isRTL
-              ? <ArrowRight size={20} color={C.text} />
-              : <ArrowLeft  size={20} color={C.text} />
-            }
-          </TouchableOpacity>
-        </View>
-
-        {/* Shield Icon + Title */}
-        <View style={styles.heroArea}>
-          <View style={styles.shieldBadge}>
-            <ShieldCheck size={32} color={C.primary} />
-          </View>
-          <Text style={[styles.heroTitle, { textAlign: isRTL ? 'right' : 'center' }]}>
-            {getT('screenTitle')}
-          </Text>
-          <Text style={[styles.heroSubtitle, { textAlign: 'center' }]}>
-            {getT('screenSubtitle')}
-          </Text>
-          <Text style={styles.phoneChip}>{phoneNumber}</Text>
-        </View>
-
-        {/* OTP Form Card */}
+        {/* OTP Card */}
         <View style={styles.card}>
+          <View style={styles.heroArea}>
+            <View style={styles.shieldBadge}>
+              <ShieldCheck size={28} color={C.primary} />
+            </View>
+            <Text style={styles.heroTitle}>{getT('screenTitle')}</Text>
+            <Text style={styles.heroSubtitle}>{getT('screenSubtitle')}</Text>
+            <Text style={styles.phoneChip}>{phoneNumber}</Text>
+          </View>
+
           <Text style={[styles.inputLabel, { textAlign: isRTL ? 'right' : 'left' }]}>
             {getT('codeLabel')}
           </Text>
@@ -344,36 +380,72 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.bg,
+    backgroundColor: '#F8FAFC',
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+  topHeaderBannerContainer: {
+    height: 235,
+    width: '100%',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topHeaderBannerBg: {
+    width: '100%',
+    height: '100%',
+  },
+  topHeaderContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 38,
+    justifyContent: 'space-between',
+    paddingBottom: 16,
   },
   topBar: {
-    paddingTop: Platform.OS === 'ios' ? 52 : 38,
-    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: C.inputBg,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  logoWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  card: {
+    backgroundColor: C.white,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 24,
+    gap: 16,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
+  },
   heroArea: {
     alignItems: 'center',
-    paddingVertical: 28,
-    gap: 10,
+    paddingBottom: 8,
+    gap: 8,
   },
   shieldBadge: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     backgroundColor: C.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -382,44 +454,33 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: C.text,
+    textAlign: 'center',
   },
   heroSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: C.textSub,
-    lineHeight: 20,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   phoneChip: {
     backgroundColor: C.primaryLight,
     color: C.primary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '800',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: '#D8D0FA',
     overflow: 'hidden',
     letterSpacing: 1,
   },
-  card: {
-    backgroundColor: C.white,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: C.border,
-    padding: 24,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-  },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: C.text,
   },
   otpInput: {
@@ -427,8 +488,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: C.border,
     borderRadius: 16,
-    height: 72,
-    fontSize: 28,
+    height: 68,
+    fontSize: 26,
     color: C.text,
     fontWeight: '900',
     letterSpacing: 12,
@@ -447,7 +508,7 @@ const styles = StyleSheet.create({
   },
   timerText: {
     color: C.textSub,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   resendBtn: {
@@ -463,12 +524,12 @@ const styles = StyleSheet.create({
   },
   resendBtnText: {
     color: C.primary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
   },
   primaryBtn: {
     backgroundColor: C.primary,
-    borderRadius: 14,
+    borderRadius: 16,
     height: 54,
     alignItems: 'center',
     justifyContent: 'center',
@@ -476,7 +537,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: 4,
     marginTop: 4,
   },
   primaryBtnDisabled: {
@@ -488,6 +549,5 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 0.3,
   },
 });

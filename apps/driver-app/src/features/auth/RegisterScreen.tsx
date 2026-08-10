@@ -13,7 +13,9 @@ import {
   StatusBar,
   Dimensions,
   Alert,
+  ImageBackground,
 } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { clearDocumentStorageCache } from '../profile/DocumentsScreen';
@@ -34,6 +36,7 @@ import {
   Sparkles,
 } from 'lucide-react-native';
 import { RootStackParamList } from '../../../App';
+import { LaserLogo } from '../../components/LaserLogo';
 import { authService } from '../../services/auth.service';
 
 // ─── Brand Tokens ─────────────────────────────────────────────────────────────
@@ -409,33 +412,63 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* ── Top Header Banner with marrakech_bg.jpg & LaserLogo ── */}
+      <View style={styles.topHeaderBannerContainer}>
+        <ImageBackground
+          source={require('../../assets/marrakech_bg.jpg')}
+          style={styles.topHeaderBannerBg}
+          resizeMode="cover"
+        >
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="headerGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#1E1B4B" stopOpacity="0.45" />
+                <Stop offset="65%" stopColor="#0F172A" stopOpacity="0.75" />
+                <Stop offset="100%" stopColor="#F8FAFC" stopOpacity="1.0" />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#headerGradient)" />
+          </Svg>
+
+          <View style={styles.topHeaderContent}>
+            {/* Top Bar: Language Button */}
+            <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <TouchableOpacity
+                style={styles.langPickerBtn}
+                onPress={() => setShowLangModal(true)}
+                activeOpacity={0.8}
+              >
+                <Globe size={16} color="#C4B5FD" />
+                <Text style={styles.langBtnText}>
+                  {LANGUAGES.find((l) => l.code === activeLang)?.flag || '🌐'}{' '}
+                  {activeLang.toUpperCase()}
+                </Text>
+                <ChevronDown size={14} color="#C4B5FD" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Vector LaserLogo */}
+            <View style={styles.logoWrapper}>
+              <LaserLogo
+                fontSize={32}
+                showTagline={true}
+                subTaglineText={getT('logoSubTagline')}
+                theme="dark"
+                variant="hero"
+              />
+            </View>
+          </View>
+        </ImageBackground>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Top bar: lang + logo */}
-        <View style={[styles.topBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          <View style={styles.logoArea}>
-            <View style={styles.logoBadge}>
-              <Text style={styles.logoText}>Y</Text>
-            </View>
-            <Text style={styles.logoWordmark}>Yalla VTC</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.langBtn}
-            onPress={() => setShowLangModal(true)}
-            activeOpacity={0.75}
-          >
-            <Globe size={14} color={C.primary} />
-            <Text style={styles.langBtnText}>
-              {LANGUAGES.find(l => l.code === activeLang)?.flag} {activeLang.toUpperCase()}
-            </Text>
-            <ChevronDown size={12} color={C.primary} />
-          </TouchableOpacity>
-        </View>
+        {/* Screen header */}
 
         {/* Screen header */}
         <View style={styles.headerBlock}>
@@ -731,29 +764,56 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.bg },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  topHeaderBannerContainer: {
+    height: 235,
+    width: '100%',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  topHeaderBannerBg: {
+    width: '100%',
+    height: '100%',
+  },
+  topHeaderContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 52 : 38,
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+  },
   topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 52 : 38, paddingHorizontal: 20, paddingBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
-  logoArea: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoBadge: {
-    width: 40, height: 40, borderRadius: 12, backgroundColor: C.primary,
-    alignItems: 'center', justifyContent: 'center',
+  langPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
   },
-  logoText: { fontSize: 22, fontWeight: '900', color: C.white },
-  logoWordmark: { fontSize: 18, fontWeight: '900', color: C.text },
-  langBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: C.primaryLight, paddingHorizontal: 12, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1, borderColor: '#D8D0FA',
+  langBtnText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
-  langBtnText: { color: C.primary, fontSize: 12, fontWeight: '700' },
-  headerBlock: { marginTop: 20, marginBottom: 4 },
+  logoWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 40 },
+  headerBlock: { marginTop: 8, marginBottom: 4 },
   screenTitle: { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 6 },
   screenSubtitle: { fontSize: 14, color: C.textSub, lineHeight: 20 },
-  rolesContainer: { gap: 14, marginTop: 20 },
+  rolesContainer: { gap: 14, marginTop: 16 },
   roleCard: {
     backgroundColor: C.white, borderWidth: 1.5, borderColor: C.border,
     borderRadius: 20, padding: 20,
