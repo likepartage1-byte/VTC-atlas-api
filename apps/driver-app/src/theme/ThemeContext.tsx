@@ -40,12 +40,13 @@ interface ThemeContextType {
   isDarkMode: boolean;
   colors: ThemeColorsType;
   toggleTheme: () => void;
+  setMode: (isDark: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(true); // default dark
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(false); // default clean light mode
 
   useEffect(() => {
     // Load persisted preference
@@ -72,10 +73,19 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const setMode = async (isDark: boolean) => {
+    try {
+      setIsDarkMode(isDark);
+      await AsyncStorage.setItem('theme_preference', isDark ? 'dark' : 'light');
+    } catch (e) {
+      console.error('Failed to set theme preference', e);
+    }
+  };
+
   const colors = isDarkMode ? AtlasColors : AtlasLightColors;
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, colors, toggleTheme }}>
+    <ThemeContext.Provider value={{ isDarkMode, colors, toggleTheme, setMode }}>
       {children}
     </ThemeContext.Provider>
   );
