@@ -1,23 +1,36 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Image,
+  PanResponder,
+  Animated,
 } from 'react-native';
-import { MoreVertical, Package, MapPin, Navigation, DollarSign, Star } from 'lucide-react-native';
+import {
+  MoreVertical,
+  Package,
+  MapPin,
+  Navigation,
+  DollarSign,
+  Star,
+  EyeOff,
+  AlertTriangle,
+} from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../theme/ThemeContext';
-import { MockOrder } from '../ordersRepository';
+import { MockOrder } from '../repositories/mockOrdersRepository';
 
 interface OrderCardProps {
   order: MockOrder;
   onPress: (order: MockOrder) => void;
+  onSelectOnMap?: (order: MockOrder) => void;
+  onHideOrder?: (orderId: string) => void;
+  onReportOrder?: (order: MockOrder) => void;
   driverStatus?: 'OFFLINE' | 'AVAILABLE';
 }
 
-// Helper: detect service type
 const isMotoService = (serviceType?: string) => {
   const st = (serviceType ?? '').toUpperCase();
   return ['MOTORCYCLE', 'MOTO'].includes(st);
@@ -27,161 +40,230 @@ const isDeliveryService = (serviceType?: string) => {
   return st === 'MOTORCYCLE_DELIVERY';
 };
 
-export const OrderCard = memo(({ order, onPress, driverStatus }: OrderCardProps) => {
+export const OrderCard = memo(({
+  order,
+  onPress,
+  onSelectOnMap,
+  onHideOrder,
+  onReportOrder,
+  driverStatus,
+}: OrderCardProps) => {
   const { colors, isDarkMode } = useTheme();
   const { i18n } = useTranslation();
   const rawLang = (i18n.language || 'fr').toLowerCase();
   const isRTL = rawLang.startsWith('ar');
+
+  const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
 
   const { passengerDetail } = order;
   const isMoto = isMotoService(order.serviceType);
   const isDelivery = isDeliveryService(order.serviceType);
   const isMotoAny = isMoto || isDelivery;
 
-  // Service badge label
   const serviceLabel = isDelivery
     ? (isRTL ? '📦 توصيل طرد' : '📦 Livraison')
     : isMoto
     ? (isRTL ? '🏍️ رحلة دراجة' : '🏍️ Moto Ride')
     : null;
 
-  // Payment badge label
   const paymentLabel = isRTL ? 'نقداً' : rawLang.startsWith('es') ? 'Efectivo' : rawLang.startsWith('en') ? 'Cash' : 'Espèces';
 
   const cardBg = isDarkMode ? '#181A20' : '#FFFFFF';
   const cardBorder = isDarkMode ? '#2D3038' : '#E5E7EB';
+  const surfaceAltBg = isDarkMode ? '#20232B' : '#F8F7FC';
   const primaryBrand = isDarkMode ? '#8B6CF6' : '#683EE6';
   const primaryLightBg = isDarkMode ? '#272042' : '#F3F0FF';
   const textMain = isDarkMode ? '#F9FAFB' : '#111827';
   const textSub = isDarkMode ? '#A1A1AA' : '#6B7280';
 
+  const toggleMenu = (e: any) => {
+    e?.stopPropagation?.();
+    setShowActionsMenu(!showActionsMenu);
+  };
+
+  const handleSelectOnMap = (e: any) => {
+    e?.stopPropagation?.();
+    setShowActionsMenu(false);
+    if (onSelectOnMap) {
+      onSelectOnMap(order);
+    } else {
+      onPress(order);
+    }
+  };
+
+  const handleHide = (e: any) => {
+    e?.stopPropagation?.();
+    setShowActionsMenu(false);
+    if (onHideOrder) {
+      onHideOrder(order.id);
+    }
+  };
+
+  const handleReport = (e: any) => {
+    e?.stopPropagation?.();
+    setShowActionsMenu(false);
+    if (onReportOrder) {
+      onReportOrder(order);
+    }
+  };
+
   return (
-    <TouchableOpacity
-      style={[
-        styles.card,
-        {
-          backgroundColor: cardBg,
-          borderColor: cardBorder,
-          shadowColor: isDarkMode ? '#000000' : 'rgba(104, 62, 230, 0.08)',
-        },
-      ]}
-      onPress={() => onPress(order)}
-      activeOpacity={0.88}
-    >
-      {/* ── Top Header Bar: Proximity Distance & Service Tag ── */}
-      <View style={[styles.topRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        <View style={[styles.distancePill, { backgroundColor: primaryLightBg }]}>
-          <Navigation size={12} color={primaryBrand} style={{ transform: [{ rotate: '45deg' }] }} />
-          <Text style={[styles.distanceText, { color: primaryBrand }]}>
-            {order.distanceToPickup?.startsWith('~') ? order.distanceToPickup : `~${order.distanceToPickup}`}
-          </Text>
-        </View>
+    <View style={styles.outerContainer}>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: cardBg,
+            borderColor: cardBorder,
+            shadowColor: isDarkMode ? '#000000' : 'rgba(104, 62, 230, 0.08)',
+          },
+        ]}
+        onPress={() => onPress(order)}
+        activeOpacity={0.88}
+      >
+        {/* ── Top Header Bar: Proximity Distance & 3 Vertical Dots (⋮) ──────── */}
+        <View style={[styles.topRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 6 }}>
+            <View style={[styles.distancePill, { backgroundColor: primaryLightBg }]}>
+              <Navigation size={12} color={primaryBrand} style={{ transform: [{ rotate: '45deg' }] }} />
+              <Text style={[styles.distanceText, { color: primaryBrand }]}>
+                {order.distanceToPickup?.startsWith('~') ? order.distanceToPickup : `~${order.distanceToPickup}`}
+              </Text>
+            </View>
 
-        {serviceLabel ? (
-          <View style={[styles.serviceBadge, { backgroundColor: isMotoAny ? '#FF6B1A15' : primaryLightBg }]}>
-            <Text style={[styles.serviceBadgeText, { color: isMotoAny ? '#FF6B1A' : primaryBrand }]}>
-              {serviceLabel}
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.cashBadge, { backgroundColor: isDarkMode ? '#1A2E26' : '#ECFDF5' }]}>
-            <DollarSign size={11} color="#16A34A" />
-            <Text style={styles.cashBadgeText}>{paymentLabel}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* ── Main Body: Passenger Info + Price + Addresses ── */}
-      <View style={[styles.mainBody, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-        {/* Passenger Profile Col */}
-        <View style={styles.avatarCol}>
-          <Image
-            source={{ uri: passengerDetail?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' }}
-            style={[styles.avatar, { borderColor: cardBorder }]}
-          />
-          <Text style={[styles.passengerName, { color: textMain }]} numberOfLines={1}>
-            {passengerDetail?.name?.split(' ')[0] || (isRTL ? 'راكب' : 'Passager')}
-          </Text>
-          <View style={styles.ratingRow}>
-            <Star size={10} color="#F59E0B" fill="#F59E0B" />
-            <Text style={[styles.ratingText, { color: textSub }]}>
-              {(passengerDetail?.rating || 4.9).toFixed(1)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Route & Price Info Col */}
-        <View style={[styles.infoCol, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
-          {/* Price Header */}
-          <View style={[styles.priceHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <Text style={[styles.priceText, { color: textMain }]}>
-              {order.offeredPrice} <Text style={styles.currencyText}>MAD</Text>
-            </Text>
-            {order.isFairPrice && (
-              <View style={[styles.fairBadge, { backgroundColor: primaryLightBg }]}>
-                <Text style={[styles.fairBadgeText, { color: primaryBrand }]}>
-                  {isRTL ? 'سعر عادل' : '⊙ Prix juste'}
+            {serviceLabel ? (
+              <View style={[styles.serviceBadge, { backgroundColor: isMotoAny ? '#FF6B1A15' : primaryLightBg }]}>
+                <Text style={[styles.serviceBadgeText, { color: isMotoAny ? '#FF6B1A' : primaryBrand }]}>
+                  {serviceLabel}
                 </Text>
+              </View>
+            ) : (
+              <View style={[styles.cashBadge, { backgroundColor: isDarkMode ? '#1A2E26' : '#ECFDF5' }]}>
+                <DollarSign size={11} color="#16A34A" />
+                <Text style={styles.cashBadgeText}>{paymentLabel}</Text>
               </View>
             )}
           </View>
 
-          {/* Pickup Address */}
-          <View style={[styles.addressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.dotMarker, { backgroundColor: '#16A34A' }]} />
-            <Text
-              style={[
-                styles.addressTextBold,
-                { color: textMain, textAlign: isRTL ? 'right' : 'left' },
-              ]}
-              numberOfLines={1}
-            >
-              {order.pickupAddress}
+          {/* 3 Vertical Dots Button (⋮) matching Screenshot #1 */}
+          <TouchableOpacity
+            style={[styles.threeDotsBtn, { backgroundColor: surfaceAltBg }]}
+            onPress={toggleMenu}
+            activeOpacity={0.7}
+          >
+            <MoreVertical size={18} color={textSub} />
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Main Body: Passenger Info + Price + Addresses ─────────────────── */}
+        <View style={[styles.mainBody, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          {/* Passenger Profile Col */}
+          <View style={styles.avatarCol}>
+            <Image
+              source={{ uri: passengerDetail?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' }}
+              style={[styles.avatar, { borderColor: cardBorder }]}
+            />
+            <Text style={[styles.passengerName, { color: textMain }]} numberOfLines={1}>
+              {passengerDetail?.name?.split(' ')[0] || (isRTL ? 'راكب' : 'Passager')}
             </Text>
-          </View>
-
-          {/* Route Connecting Line */}
-          <View style={[styles.routeLine, { left: isRTL ? undefined : 4, right: isRTL ? 4 : undefined, backgroundColor: cardBorder }]} />
-
-          {/* Dropoff Address */}
-          <View style={[styles.addressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-            <View style={[styles.dotMarker, { backgroundColor: primaryBrand }]} />
-            <Text
-              style={[
-                styles.addressTextGray,
-                { color: textSub, textAlign: isRTL ? 'right' : 'left' },
-              ]}
-              numberOfLines={1}
-            >
-              {order.dropoffAddress}
-            </Text>
-          </View>
-
-          {/* Parcel details if delivery */}
-          {isDelivery && order.parcelInfo && (
-            <View style={[styles.parcelRow, { borderColor: cardBorder }]}>
-              <Package size={12} color={textSub} />
-              <Text style={[styles.parcelText, { color: textSub }]}>
-                {[
-                  order.parcelInfo.type,
-                  order.parcelInfo.size,
-                  order.parcelInfo.weight,
-                ].filter(Boolean).join(' · ')}
+            <View style={styles.ratingRow}>
+              <Star size={10} color="#F59E0B" fill="#F59E0B" />
+              <Text style={[styles.ratingText, { color: textSub }]}>
+                {(passengerDetail?.rating || 4.9).toFixed(1)}
               </Text>
             </View>
-          )}
+          </View>
+
+          {/* Route & Price Info Col */}
+          <View style={[styles.infoCol, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+            {/* Price Header */}
+            <View style={[styles.priceHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <Text style={[styles.priceText, { color: textMain }]}>
+                {order.offeredPrice} <Text style={styles.currencyText}>MAD</Text>
+              </Text>
+              {order.isFairPrice && (
+                <View style={[styles.fairBadge, { backgroundColor: primaryLightBg }]}>
+                  <Text style={[styles.fairBadgeText, { color: primaryBrand }]}>
+                    {isRTL ? 'سعر عادل' : '⊙ Prix juste'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Pickup Address */}
+            <View style={[styles.addressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.dotMarker, { backgroundColor: '#16A34A' }]} />
+              <Text
+                style={[
+                  styles.addressTextBold,
+                  { color: textMain, textAlign: isRTL ? 'right' : 'left' },
+                ]}
+                numberOfLines={1}
+              >
+                {order.pickupAddress}
+              </Text>
+            </View>
+
+            {/* Route Connecting Line */}
+            <View style={[styles.routeLine, { left: isRTL ? undefined : 4, right: isRTL ? 4 : undefined, backgroundColor: cardBorder }]} />
+
+            {/* Dropoff Address */}
+            <View style={[styles.addressRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <View style={[styles.dotMarker, { backgroundColor: primaryBrand }]} />
+              <Text
+                style={[
+                  styles.addressTextGray,
+                  { color: textSub, textAlign: isRTL ? 'right' : 'left' },
+                ]}
+                numberOfLines={1}
+              >
+                {order.dropoffAddress}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
+
+        {/* ── Screenshot #1 Actions Menu Bar (Revealed on ⋮ tap) ─────────────── */}
+        {showActionsMenu && (
+          <View style={[styles.actionsBarContainer, { backgroundColor: surfaceAltBg, borderColor: cardBorder }]}>
+            {/* 1. Choisir sur la carte (📍) */}
+            <TouchableOpacity style={styles.actionBtnItem} onPress={handleSelectOnMap}>
+              <MapPin size={18} color={primaryBrand} />
+              <Text style={[styles.actionBtnText, { color: textMain }]}>
+                {isRTL ? 'اختيار على الخريطة' : 'Choisir sur la carte'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* 2. Masquer (🙈) */}
+            <TouchableOpacity style={styles.actionBtnItem} onPress={handleHide}>
+              <EyeOff size={18} color={textSub} />
+              <Text style={[styles.actionBtnText, { color: textSub }]}>
+                {isRTL ? 'إخفاء' : 'Masquer'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* 3. Plainte (⚠️) */}
+            <TouchableOpacity style={styles.actionBtnItem} onPress={handleReport}>
+              <AlertTriangle size={18} color="#EF4444" />
+              <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>
+                {isRTL ? 'إبلاغ' : 'Plainte'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    marginBottom: 10,
+  },
   card: {
     borderRadius: 14,
     borderWidth: 1,
     padding: 14,
-    marginBottom: 10,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -198,7 +280,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 20,
+    borderRadius: 12,
   },
   distanceText: {
     fontSize: 12,
@@ -206,7 +288,7 @@ const styles = StyleSheet.create({
   },
   serviceBadge: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 8,
   },
   serviceBadgeText: {
@@ -219,12 +301,19 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   cashBadgeText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#16A34A',
+  },
+  threeDotsBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mainBody: {
     alignItems: 'flex-start',
@@ -232,20 +321,19 @@ const styles = StyleSheet.create({
   },
   avatarCol: {
     alignItems: 'center',
-    width: 54,
+    width: 60,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    borderWidth: 1,
+    borderWidth: 1.5,
     marginBottom: 4,
   },
   passengerName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-    maxWidth: 54,
   },
   ratingRow: {
     flexDirection: 'row',
@@ -254,23 +342,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ratingText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
   },
   infoCol: {
     flex: 1,
-    gap: 4,
-    position: 'relative',
   },
   priceHeader: {
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   priceText: {
-    fontSize: 22,
+    fontSize: 19,
     fontWeight: '900',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
   currencyText: {
     fontSize: 13,
@@ -282,18 +368,18 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   fairBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
   },
   addressRow: {
     alignItems: 'center',
     gap: 8,
-    marginVertical: 1,
+    marginVertical: 2,
   },
   dotMarker: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   addressTextBold: {
     fontSize: 13,
@@ -306,20 +392,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   routeLine: {
-    position: 'absolute',
-    top: 40,
     width: 1,
-    height: 12,
+    height: 10,
+    marginLeft: 3.5,
+    marginVertical: 1,
   },
-  parcelRow: {
+  actionsBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginTop: 6,
-    paddingTop: 4,
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
     borderTopWidth: 1,
+    borderRadius: 10,
   },
-  parcelText: {
+  actionBtnItem: {
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  actionBtnText: {
     fontSize: 11,
+    fontWeight: '700',
   },
 });

@@ -22,6 +22,7 @@ import { OrderRadar } from '../components/OrderRadar';
 import { SideDrawer } from '../components/SideDrawer';
 import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
 import { ManualRideDetailsModal } from '../components/ManualRideDetailsModal';
+import { ReportOrderModal } from '../components/ReportOrderModal';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -67,8 +68,17 @@ export const OrdersListScreen = () => {
   const [incomingPrivateAlertOrder, setIncomingPrivateAlertOrder] = useState<MockOrder | null>(null);
   const [manualPreviewOrder, setManualPreviewOrder] = useState<MockOrder | null>(null);
 
+  // Hidden orders & Report Modal states
+  const [hiddenOrderIds, setHiddenOrderIds] = useState<string[]>([]);
+  const [selectedReportOrder, setSelectedReportOrder] = useState<MockOrder | null>(null);
+
   // Local Mock Orders State
   const [mockOrders, setMockOrders] = useState<MockOrder[]>([]);
+
+  // Filter out hidden orders locally
+  const visibleMockOrders = useMemo(() => {
+    return mockOrders.filter((o) => !hiddenOrderIds.includes(o.id));
+  }, [mockOrders, hiddenOrderIds]);
 
   const { isMotorcycleMode, refresh: refreshVehicleMode } = useVehicleMode();
   const incomingTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -263,8 +273,25 @@ export const OrdersListScreen = () => {
     setManualPreviewOrder(null);
   }, [refreshLocalMockOrders]);
 
+  // Handle 🙈 Masquer (Hide Order locally)
+  const handleHideOrder = useCallback((orderId: string) => {
+    setHiddenOrderIds((prev) => [...prev, orderId]);
+  }, []);
+
+  // Handle ⚠️ Plainte (Report Order Modal)
+  const handleReportOrder = useCallback((order: MockOrder) => {
+    setSelectedReportOrder(order);
+  }, []);
+
+  // Handle Report Submission
+  const handleSubmitReport = useCallback((orderId: string, reason: string, details: string) => {
+    console.log('[REPORT SUBMITTED]', { orderId, reason, details });
+    setSelectedReportOrder(null);
+  }, []);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    setHiddenOrderIds([]);
     mockOrdersRepository.resetMockData();
     refreshLocalMockOrders();
     soundService.clearHistory();
@@ -365,13 +392,16 @@ export const OrdersListScreen = () => {
 
       {/* ── 2. Orders List Section with Real Order Radar Integration ─────────── */}
       <FlatList
-        data={mockOrders}
+        data={visibleMockOrders}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <OrderCard
             order={item}
             driverStatus={activeStatus}
             onPress={handleCardPress}
+            onSelectOnMap={handleCardPress}
+            onHideOrder={handleHideOrder}
+            onReportOrder={handleReportOrder}
           />
         )}
         contentContainerStyle={styles.listPadding}
@@ -389,7 +419,7 @@ export const OrdersListScreen = () => {
         }
       />
 
-      {/* ── 3. Side Drawer, Private Incoming Alert Sheet & Manual Ride Details Modal ── */}
+      {/* ── 3. Side Drawer, Private Alert Sheet, Manual Details Modal & Report Modal ── */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {/* A. Automatic Targeted Incoming Alert (With 10-Second Countdown Lifetime Bar) */}
@@ -408,6 +438,16 @@ export const OrdersListScreen = () => {
           order={manualPreviewOrder}
           onClose={() => setManualPreviewOrder(null)}
           onAccept={(orderId, finalPrice) => handleAcceptOrder(orderId, finalPrice)}
+        />
+      )}
+
+      {/* C. Report Order Modal (Demande de rapport) */}
+      {selectedReportOrder && (
+        <ReportOrderModal
+          order={selectedReportOrder}
+          visible={!!selectedReportOrder}
+          onClose={() => setSelectedReportOrder(null)}
+          onSubmitReport={handleSubmitReport}
         />
       )}
     </SafeAreaView>
