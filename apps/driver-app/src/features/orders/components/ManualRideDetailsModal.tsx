@@ -132,29 +132,19 @@ export const ManualRideDetailsModal = memo(({
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-          {/* ── 2. MAP / ROUTE PREVIEW (Upper Map with 3 Points & 2 Distance Badges) ── */}
+          {/* ── 2. MAP / ROUTE PREVIEW (Upper Map with 3 Points & Direct Pin Tags) ── */}
           <View style={[styles.mapContainer, { borderColor: borderColor }]}>
             <LeafletMapView
-              height={190}
+              height={200}
               isDarkMode={isDarkMode}
               driver={{ lat: 31.6342, lng: -8.0089, title: isRTL ? 'سيارة السائق 🚗' : 'Véhicule Chauffeur 🚗' }}
               pickup={{ lat: order.pickupLat || 31.6258, lng: order.pickupLng || -7.9891, title: order.pickupAddress }}
               destination={{ lat: order.dropoffLat || 31.6425, lng: order.dropoffLng || -8.0125, title: order.dropoffAddress }}
+              driverToPickupDist={order.distanceToPickup || '1.5 km'}
+              driverToPickupEta={order.pickupEta || '2 min'}
+              tripDist={order.tripDistance || '8.8 km'}
+              tripEta={order.tripDuration || '14 min'}
             />
-
-            {/* Distance Badge 1: DRIVER 🚗 -> PASSENGER PICKUP A */}
-            <View style={[styles.mapDistanceBadgeDriver, { left: isRTL ? undefined : 10, right: isRTL ? 10 : undefined }]}>
-              <Text style={styles.mapBadgeTextDriver}>
-                🚗 → A: {order.distanceToPickup?.startsWith('~') ? order.distanceToPickup : `~${order.distanceToPickup || '1.5 km'}`} ({order.pickupEta || '~2 min'})
-              </Text>
-            </View>
-
-            {/* Distance Badge 2: PASSENGER TRIP A -> DROP OFF B */}
-            <View style={[styles.mapDistanceBadgeTrip, { right: isRTL ? undefined : 10, left: isRTL ? 10 : undefined }]}>
-              <Text style={styles.mapBadgeTextTrip}>
-                A → B: {order.tripDistance || '8.8 km'} • {order.tripDuration || '14 min'}
-              </Text>
-            </View>
           </View>
 
           {/* ── 3. PASSENGER INFORMATION CARD ─────────────────────────────────── */}

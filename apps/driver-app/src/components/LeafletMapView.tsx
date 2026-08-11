@@ -31,10 +31,10 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
   driver,
   pickup = DEFAULT_MARRAKECH_PICKUP,
   destination,
-  driverToPickupDist,
-  driverToPickupEta,
-  tripDist,
-  tripEta,
+  driverToPickupDist = '1.5 km',
+  driverToPickupEta = '2 min',
+  tripDist = '8.8 km',
+  tripEta = '14 min',
   height = '100%',
   isDarkMode = false,
   routeCoordinates = [],
@@ -48,7 +48,6 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
     const bgMapColor = isDarkMode ? '#12141A' : '#F3F4F6';
 
-    const hasDriver = !!driver;
     const hasDestination = !!destination;
 
     const driverLat = driver?.lat || pickup.lat + 0.015;
@@ -56,6 +55,11 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
     const destLat = destination?.lat || pickup.lat + 0.020;
     const destLng = destination?.lng || pickup.lng + 0.018;
+
+    const cleanDriverDist = driverToPickupDist.replace(/^~/, '').trim();
+    const cleanDriverEta = driverToPickupEta.replace(/^~/, '').trim();
+    const cleanTripDist = tripDist.replace(/^~/, '').trim();
+    const cleanTripEta = tripEta.replace(/^~/, '').trim();
 
     return `
 <!DOCTYPE html>
@@ -72,8 +76,8 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
     /* Driver Vehicle Pin 🚗 */
     .custom-driver-car {
-      width: 38px;
-      height: 38px;
+      width: 36px;
+      height: 36px;
       background: ${isDarkMode ? '#1E293B' : '#FFFFFF'};
       border-radius: 50%;
       border: 3px solid #3B82F6;
@@ -81,13 +85,13 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
-      font-size: 20px;
+      font-size: 19px;
     }
 
-    /* Pickup Point A Badge 🔵 */
+    /* Pickup Point A Marker Badge 🔵 */
     .custom-pin-a {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       background: #10B981;
       border-radius: 50%;
       border: 3px solid #FFFFFF;
@@ -100,10 +104,10 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       font-weight: 900;
     }
 
-    /* Destination Point B Badge 🟣 */
+    /* Destination Point B Marker Badge 🟣 (Yalla Logo Purple #683EE6) */
     .custom-pin-b {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       background: #683EE6;
       border-radius: 50%;
       border: 3px solid #FFFFFF;
@@ -114,6 +118,38 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       color: #FFFFFF;
       font-size: 15px;
       font-weight: 900;
+    }
+
+    /* Compact Square Badge above Marker A (Blue) */
+    .tag-badge-a {
+      background: #3B82F6;
+      color: #FFFFFF;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      line-height: 1.25;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+
+    /* Compact Square Badge above Marker B (Yalla Logo Purple #683EE6) */
+    .tag-badge-b {
+      background: #683EE6;
+      color: #FFFFFF;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 3px 8px rgba(104, 62, 230, 0.4);
+      margin-bottom: 4px;
+      white-space: nowrap;
+      line-height: 1.25;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
     /* Floating Zoom Controls (+ / -) */
@@ -169,39 +205,48 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     var driverIcon = L.divIcon({
       className: '',
       html: '<div class="custom-driver-car">🚗</div>',
-      iconSize: [38, 38],
-      iconAnchor: [19, 19]
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
     });
     var driverMarker = L.marker([${driverLat}, ${driverLng}], { icon: driverIcon }).addTo(map);
-    driverMarker.bindPopup("<b>${driver?.title || '🚗 السائق (Driver)'}</b>");
     allBounds.push([${driverLat}, ${driverLng}]);
 
-    // 2. PICKUP MARKER A 🔵
+    // 2. PICKUP MARKER A 🔵 with Tag Box directly above (Distance top, ETA bottom)
     var pickupIcon = L.divIcon({
       className: '',
-      html: '<div class="custom-pin-a">A</div>',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      html: '<div style="display:flex; flex-direction:column; align-items:center;">' +
+              '<div class="tag-badge-a">' +
+                '<div>${cleanDriverDist}</div>' +
+                '<div>${cleanDriverEta}</div>' +
+              '</div>' +
+              '<div class="custom-pin-a">A</div>' +
+            '</div>',
+      iconSize: [75, 75],
+      iconAnchor: [37, 75]
     });
     var pickupMarker = L.marker([${pickup.lat}, ${pickup.lng}], {
       icon: pickupIcon,
       draggable: ${interactivePickup}
     }).addTo(map);
-    pickupMarker.bindPopup("<b>${pickup.title || 'Point A (Pickup)'}</b>");
     allBounds.push([${pickup.lat}, ${pickup.lng}]);
 
-    // 3. DESTINATION MARKER B 🟣
+    // 3. DESTINATION MARKER B 🟣 with Yalla Logo Purple Tag Box directly above (Distance top, ETA bottom)
     ${
       hasDestination
         ? `
     var destIcon = L.divIcon({
       className: '',
-      html: '<div class="custom-pin-b">B</div>',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
+      html: '<div style="display:flex; flex-direction:column; align-items:center;">' +
+              '<div class="tag-badge-b">' +
+                '<div>${cleanTripDist}</div>' +
+                '<div>${cleanTripEta}</div>' +
+              '</div>' +
+              '<div class="custom-pin-b">B</div>' +
+            '</div>',
+      iconSize: [75, 75],
+      iconAnchor: [37, 75]
     });
     var destMarker = L.marker([${destLat}, ${destLng}], { icon: destIcon }).addTo(map);
-    destMarker.bindPopup("<b>${destination.title || 'Point B (Destination)'}</b>");
     allBounds.push([${destLat}, ${destLng}]);
     `
         : ''
@@ -220,7 +265,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       lineCap: 'round'
     }).addTo(map);
 
-    // 5. ROUTE LINE 2: PICKUP A -> DROP OFF B (Solid Purple Line)
+    // 5. ROUTE LINE 2: PICKUP A -> DROP OFF B (Solid Yalla Purple Line #683EE6)
     ${
       hasDestination
         ? `
@@ -241,13 +286,13 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     // 6. FIT BOUNDS SO ALL 3 POINTS ARE VISIBLE ON MAP (Auto-fit Camera)
     if (allBounds.length > 1) {
       var bounds = L.latLngBounds(allBounds);
-      map.fitBounds(bounds, { padding: [35, 35] });
+      map.fitBounds(bounds, { padding: [40, 40] });
     }
   </script>
 </body>
 </html>
     `;
-  }, [driver, pickup, destination, isDarkMode, interactivePickup]);
+  }, [driver, pickup, destination, driverToPickupDist, driverToPickupEta, tripDist, tripEta, isDarkMode, interactivePickup]);
 
   return (
     <View style={[styles.container, { height }]}>
