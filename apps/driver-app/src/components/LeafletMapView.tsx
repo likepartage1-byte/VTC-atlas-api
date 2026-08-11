@@ -115,10 +115,46 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       font-size: 15px;
       font-weight: 900;
     }
+
+    /* Floating Zoom Controls (+ / -) */
+    .zoom-container {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .zoom-btn {
+      width: 36px;
+      height: 36px;
+      background: ${isDarkMode ? '#1E293B' : '#FFFFFF'};
+      color: ${isDarkMode ? '#F9FAFB' : '#111827'};
+      border-radius: 10px;
+      border: 1px solid ${isDarkMode ? '#334155' : '#E5E7EB'};
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .zoom-btn:active {
+      transform: scale(0.92);
+      background: ${isDarkMode ? '#334155' : '#E5E7EB'};
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div class="zoom-container">
+    <div class="zoom-btn" onclick="map.zoomIn()">+</div>
+    <div class="zoom-btn" onclick="map.zoomOut()">−</div>
+  </div>
   <script>
     var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${pickup.lat}, ${pickup.lng}], 14);
 
