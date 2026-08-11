@@ -16,11 +16,11 @@ import {
 import { X, MapPin, Navigation, Edit2, Star, Check } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../theme/ThemeContext';
-import { MockOrder } from '../ordersRepository';
+import { MockOrder, MOCK_CONFIG } from '../repositories/mockOrdersRepository';
 
 const { height: SCREEN_H } = Dimensions.get('window');
-const COUNTDOWN_SECONDS = 10;
-const MAX_PRICE_PERCENTAGE = 0.30; // Max +30% price bidding ceiling
+const COUNTDOWN_SECONDS = MOCK_CONFIG.NOTIFICATION_LIFETIME_SECONDS;
+const MAX_PRICE_PERCENTAGE = MOCK_CONFIG.MAX_BID_PERCENTAGE;
 
 interface PrivateRideAlertModalProps {
   order: MockOrder | null;

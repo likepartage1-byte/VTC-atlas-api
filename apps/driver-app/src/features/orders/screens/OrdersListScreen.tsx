@@ -10,23 +10,25 @@ import {
   I18nManager,
   Alert,
   Platform,
-  PermissionsAndroid,
-  Linking,
   StatusBar,
-  Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Menu, RefreshCw } from 'lucide-react-native';
+import { Menu, RefreshCw, Sparkles } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { OrderCard } from '../components/OrderCard';
 import { OrderRadar } from '../components/OrderRadar';
 import { SideDrawer } from '../components/SideDrawer';
 import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
-import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
+import {
+  mockOrdersRepository,
+  MockOrder,
+  MOCK_CONFIG,
+  DriverTier,
+} from '../repositories/mockOrdersRepository';
+import { useOrdersStore } from '../../../store/useOrdersStore';
 import { useTheme } from '../../../theme/ThemeContext';
-import { socketService } from '../../../services/socket.service';
 import { soundService } from '../../../services/sound.service';
 import { useVehicleMode } from '../../../hooks/useVehicleMode';
 import {
@@ -36,20 +38,7 @@ import {
   setGlobalDriverWorkStatus,
 } from '../../../services/keepAwake.service';
 
-type MockOrder = RideOrder & { passengerDetail?: any; isFairPrice?: boolean };
 type DriverStatus = 'OFFLINE' | 'AVAILABLE';
-
-// Helper to parse distance number for proximity sorting (Rule #19)
-const parseDistanceKm = (distStr?: string): number => {
-  if (!distStr) return 999;
-  const clean = distStr.replace(/[^0-9.,]/g, '').replace(',', '.');
-  const val = parseFloat(clean);
-  if (isNaN(val)) return 999;
-  if (distStr.toLowerCase().includes('m') && !distStr.toLowerCase().includes('km')) {
-    return val / 1000;
-  }
-  return val;
-};
 
 export const OrdersListScreen = () => {
   const navigation = useNavigation<any>();
@@ -60,9 +49,10 @@ export const OrdersListScreen = () => {
   const rawLang = (i18n.language || 'fr').toLowerCase();
   const isRTL = rawLang.startsWith('ar');
 
-  const { orders: storeOrders, removeOrder } = useOrdersStore();
-  const previousOrderIdsRef = useRef<Set<string>>(new Set());
+  // Driver Tier state for priority testing (BASIC, GOLD, PREMIER)
+  const [driverTier, setDriverTier] = useState<DriverTier>('GOLD');
 
+  // Driver status state
   const [motoStatus, setMotoStatus]               = useState<DriverStatus>('OFFLINE');
   const [motoStatusLoading, setMotoStatusLoading] = useState<boolean>(false);
 
@@ -71,15 +61,22 @@ export const OrdersListScreen = () => {
 
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-  const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
+
+  // Separate states for Incoming Private Ride Alert vs Manual Card Preview (Rule #14)
+  const [incomingPrivateAlertOrder, setIncomingPrivateAlertOrder] = useState<MockOrder | null>(null);
+  const [manualPreviewOrder, setManualPreviewOrder] = useState<MockOrder | null>(null);
+
+  // Local Mock Orders State
+  const [mockOrders, setMockOrders] = useState<MockOrder[]>([]);
 
   const { isMotorcycleMode, refresh: refreshVehicleMode } = useVehicleMode();
+  const incomingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     refreshVehicleMode();
   }, [refreshVehicleMode]);
 
-  // Load persistent mode statuses independently
+  // Load persistent driver status & tier
   useEffect(() => {
     (async () => {
       try {
@@ -87,6 +84,10 @@ export const OrdersListScreen = () => {
         if (savedMoto === 'AVAILABLE' || savedMoto === 'OFFLINE') setMotoStatus(savedMoto as DriverStatus);
         const savedCar = await AsyncStorage.getItem('@car_driver_status');
         if (savedCar === 'AVAILABLE' || savedCar === 'OFFLINE') setCarStatus(savedCar as DriverStatus);
+        const savedTier = await AsyncStorage.getItem('@driver_tier_level');
+        if (savedTier === 'BASIC' || savedTier === 'GOLD' || savedTier === 'PREMIER') {
+          setDriverTier(savedTier as DriverTier);
+        }
       } catch (_) {}
     })();
   }, []);
@@ -105,56 +106,43 @@ export const OrdersListScreen = () => {
     syncKeepScreenOnNativeSetting(true);
   }, [activeStatus, isMotorcycleMode]);
 
-  // Filter orders by vehicle type
-  const MOTO_SERVICE_TYPES = ['MOTORCYCLE', 'MOTORCYCLE_DELIVERY', 'MOTO'];
-  const filteredOrders = useMemo(() => {
-    return (storeOrders as MockOrder[]).filter(o => {
-      const st = (o.serviceType ?? '').toUpperCase();
-      if (isMotorcycleMode) {
-        return !st || MOTO_SERVICE_TYPES.includes(st);
-      } else {
-        return !MOTO_SERVICE_TYPES.includes(st);
-      }
-    });
-  }, [storeOrders, isMotorcycleMode]);
+  // Load sorted mock orders from mockOrdersRepository (Rule #3)
+  const refreshLocalMockOrders = useCallback(() => {
+    const sorted = mockOrdersRepository.getSortedOrders();
+    setMockOrders(sorted);
+  }, []);
 
-  // MANDATORY RULE #19: Sort orders by proximity (nearest to driver first)
-  const sortedOrders = useMemo(() => {
-    return [...filteredOrders].sort(
-      (a, b) => parseDistanceKm(a.distanceToPickup) - parseDistanceKm(b.distanceToPickup)
-    );
-  }, [filteredOrders]);
-
-  // Track order arrivals & play Yalla VTC notification sound once for new orders
   useEffect(() => {
-    const prevIds = previousOrderIdsRef.current;
-    const currentIds = new Set(sortedOrders.map(o => o.id));
+    refreshLocalMockOrders();
+  }, [refreshLocalMockOrders]);
 
-    // Detect if a brand new order arrived
-    for (const order of sortedOrders) {
-      if (!prevIds.has(order.id)) {
-        // Trigger Yalla VTC chime + vibration for new order ID (deduplicated & throttled)
-        if (activeStatus === 'AVAILABLE') {
-          soundService.playNewOrderSound(order.id);
-        }
-      }
+  // ── Rule #7: Simulate Incoming Private Ride Alert when Driver goes ONLINE ──
+  useEffect(() => {
+    // Clear any pending timer when status changes
+    if (incomingTimerRef.current) {
+      clearTimeout(incomingTimerRef.current);
+      incomingTimerRef.current = null;
     }
 
-    previousOrderIdsRef.current = currentIds;
-  }, [sortedOrders, activeStatus]);
-
-  // Auto-cleanup expired orders every 30s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      storeOrders.forEach(o => {
-        if (o.expiresAt && o.expiresAt < now) {
-          removeOrder(o.id);
+    if (activeStatus === 'AVAILABLE' && MOCK_CONFIG.USE_MOCK_ORDERS) {
+      // Simulate natural search delay (1.8s) before triggering nearest eligible ride
+      incomingTimerRef.current = setTimeout(() => {
+        const { order, priorityWindowSeconds } = mockOrdersRepository.getNearestEligiblePrivateOrder(driverTier);
+        if (order) {
+          soundService.playNewOrderSound(order.id);
+          setIncomingPrivateAlertOrder(order);
         }
-      });
-    }, 30_000);
-    return () => clearInterval(interval);
-  }, [storeOrders, removeOrder]);
+      }, 1800);
+    } else {
+      setIncomingPrivateAlertOrder(null);
+    }
+
+    return () => {
+      if (incomingTimerRef.current) {
+        clearTimeout(incomingTimerRef.current);
+      }
+    };
+  }, [activeStatus, driverTier, refreshLocalMockOrders]);
 
   // ── Motorcycle Status Toggle ────────────────────────────────────────────────
   const toggleMotoStatus = useCallback(async () => {
@@ -178,11 +166,9 @@ export const OrdersListScreen = () => {
         }
         setMotoStatus('AVAILABLE');
         await AsyncStorage.setItem('@moto_driver_status', 'AVAILABLE').catch(() => {});
-        socketService.setPresence('AVAILABLE');
       } else {
         setMotoStatus('OFFLINE');
         await AsyncStorage.setItem('@moto_driver_status', 'OFFLINE').catch(() => {});
-        socketService.setPresence('OFFLINE');
       }
     } catch (e) {
       console.error('[MOTO STATUS ERROR]', e);
@@ -213,11 +199,9 @@ export const OrdersListScreen = () => {
         }
         setCarStatus('AVAILABLE');
         await AsyncStorage.setItem('@car_driver_status', 'AVAILABLE').catch(() => {});
-        socketService.setPresence('AVAILABLE');
       } else {
         setCarStatus('OFFLINE');
         await AsyncStorage.setItem('@car_driver_status', 'OFFLINE').catch(() => {});
-        socketService.setPresence('OFFLINE');
       }
     } catch (e) {
       console.error('[CAR STATUS ERROR]', e);
@@ -226,7 +210,7 @@ export const OrdersListScreen = () => {
     }
   }, [carStatus, carStatusLoading, isRTL]);
 
-  // MANDATORY RULE #11: Tapping an order card when OFFLINE triggers Online switch
+  // MANDATORY RULE #5 & #14: Manual Card Press vs Incoming Private Alert
   const handleCardPress = useCallback(async (order: MockOrder) => {
     if (activeStatus === 'OFFLINE') {
       Alert.alert(
@@ -244,38 +228,58 @@ export const OrdersListScreen = () => {
               } else {
                 await toggleCarStatus();
               }
-              setSelectedOrder(order);
+              setManualPreviewOrder(order);
             },
           },
         ]
       );
       return;
     }
-    setSelectedOrder(order);
+    setManualPreviewOrder(order);
   }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
 
-  const handleAcceptOrder = useCallback(async (orderId: string, finalPrice: number) => {
-    try {
-      await socketService.acceptRide(orderId);
-      removeOrder(orderId);
-      setSelectedOrder(null);
-    } catch (err: any) {
-      Alert.alert(
-        isRTL ? 'تم قبول الطلب بواسطة سائق آخر' : 'Course déjà acceptée',
-        err?.response?.data?.message || (isRTL ? 'تم قبول هذا الطلب من طرف سائق آخر.' : 'Cette course a déjà été acceptée par un autre chauffeur.'),
-        [{ text: 'OK' }]
-      );
-      removeOrder(orderId);
-      setSelectedOrder(null);
-    }
-  }, [removeOrder, isRTL]);
+  // Rule #11: Accept Order in local Mock State
+  const handleAcceptOrder = useCallback((orderId: string, finalPrice: number) => {
+    mockOrdersRepository.acceptOrder(orderId);
+    refreshLocalMockOrders();
+    setIncomingPrivateAlertOrder(null);
+    setManualPreviewOrder(null);
+
+    Alert.alert(
+      isRTL ? 'تم قبول الطلب بنجاح 🎉' : 'Course acceptée avec succès 🎉',
+      isRTL
+        ? `تم تثبيت الرحلة بقيمة ${finalPrice} د.م. (حالة العرض المحلية: ACCEPTED).`
+        : `La course a été réservée pour ${finalPrice} MAD (Statut local: ACCEPTED).`,
+      [{ text: 'OK' }]
+    );
+  }, [refreshLocalMockOrders, isRTL]);
+
+  // Rule #12: Ignore Order in local Mock State
+  const handleIgnoreOrder = useCallback((orderId: string) => {
+    mockOrdersRepository.ignoreOrder(orderId);
+    refreshLocalMockOrders();
+    setIncomingPrivateAlertOrder(null);
+    setManualPreviewOrder(null);
+  }, [refreshLocalMockOrders]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    mockOrdersRepository.resetMockData();
+    refreshLocalMockOrders();
     soundService.clearHistory();
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 400));
     setRefreshing(false);
-  }, []);
+  }, [refreshLocalMockOrders]);
+
+  // Cycle Driver Tier Level for testing (BASIC -> GOLD -> PREMIER)
+  const cycleDriverTier = async () => {
+    const nextTier: DriverTier = driverTier === 'BASIC' ? 'GOLD' : driverTier === 'GOLD' ? 'PREMIER' : 'BASIC';
+    setDriverTier(nextTier);
+    await AsyncStorage.setItem('@driver_tier_level', nextTier).catch(() => {});
+  };
+
+  // Active active modal target
+  const activeModalOrder = incomingPrivateAlertOrder || manualPreviewOrder;
 
   // Theme Design Tokens
   const pageBg = isDarkMode ? '#0F1115' : '#FFFFFF';
@@ -347,19 +351,20 @@ export const OrdersListScreen = () => {
           </Text>
         </TouchableOpacity>
 
-        {/* Refresh / Sync Button */}
+        {/* Tier Test Badge Switcher (BASIC / GOLD / PREMIER) */}
         <TouchableOpacity
-          style={[styles.menuBtn, { backgroundColor: isDarkMode ? '#20232B' : '#F8F7FC' }]}
-          onPress={onRefresh}
-          activeOpacity={0.7}
+          style={[styles.tierTestBadge, { backgroundColor: isDarkMode ? '#272042' : '#F3F0FF', borderColor: primaryBrand }]}
+          onPress={cycleDriverTier}
+          activeOpacity={0.8}
         >
-          <RefreshCw size={18} color={textSecondaryColor} />
+          <Sparkles size={12} color={primaryBrand} />
+          <Text style={[styles.tierTestText, { color: primaryBrand }]}>{driverTier}</Text>
         </TouchableOpacity>
       </View>
 
       {/* ── 2. Orders List Section with Real Order Radar Integration ─────────── */}
       <FlatList
-        data={sortedOrders}
+        data={mockOrders}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <OrderCard
@@ -378,20 +383,23 @@ export const OrdersListScreen = () => {
           />
         }
         ListEmptyComponent={
-          /* Real Order Radar Component: Active only when NO orders are present */
+          /* Real Order Radar Component: Active when NO orders are present */
           <OrderRadar status={activeStatus} />
         }
       />
 
-      {/* ── 3. Side Drawer & Trip Details Sheet ───────────────────────────────── */}
+      {/* ── 3. Side Drawer & Private Ride Alert Sheet ────────────────────────── */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      {selectedOrder && (
+      {activeModalOrder && (
         <PrivateRideAlertModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onIgnore={() => setSelectedOrder(null)}
-          onAccept={handleAcceptOrder}
+          order={activeModalOrder}
+          onClose={() => {
+            setIncomingPrivateAlertOrder(null);
+            setManualPreviewOrder(null);
+          }}
+          onIgnore={() => handleIgnoreOrder(activeModalOrder.id)}
+          onAccept={(orderId, finalPrice) => handleAcceptOrder(orderId, finalPrice)}
         />
       )}
     </SafeAreaView>
@@ -433,6 +441,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.3,
+  },
+  tierTestBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  tierTestText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   listPadding: {
     padding: 14,
