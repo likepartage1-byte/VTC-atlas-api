@@ -21,6 +21,7 @@ import { OrderCard } from '../components/OrderCard';
 import { OrderRadar } from '../components/OrderRadar';
 import { SideDrawer } from '../components/SideDrawer';
 import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
+import { ManualRideDetailsModal } from '../components/ManualRideDetailsModal';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -388,17 +389,24 @@ export const OrdersListScreen = () => {
         }
       />
 
-      {/* ── 3. Side Drawer & Private Ride Alert Sheet ────────────────────────── */}
+      {/* ── 3. Side Drawer, Private Incoming Alert Sheet & Manual Ride Details Modal ── */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      {activeModalOrder && (
+      {/* A. Automatic Targeted Incoming Alert (With 10-Second Countdown Lifetime Bar) */}
+      {incomingPrivateAlertOrder && (
         <PrivateRideAlertModal
-          order={activeModalOrder}
-          onClose={() => {
-            setIncomingPrivateAlertOrder(null);
-            setManualPreviewOrder(null);
-          }}
-          onIgnore={() => handleIgnoreOrder(activeModalOrder.id)}
+          order={incomingPrivateAlertOrder}
+          onClose={() => setIncomingPrivateAlertOrder(null)}
+          onIgnore={() => handleIgnoreOrder(incomingPrivateAlertOrder.id)}
+          onAccept={(orderId, finalPrice) => handleAcceptOrder(orderId, finalPrice)}
+        />
+      )}
+
+      {/* B. Manual Ride Details Modal (Tapped manually from Orders List - NO TIMER, NO AUTO CLOSE) */}
+      {manualPreviewOrder && (
+        <ManualRideDetailsModal
+          order={manualPreviewOrder}
+          onClose={() => setManualPreviewOrder(null)}
           onAccept={(orderId, finalPrice) => handleAcceptOrder(orderId, finalPrice)}
         />
       )}
