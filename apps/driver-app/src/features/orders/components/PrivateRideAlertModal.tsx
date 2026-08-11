@@ -153,14 +153,19 @@ export const PrivateRideAlertModal = memo(({
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
           {/* ── 2. Route Visual Preview (Points A & B) ────────────────────── */}
           <View style={[styles.routePreviewCard, { backgroundColor: surfaceAltBg, borderColor: borderColor }]}>
-            {/* Route Stats */}
+            {/* Explicit Route Stats Badges */}
             <View style={[styles.routeStatsBar, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-              <View style={styles.badgePill}>
-                <Text style={styles.badgePillText}>{order.tripDistance || '5,4 km'}</Text>
+              {/* Badge 1: Passenger Trip A -> B (مسافة الرحلة) */}
+              <View style={[styles.badgePill, { backgroundColor: primaryBrand + '18' }]}>
+                <Text style={[styles.badgePillText, { color: primaryBrand }]}>
+                  📍 {isRTL ? 'مسافة الرحلة:' : 'Course:'} {order.tripDistance || '5,4 km'}
+                </Text>
               </View>
+
+              {/* Badge 2: Driver -> Pickup A (وصول السائق للزبون) */}
               <View style={[styles.badgePill, { backgroundColor: '#10B98118' }]}>
                 <Text style={[styles.badgePillText, { color: '#10B981' }]}>
-                  {order.pickupEta || '8 min'} · {order.distanceToPickup || '2,3 km'}
+                  🚗 {isRTL ? 'الوصول للزبون:' : 'Vers client:'} {order.distanceToPickup || '2,3 km'} ({order.pickupEta || '8 min'})
                 </Text>
               </View>
             </View>
@@ -197,8 +202,8 @@ export const PrivateRideAlertModal = memo(({
             />
             <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
               <View style={[styles.priceHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                <Text style={[styles.priceValue, { color: textPrimaryColor }]}>
-                  {order.tripDistance || '5.4 km'}
+                <Text style={[styles.priceValue, { color: textSecondaryColor }]}>
+                  {isRTL ? 'مسافة الرحلة:' : 'Distance course:'} {order.tripDistance || '5,4 km'}
                 </Text>
               </View>
 
@@ -221,7 +226,9 @@ export const PrivateRideAlertModal = memo(({
                 <Text style={[styles.ratingText, { color: textSecondaryColor }]}>
                   {(passengerDetail?.rating || 5.0).toFixed(1)} ({passengerDetail?.tripsCount || 5})
                 </Text>
-                <Text style={[styles.timeElapsed, { color: textSecondaryColor }]}>33 sec.</Text>
+                <Text style={[styles.timeElapsed, { color: textSecondaryColor }]}>
+                  ({isRTL ? 'وصولك له:' : 'Approche:'} ~{order.distanceToPickup || '2.3 km'})
+                </Text>
               </View>
             </View>
           </View>
