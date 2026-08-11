@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,18 +13,21 @@ import {
   PermissionsAndroid,
   Linking,
   StatusBar,
+  Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { Menu, Wifi, WifiOff, Compass, RefreshCw } from 'lucide-react-native';
+import { Menu, RefreshCw } from 'lucide-react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { OrderCard } from '../components/OrderCard';
+import { OrderRadar } from '../components/OrderRadar';
 import { SideDrawer } from '../components/SideDrawer';
 import { TripDetailsBottomSheet } from '../components/TripDetailsBottomSheet';
 import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { socketService } from '../../../services/socket.service';
+import { soundService } from '../../../services/sound.service';
 import { useVehicleMode } from '../../../hooks/useVehicleMode';
 import {
   checkNativeGpsEnabled,
@@ -36,7 +39,7 @@ import {
 type MockOrder = RideOrder & { passengerDetail?: any; isFairPrice?: boolean };
 type DriverStatus = 'OFFLINE' | 'AVAILABLE';
 
-// Helper to parse distance number for proximity sorting (Rule #9)
+// Helper to parse distance number for proximity sorting (Rule #19)
 const parseDistanceKm = (distStr?: string): number => {
   if (!distStr) return 999;
   const clean = distStr.replace(/[^0-9.,]/g, '').replace(',', '.');
@@ -58,6 +61,7 @@ export const OrdersListScreen = () => {
   const isRTL = rawLang.startsWith('ar');
 
   const { orders: storeOrders, removeOrder } = useOrdersStore();
+  const previousOrderIdsRef = useRef<Set<string>>(new Set());
 
   const [motoStatus, setMotoStatus]               = useState<DriverStatus>('OFFLINE');
   const [motoStatusLoading, setMotoStatusLoading] = useState<boolean>(false);
@@ -65,7 +69,6 @@ export const OrdersListScreen = () => {
   const [carStatus, setCarStatus]                 = useState<DriverStatus>('OFFLINE');
   const [carStatusLoading, setCarStatusLoading]   = useState<boolean>(false);
 
-  const [loading, setLoading]       = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
@@ -115,12 +118,30 @@ export const OrdersListScreen = () => {
     });
   }, [storeOrders, isMotorcycleMode]);
 
-  // MANDATORY RULE #9: Sort orders by proximity (nearest to driver first)
+  // MANDATORY RULE #19: Sort orders by proximity (nearest to driver first)
   const sortedOrders = useMemo(() => {
     return [...filteredOrders].sort(
       (a, b) => parseDistanceKm(a.distanceToPickup) - parseDistanceKm(b.distanceToPickup)
     );
   }, [filteredOrders]);
+
+  // Track order arrivals & play Yalla VTC notification sound once for new orders
+  useEffect(() => {
+    const prevIds = previousOrderIdsRef.current;
+    const currentIds = new Set(sortedOrders.map(o => o.id));
+
+    // Detect if a brand new order arrived
+    for (const order of sortedOrders) {
+      if (!prevIds.has(order.id)) {
+        // Trigger Yalla VTC chime + vibration for new order ID (deduplicated & throttled)
+        if (activeStatus === 'AVAILABLE') {
+          soundService.playNewOrderSound(order.id);
+        }
+      }
+    }
+
+    previousOrderIdsRef.current = currentIds;
+  }, [sortedOrders, activeStatus]);
 
   // Auto-cleanup expired orders every 30s
   useEffect(() => {
@@ -205,7 +226,7 @@ export const OrdersListScreen = () => {
     }
   }, [carStatus, carStatusLoading, isRTL]);
 
-  // MANDATORY RULE #6: Tapping an order card when OFFLINE triggers Online switch
+  // MANDATORY RULE #11: Tapping an order card when OFFLINE triggers Online switch
   const handleCardPress = useCallback(async (order: MockOrder) => {
     if (activeStatus === 'OFFLINE') {
       Alert.alert(
@@ -240,7 +261,7 @@ export const OrdersListScreen = () => {
       setSelectedOrder(null);
     } catch (err: any) {
       Alert.alert(
-        isRTL ? 'تم قبول الطلب بوسطة سائق آخر' : 'Course déjà acceptée',
+        isRTL ? 'تم قبول الطلب بواسطة سائق آخر' : 'Course déjà acceptée',
         err?.response?.data?.message || (isRTL ? 'تم قبول هذا الطلب من طرف سائق آخر.' : 'Cette course a déjà été acceptée par un autre chauffeur.'),
         [{ text: 'OK' }]
       );
@@ -251,16 +272,16 @@ export const OrdersListScreen = () => {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    soundService.clearHistory();
     await new Promise(r => setTimeout(r, 500));
     setRefreshing(false);
   }, []);
 
   // Theme Design Tokens
-  const pageBg = isDarkMode ? '#111318' : '#FFFFFF';
-  const surfaceBg = isDarkMode ? '#181A20' : '#FFFFFF';
-  const borderColor = isDarkMode ? '#2D3038' : '#E5E7EB';
+  const pageBg = isDarkMode ? '#0F1115' : '#FFFFFF';
+  const surfaceBg = isDarkMode ? '#171A21' : '#FFFFFF';
+  const borderColor = isDarkMode ? '#272A33' : '#E5E7EB';
   const primaryBrand = isDarkMode ? '#8B6CF6' : '#683EE6';
-  const textPrimaryColor = isDarkMode ? '#F9FAFB' : '#111827';
   const textSecondaryColor = isDarkMode ? '#A1A1AA' : '#6B7280';
 
   const topPadding = Platform.OS === 'ios' ? insets.top : (StatusBar.currentHeight || 0);
@@ -336,7 +357,7 @@ export const OrdersListScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* ── 2. Orders List Section (RULE #6: Always visible even when offline) ── */}
+      {/* ── 2. Orders List Section with Real Order Radar Integration ─────────── */}
       <FlatList
         data={sortedOrders}
         keyExtractor={(item) => item.id}
@@ -357,19 +378,8 @@ export const OrdersListScreen = () => {
           />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={[styles.emptyIconBg, { backgroundColor: isDarkMode ? '#20232B' : '#F3F0FF' }]}>
-              <Compass size={40} color={primaryBrand} />
-            </View>
-            <Text style={[styles.emptyTitle, { color: textPrimaryColor }]}>
-              {isRTL ? 'لا تتوفر طلبات قريبة حالياً' : 'Aucune commande disponible'}
-            </Text>
-            <Text style={[styles.emptySub, { color: textSecondaryColor }]}>
-              {activeStatus === 'OFFLINE'
-                ? (isRTL ? 'أنت غير متصل الآن. قم بالتحويل إلى "متصل" لتلقي إشعارات الطلبات الفورية.' : 'Vous êtes hors ligne. Passez en ligne pour recevoir des demandes directes.')
-                : (isRTL ? 'جاري البحث عن طلبات رحلات جديدة بالقرب منك...' : 'Recherche de nouvelles courses à proximité...')}
-            </Text>
-          </View>
+          /* Real Order Radar Component: Active only when NO orders are present */
+          <OrderRadar status={activeStatus} />
         }
       />
 
@@ -426,31 +436,5 @@ const styles = StyleSheet.create({
   listPadding: {
     padding: 14,
     paddingBottom: 24,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 24,
-  },
-  emptyIconBg: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  emptySub: {
-    fontSize: 13,
-    textAlign: 'center',
-    lineHeight: 20,
-    maxWidth: 280,
   },
 });
