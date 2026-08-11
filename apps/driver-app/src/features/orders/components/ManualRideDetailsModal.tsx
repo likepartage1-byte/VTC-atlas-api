@@ -132,26 +132,27 @@ export const ManualRideDetailsModal = memo(({
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-          {/* ── 2. MAP / ROUTE PREVIEW (Upper Map with 2 Distance Badges) ──────── */}
+          {/* ── 2. MAP / ROUTE PREVIEW (Upper Map with 3 Points & 2 Distance Badges) ── */}
           <View style={[styles.mapContainer, { borderColor: borderColor }]}>
             <LeafletMapView
               height={190}
               isDarkMode={isDarkMode}
+              driver={{ lat: 31.6342, lng: -8.0089, title: isRTL ? 'سيارة السائق 🚗' : 'Véhicule Chauffeur 🚗' }}
               pickup={{ lat: order.pickupLat || 31.6258, lng: order.pickupLng || -7.9891, title: order.pickupAddress }}
               destination={{ lat: order.dropoffLat || 31.6425, lng: order.dropoffLng || -8.0125, title: order.dropoffAddress }}
             />
 
-            {/* Distance Badge 1: Driver -> Passenger Pickup A */}
-            <View style={[styles.mapDistanceBadgeDriver, { left: isRTL ? undefined : 12, right: isRTL ? 12 : undefined }]}>
+            {/* Distance Badge 1: DRIVER 🚗 -> PASSENGER PICKUP A */}
+            <View style={[styles.mapDistanceBadgeDriver, { left: isRTL ? undefined : 10, right: isRTL ? 10 : undefined }]}>
               <Text style={styles.mapBadgeTextDriver}>
-                {order.distanceToPickup?.startsWith('~') ? order.distanceToPickup : `~${order.distanceToPickup || '1.5 km'}`}
+                🚗 → A: {order.distanceToPickup?.startsWith('~') ? order.distanceToPickup : `~${order.distanceToPickup || '1.5 km'}`} ({order.pickupEta || '~2 min'})
               </Text>
             </View>
 
-            {/* Distance Badge 2: Passenger Trip A -> B */}
-            <View style={[styles.mapDistanceBadgeTrip, { right: isRTL ? undefined : 12, left: isRTL ? 12 : undefined }]}>
+            {/* Distance Badge 2: PASSENGER TRIP A -> DROP OFF B */}
+            <View style={[styles.mapDistanceBadgeTrip, { right: isRTL ? undefined : 10, left: isRTL ? 10 : undefined }]}>
               <Text style={styles.mapBadgeTextTrip}>
-                {order.tripDuration || '14 min'} • {order.tripDistance || '8.8 km'}
+                A → B: {order.tripDistance || '8.8 km'} • {order.tripDuration || '14 min'}
               </Text>
             </View>
           </View>
