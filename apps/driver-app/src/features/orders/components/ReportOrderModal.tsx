@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   scrollContent: {
     paddingHorizontal: 20,
