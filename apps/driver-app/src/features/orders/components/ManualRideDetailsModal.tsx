@@ -132,10 +132,10 @@ export const ManualRideDetailsModal = memo(({
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} bounces={false}>
-          {/* ── 2. MAP / ROUTE PREVIEW (Upper Map with 3 Points & Direct Pin Tags) ── */}
+          {/* ── 2. MAP / ROUTE PREVIEW (Expanded Upper Map for Full Visibility) ── */}
           <View style={[styles.mapContainer, { borderColor: borderColor }]}>
             <LeafletMapView
-              height={200}
+              height={260}
               isDarkMode={isDarkMode}
               driver={{ lat: 31.6342, lng: -8.0089, title: isRTL ? 'سيارة السائق 🚗' : 'Véhicule Chauffeur 🚗' }}
               pickup={{ lat: order.pickupLat || 31.6258, lng: order.pickupLng || -7.9891, title: order.pickupAddress }}
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   mapContainer: {
-    height: 190,
+    height: 260,
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
