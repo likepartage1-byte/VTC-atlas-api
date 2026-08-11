@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,229 +9,120 @@ import {
   ActivityIndicator,
   I18nManager,
   Alert,
-  Animated,
-  Easing,
-  ImageBackground,
+  Platform,
+  PermissionsAndroid,
+  Linking,
+  StatusBar,
 } from 'react-native';
-import { Menu, Compass, AlertCircle } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Defs, RadialGradient, Stop } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Menu, Wifi, WifiOff, Compass, RefreshCw } from 'lucide-react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { OrderCard } from '../components/OrderCard';
-import { BottomNavigation } from '../components/BottomNavigation';
 import { SideDrawer } from '../components/SideDrawer';
 import { TripDetailsBottomSheet } from '../components/TripDetailsBottomSheet';
 import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { socketService } from '../../../services/socket.service';
+import { useVehicleMode } from '../../../hooks/useVehicleMode';
+import {
+  checkNativeGpsEnabled,
+  openNativeGpsSettings,
+  syncKeepScreenOnNativeSetting,
+  setGlobalDriverWorkStatus,
+} from '../../../services/keepAwake.service';
 
-// Legacy type alias — OrderCard still expects MockOrder shape
 type MockOrder = RideOrder & { passengerDetail?: any; isFairPrice?: boolean };
+type DriverStatus = 'OFFLINE' | 'AVAILABLE';
 
-type DriverStatus = 'OFFLINE' | 'AVAILABLE' | 'BUSY';
-
-const SAFE_POSITIONS = [
-  { top: '25%', left: '25%', right: undefined, bottom: undefined },
-  { top: '22%', right: '28%', left: undefined, bottom: undefined },
-  { top: '38%', left: '20%', right: undefined, bottom: undefined },
-  { top: '42%', right: '18%', left: undefined, bottom: undefined },
-  { bottom: '26%', left: '28%', top: undefined, right: undefined },
-  { bottom: '22%', right: '30%', top: undefined, left: undefined },
-  { bottom: '38%', left: '22%', top: undefined, right: undefined },
-  { bottom: '40%', right: '24%', top: undefined, left: undefined },
-  { top: '30%', right: '40%', left: undefined, bottom: undefined },
-  { bottom: '30%', left: '42%', top: undefined, right: undefined },
-];
+// Helper to parse distance number for proximity sorting (Rule #9)
+const parseDistanceKm = (distStr?: string): number => {
+  if (!distStr) return 999;
+  const clean = distStr.replace(/[^0-9.,]/g, '').replace(',', '.');
+  const val = parseFloat(clean);
+  if (isNaN(val)) return 999;
+  if (distStr.toLowerCase().includes('m') && !distStr.toLowerCase().includes('km')) {
+    return val / 1000;
+  }
+  return val;
+};
 
 export const OrdersListScreen = () => {
-  const { t, i18n } = useTranslation('profile');
+  const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const { t, i18n } = useTranslation();
   const { colors, isDarkMode } = useTheme();
-  const isRTL = i18n.language === 'ar';
+  
+  const rawLang = (i18n.language || 'fr').toLowerCase();
+  const isRTL = rawLang.startsWith('ar');
 
   const { orders: storeOrders, removeOrder } = useOrdersStore();
 
-  const [status, setStatus]         = useState<DriverStatus>('OFFLINE');
+  const [motoStatus, setMotoStatus]               = useState<DriverStatus>('OFFLINE');
+  const [motoStatusLoading, setMotoStatusLoading] = useState<boolean>(false);
+
+  const [carStatus, setCarStatus]                 = useState<DriverStatus>('OFFLINE');
+  const [carStatusLoading, setCarStatusLoading]   = useState<boolean>(false);
+
   const [loading, setLoading]       = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg]     = useState<string | null>(null);
-  const [activeTab, setActiveTab]   = useState<string>('orders');
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
 
-  // Dynamic positions for submarine targets
-  const [target1Pos, setTarget1Pos] = useState<any>(SAFE_POSITIONS[0]);
-  const [target2Pos, setTarget2Pos] = useState<any>(SAFE_POSITIONS[1]);
-  const [target3Pos, setTarget3Pos] = useState<any>(SAFE_POSITIONS[5]);
-
-  // Radar Animation States
-  const pulse1 = useRef(new Animated.Value(0)).current;
-  const pulse2 = useRef(new Animated.Value(0)).current;
-  const pulse3 = useRef(new Animated.Value(0)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const textAnim = useRef(new Animated.Value(0)).current;
-  const target1Anim = useRef(new Animated.Value(0)).current;
-  const target2Anim = useRef(new Animated.Value(0)).current;
-  const target3Anim = useRef(new Animated.Value(0)).current;
-
-  // Cast store orders to MockOrder shape for OrderCard compatibility
-  const orders = storeOrders as MockOrder[];
-
-  // ── Radar Loop & Pulsing Interpolations ──────────────────────────────────────────
-  const startAnimations = useCallback(() => {
-    const runPulse = (anim: Animated.Value) => {
-      anim.setValue(0);
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 2800,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }).start(() => runPulse(anim));
-    };
-
-    runPulse(pulse1);
-    const t2 = setTimeout(() => runPulse(pulse2), 900);
-    const t3 = setTimeout(() => runPulse(pulse3), 1800);
-
-    Animated.loop(
-      Animated.timing(spinAnim, {
-        toValue: 1,
-        duration: 3600,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(textAnim, {
-          toValue: 1,
-          duration: 1000,
-          easing: Easing.ease,
-          useNativeDriver: true,
-        }),
-        Animated.timing(textAnim, {
-          toValue: 0.4,
-          duration: 1000,
-          easing: Easing.ease,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-
-    const runTarget = (anim: Animated.Value, setPos: (pos: any) => void) => {
-      let timeoutId: any;
-      let active = true;
-
-      const cycle = () => {
-        if (!active) return;
-        anim.setValue(0);
-        
-        // Randomize location
-        const rIndex = Math.floor(Math.random() * SAFE_POSITIONS.length);
-        setPos(SAFE_POSITIONS[rIndex]);
-
-        // 35% chance to skip this cycle to dynamically show 0/1/2/3 dots!
-        const skip = Math.random() < 0.35;
-        if (skip) {
-          timeoutId = setTimeout(() => {
-            cycle();
-          }, 2400);
-          return;
-        }
-
-        Animated.sequence([
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 800,
-            easing: Easing.ease,
-            useNativeDriver: true,
-          }),
-          Animated.delay(650),
-          Animated.timing(anim, {
-            toValue: 0,
-            duration: 950,
-            easing: Easing.ease,
-            useNativeDriver: true,
-          }),
-        ]).start((result) => {
-          if (result.finished) {
-            cycle();
-          }
-        });
-      };
-
-      cycle();
-
-      return () => {
-        active = false;
-        if (timeoutId) clearTimeout(timeoutId);
-      };
-    };
-
-    const cleanupTarget1 = runTarget(target1Anim, setTarget1Pos);
-    const cleanupTarget2 = runTarget(target2Anim, setTarget2Pos);
-    const cleanupTarget3 = runTarget(target3Anim, setTarget3Pos);
-
-    return () => {
-      clearTimeout(t2);
-      clearTimeout(t3);
-      cleanupTarget1();
-      cleanupTarget2();
-      cleanupTarget3();
-      pulse1.stopAnimation();
-      pulse2.stopAnimation();
-      pulse3.stopAnimation();
-      spinAnim.stopAnimation();
-      textAnim.stopAnimation();
-      target1Anim.stopAnimation();
-      target2Anim.stopAnimation();
-      target3Anim.stopAnimation();
-    };
-  }, [pulse1, pulse2, pulse3, spinAnim, textAnim, target1Anim, target2Anim, target3Anim]);
+  const { isMotorcycleMode, refresh: refreshVehicleMode } = useVehicleMode();
 
   useEffect(() => {
-    const showRadar = orders.length === 0 && !loading && !errorMsg;
-    if (showRadar) {
-      const cleanup = startAnimations();
-      return cleanup;
-    }
-  }, [orders.length, loading, errorMsg, startAnimations]);
+    refreshVehicleMode();
+  }, [refreshVehicleMode]);
 
-  const pulse1Scale = pulse1.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 2.2],
-  });
-  const pulse1Opacity = pulse1.interpolate({
-    inputRange: [0, 0.1, 0.8, 1],
-    outputRange: [0, 0.7, 0.4, 0],
-  });
+  // Load persistent mode statuses independently
+  useEffect(() => {
+    (async () => {
+      try {
+        const savedMoto = await AsyncStorage.getItem('@moto_driver_status');
+        if (savedMoto === 'AVAILABLE' || savedMoto === 'OFFLINE') setMotoStatus(savedMoto as DriverStatus);
+        const savedCar = await AsyncStorage.getItem('@car_driver_status');
+        if (savedCar === 'AVAILABLE' || savedCar === 'OFFLINE') setCarStatus(savedCar as DriverStatus);
+      } catch (_) {}
+    })();
+  }, []);
 
-  const pulse2Scale = pulse2.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 2.2],
-  });
-  const pulse2Opacity = pulse2.interpolate({
-    inputRange: [0, 0.1, 0.8, 1],
-    outputRange: [0, 0.7, 0.4, 0],
-  });
+  const activeStatus = isMotorcycleMode ? motoStatus : carStatus;
 
-  const pulse3Scale = pulse3.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 2.2],
-  });
-  const pulse3Opacity = pulse3.interpolate({
-    inputRange: [0, 0.1, 0.8, 1],
-    outputRange: [0, 0.7, 0.4, 0],
-  });
+  useFocusEffect(
+    useCallback(() => {
+      setGlobalDriverWorkStatus(activeStatus === 'AVAILABLE', isMotorcycleMode);
+      syncKeepScreenOnNativeSetting(true);
+    }, [activeStatus, isMotorcycleMode])
+  );
 
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  useEffect(() => {
+    setGlobalDriverWorkStatus(activeStatus === 'AVAILABLE', isMotorcycleMode);
+    syncKeepScreenOnNativeSetting(true);
+  }, [activeStatus, isMotorcycleMode]);
 
-  const textOpacity = textAnim;
+  // Filter orders by vehicle type
+  const MOTO_SERVICE_TYPES = ['MOTORCYCLE', 'MOTORCYCLE_DELIVERY', 'MOTO'];
+  const filteredOrders = useMemo(() => {
+    return (storeOrders as MockOrder[]).filter(o => {
+      const st = (o.serviceType ?? '').toUpperCase();
+      if (isMotorcycleMode) {
+        return !st || MOTO_SERVICE_TYPES.includes(st);
+      } else {
+        return !MOTO_SERVICE_TYPES.includes(st);
+      }
+    });
+  }, [storeOrders, isMotorcycleMode]);
 
-  // ── Auto-cleanup expired orders every 30s ─────────────────────────────────
+  // MANDATORY RULE #9: Sort orders by proximity (nearest to driver first)
+  const sortedOrders = useMemo(() => {
+    return [...filteredOrders].sort(
+      (a, b) => parseDistanceKm(a.distanceToPickup) - parseDistanceKm(b.distanceToPickup)
+    );
+  }, [filteredOrders]);
+
+  // Auto-cleanup expired orders every 30s
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -245,445 +135,254 @@ export const OrdersListScreen = () => {
     return () => clearInterval(interval);
   }, [storeOrders, removeOrder]);
 
-  // ── Pull-to-refresh: noop since data is driven by live socket ─────────────
-  const fetchOrders = useCallback(async (silent = false) => {
-    // Orders arrive via WebSocket; nothing to fetch manually.
-    // This handler is kept for the refresh control UI.
-    if (!silent) setLoading(true);
-    await new Promise(r => setTimeout(r, 400));
-    setLoading(false);
-    setRefreshing(false);
-  }, []);
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    fetchOrders(true);
-  }, [fetchOrders]);
-
-
-  // ── Status capsule ─────────────────────────────────────────────────────────
-  const cycleStatus = useCallback(() => {
-    setStatus((s) => s === 'OFFLINE' ? 'AVAILABLE' : s === 'AVAILABLE' ? 'BUSY' : 'OFFLINE');
-  }, []);
-
-  const statusConfig = useMemo(() => {
-    switch (status) {
-      case 'AVAILABLE': return { label: t('available'),  color: colors.online };
-      case 'BUSY':      return { label: t('busy'),       color: colors.warning };
-      default:          return { label: t('offline'),    color: colors.neutral };
+  // ── Motorcycle Status Toggle ────────────────────────────────────────────────
+  const toggleMotoStatus = useCallback(async () => {
+    if (motoStatusLoading) return;
+    try {
+      setMotoStatusLoading(true);
+      if (motoStatus === 'OFFLINE') {
+        if (Platform.OS === 'android') {
+          const isGpsEnabled = await checkNativeGpsEnabled();
+          if (!isGpsEnabled) {
+            Alert.alert(
+              isRTL ? '📍 خدمة تحديد الموقع معطلة' : '📍 Localisation désactivée',
+              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : 'Veuillez activer le GPS pour recevoir des courses.',
+              [
+                { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
+                { text: isRTL ? 'تفعيل GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
+              ]
+            );
+            return;
+          }
+        }
+        setMotoStatus('AVAILABLE');
+        await AsyncStorage.setItem('@moto_driver_status', 'AVAILABLE').catch(() => {});
+        socketService.setPresence('AVAILABLE');
+      } else {
+        setMotoStatus('OFFLINE');
+        await AsyncStorage.setItem('@moto_driver_status', 'OFFLINE').catch(() => {});
+        socketService.setPresence('OFFLINE');
+      }
+    } catch (e) {
+      console.error('[MOTO STATUS ERROR]', e);
+    } finally {
+      setMotoStatusLoading(false);
     }
-  }, [status, colors, t]);
+  }, [motoStatus, motoStatusLoading, isRTL]);
 
-  const handleCardPress = useCallback((order: MockOrder) => {
+  // ── Car Status Toggle ───────────────────────────────────────────────────────
+  const toggleCarStatus = useCallback(async () => {
+    if (carStatusLoading) return;
+    try {
+      setCarStatusLoading(true);
+      if (carStatus === 'OFFLINE') {
+        if (Platform.OS === 'android') {
+          const isGpsEnabled = await checkNativeGpsEnabled();
+          if (!isGpsEnabled) {
+            Alert.alert(
+              isRTL ? '📍 خدمة تحديد الموقع معطلة' : '📍 Localisation désactivée',
+              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : 'Veuillez activer le GPS pour recevoir des courses.',
+              [
+                { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
+                { text: isRTL ? 'تفعيل GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
+              ]
+            );
+            return;
+          }
+        }
+        setCarStatus('AVAILABLE');
+        await AsyncStorage.setItem('@car_driver_status', 'AVAILABLE').catch(() => {});
+        socketService.setPresence('AVAILABLE');
+      } else {
+        setCarStatus('OFFLINE');
+        await AsyncStorage.setItem('@car_driver_status', 'OFFLINE').catch(() => {});
+        socketService.setPresence('OFFLINE');
+      }
+    } catch (e) {
+      console.error('[CAR STATUS ERROR]', e);
+    } finally {
+      setCarStatusLoading(false);
+    }
+  }, [carStatus, carStatusLoading, isRTL]);
+
+  // MANDATORY RULE #6: Tapping an order card when OFFLINE triggers Online switch
+  const handleCardPress = useCallback(async (order: MockOrder) => {
+    if (activeStatus === 'OFFLINE') {
+      Alert.alert(
+        isRTL ? 'تنشيط الوضع متصل' : 'Passer en ligne',
+        isRTL
+          ? 'أنت غير متصل الآن. هل ترغب في التحويل إلى "متصل" لعرض وتفاعل الطلبات؟'
+          : 'Vous êtes hors ligne. Voulez-vous passer en ligne pour accepter cette course ?',
+        [
+          { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
+          {
+            text: isRTL ? 'تفعيل (En ligne)' : 'Passer en ligne',
+            onPress: async () => {
+              if (isMotorcycleMode) {
+                await toggleMotoStatus();
+              } else {
+                await toggleCarStatus();
+              }
+              setSelectedOrder(order);
+            },
+          },
+        ]
+      );
+      return;
+    }
     setSelectedOrder(order);
-  }, []);
+  }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
 
-  const handleAccept = useCallback(async (orderId: string, finalPrice: number) => {
+  const handleAcceptOrder = useCallback(async (orderId: string, finalPrice: number) => {
     try {
       await socketService.acceptRide(orderId);
-      removeOrder(orderId);   // Remove from live list on success
+      removeOrder(orderId);
       setSelectedOrder(null);
     } catch (err: any) {
       Alert.alert(
-        'Course non disponible',
-        err?.response?.data?.message || 'Cette course a déjà été acceptée par un autre chauffeur.',
-        [{ text: 'OK' }],
+        isRTL ? 'تم قبول الطلب بوسطة سائق آخر' : 'Course déjà acceptée',
+        err?.response?.data?.message || (isRTL ? 'تم قبول هذا الطلب من طرف سائق آخر.' : 'Cette course a déjà été acceptée par un autre chauffeur.'),
+        [{ text: 'OK' }]
       );
-      removeOrder(orderId);   // Clean up even on conflict
+      removeOrder(orderId);
       setSelectedOrder(null);
     }
-  }, [removeOrder]);
+  }, [removeOrder, isRTL]);
 
-
-  const handleCloseSheet = useCallback(() => {
-    setSelectedOrder(null);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await new Promise(r => setTimeout(r, 500));
+    setRefreshing(false);
   }, []);
 
-  // ── Render helpers ─────────────────────────────────────────────────────────
-  const renderHeader = () => (
-    <View style={[
-      styles.header,
-      { 
-        backgroundColor: colors.surface, 
-        borderBottomColor: colors.surfaceAlt,
-        flexDirection: I18nManager.isRTL ? 'row-reverse' : 'row'
-      }
-    ]}>
-      <TouchableOpacity 
-        style={[styles.iconBtn, { backgroundColor: colors.surfaceAlt }]} 
-        onPress={() => setDrawerOpen(true)} 
-        activeOpacity={0.7}
-      >
-        <Menu size={22} color={colors.textPrimary} />
-      </TouchableOpacity>
+  // Theme Design Tokens
+  const pageBg = isDarkMode ? '#111318' : '#FFFFFF';
+  const surfaceBg = isDarkMode ? '#181A20' : '#FFFFFF';
+  const borderColor = isDarkMode ? '#2D3038' : '#E5E7EB';
+  const primaryBrand = isDarkMode ? '#8B6CF6' : '#683EE6';
+  const textPrimaryColor = isDarkMode ? '#F9FAFB' : '#111827';
+  const textSecondaryColor = isDarkMode ? '#A1A1AA' : '#6B7280';
 
-      <View style={styles.headerTitleContainer}>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          {t('orders')}
-        </Text>
-      </View>
+  const topPadding = Platform.OS === 'ios' ? insets.top : (StatusBar.currentHeight || 0);
 
-      <TouchableOpacity
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: pageBg }]} edges={['right', 'left', 'bottom']}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" />
+
+      {/* ── 1. Clean YALLA VTC Header ────────────────────────────────────────── */}
+      <View
         style={[
-          styles.statusCapsule, 
-          { 
-            backgroundColor: status === 'OFFLINE' ? colors.surfaceAlt : statusConfig.color + '15', 
-            borderColor: statusConfig.color + '30' 
-          }
+          styles.headerBar,
+          {
+            backgroundColor: surfaceBg,
+            borderBottomColor: borderColor,
+            paddingTop: topPadding + 6,
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+          },
         ]}
-        onPress={cycleStatus}
-        activeOpacity={0.85}
       >
-        <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
-        <Text style={[styles.statusLabel, { color: statusConfig.color }]}>
-          {statusConfig.label}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+        {/* Menu Button (☰) */}
+        <TouchableOpacity
+          style={[styles.menuBtn, { backgroundColor: isDarkMode ? '#20232B' : '#F3F0FF' }]}
+          onPress={() => setDrawerOpen(true)}
+          activeOpacity={0.7}
+        >
+          <Menu size={22} color={primaryBrand} />
+        </TouchableOpacity>
 
-  const renderLoading = () => (
-    <View style={styles.centered}>
-      <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={[styles.centeredText, { color: colors.textSecondary }]}>
-        {t('check_again', 'Recherche de commandes...')}
-      </Text>
-    </View>
-  );
-
-  const renderEmpty = () => {
-    const radarColor = isDarkMode ? '#C084FC' : '#7C3AED';
-
-    return (
-      <View style={[styles.pureRadarContainer, { backgroundColor: colors.bg }]}>
-        <View style={styles.radarMainFrame}>
-          
-          {/* Night Map Background Texture */}
-          <ImageBackground
-            source={require('../../../assets/radar_dark.png')}
-            style={StyleSheet.absoluteFillObject}
-            resizeMode="cover"
-            imageStyle={{ opacity: isDarkMode ? 0.35 : 0.18, borderRadius: 170 }}
-          >
-            {/* Soft dark/light overlay depending on active theme */}
+        {/* Centered Driver Status Pill */}
+        <TouchableOpacity
+          disabled={isMotorcycleMode ? motoStatusLoading : carStatusLoading}
+          style={[
+            styles.statusPill,
+            {
+              flexDirection: isRTL ? 'row-reverse' : 'row',
+              backgroundColor: activeStatus === 'AVAILABLE' ? (isDarkMode ? '#14291F' : '#ECFDF5') : (isDarkMode ? '#20232B' : '#F8F7FC'),
+              borderColor: activeStatus === 'AVAILABLE' ? '#16A34A' : '#E5E7EB',
+            },
+          ]}
+          onPress={isMotorcycleMode ? toggleMotoStatus : toggleCarStatus}
+          activeOpacity={0.85}
+        >
+          {(isMotorcycleMode ? motoStatusLoading : carStatusLoading) ? (
+            <ActivityIndicator size="small" color={activeStatus === 'AVAILABLE' ? '#16A34A' : textSecondaryColor} />
+          ) : (
             <View
               style={[
-                StyleSheet.absoluteFillObject,
-                {
-                  backgroundColor: isDarkMode ? 'rgba(11, 15, 25, 0.45)' : 'rgba(248, 250, 252, 0.4)',
-                  borderRadius: 170
-                }
+                styles.statusDot,
+                { backgroundColor: activeStatus === 'AVAILABLE' ? '#16A34A' : '#6B7280' },
               ]}
             />
-          </ImageBackground>
-
-          {/* Abstract Vector Road Network Grid (Roadmap/grid background) */}
-          <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-            <Svg width="100%" height="100%" viewBox="0 0 340 340">
-              {/* Central horizontal road */}
-              <Path
-                d="M 10,170 Q 100,160 170,170 T 330,170"
-                fill="none"
-                stroke={radarColor}
-                strokeWidth={1.5}
-                strokeDasharray="4 6"
-                opacity={0.06}
-              />
-              {/* Central vertical road */}
-              <Path
-                d="M 170,10 Q 160,100 170,170 T 170,330"
-                fill="none"
-                stroke={radarColor}
-                strokeWidth={1.5}
-                strokeDasharray="4 6"
-                opacity={0.06}
-              />
-              {/* Curved street 1 */}
-              <Path
-                d="M 40,60 C 120,40 220,120 280,100"
-                fill="none"
-                stroke={radarColor}
-                strokeWidth={2}
-                opacity={0.05}
-              />
-              {/* Curved street 2 */}
-              <Path
-                d="M 60,280 C 140,240 220,320 300,240"
-                fill="none"
-                stroke={radarColor}
-                strokeWidth={2}
-                opacity={0.05}
-              />
-              {/* Diagonal ring road */}
-              <Path
-                d="M 80,100 C 120,180 200,220 260,280"
-                fill="none"
-                stroke={radarColor}
-                strokeWidth={1.5}
-                opacity={0.04}
-              />
-              {/* Tiny intersection dots */}
-              <Path
-                d="M40,60 h1 M280,100 h1 M60,280 h1 M300,240 h1 M170,170 h1 M80,100 h1 M260,280 h1"
-                stroke={radarColor}
-                strokeWidth={4}
-                strokeLinecap="round"
-                opacity={0.12}
-              />
-            </Svg>
-          </View>
-
-          {/* Static Radar Grid Background (Concentric Circles) */}
-          <View style={[styles.gridCircle, { width: 80, height: 80, borderRadius: 40, borderColor: radarColor, opacity: 0.12 }]} />
-          <View style={[styles.gridCircle, { width: 160, height: 160, borderRadius: 80, borderColor: radarColor, opacity: 0.09 }]} />
-          <View style={[styles.gridCircle, { width: 240, height: 240, borderRadius: 120, borderColor: radarColor, opacity: 0.07 }]} />
-          <View style={[styles.gridCircle, { width: 320, height: 320, borderRadius: 160, borderColor: radarColor, opacity: 0.05 }]} />
-          
-          {/* Crosshairs lines to complete the professional look */}
-          <View style={[styles.crosshairLine, { width: 340, height: 1, backgroundColor: radarColor, opacity: 0.04 }]} />
-          <View style={[styles.crosshairLine, { width: 1, height: 340, backgroundColor: radarColor, opacity: 0.04 }]} />
-
-          {/* Pulsing Concentric Waves */}
-          <Animated.View
+          )}
+          <Text
             style={[
-              styles.pulsingRing,
-              {
-                transform: [{ scale: pulse1Scale }],
-                opacity: pulse1Opacity,
-                borderColor: radarColor,
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.pulsingRing,
-              {
-                transform: [{ scale: pulse2Scale }],
-                opacity: pulse2Opacity,
-                borderColor: radarColor,
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.pulsingRing,
-              {
-                transform: [{ scale: pulse3Scale }],
-                opacity: pulse3Opacity,
-                borderColor: radarColor,
-              },
-            ]}
-          />
-
-          {/* Submarine Sonar target blips */}
-          {/* Target Blip 1 */}
-          <Animated.View
-            style={[
-              styles.submarineBlip,
-              target1Pos,
-              {
-                opacity: target1Anim,
-              },
+              styles.statusText,
+              { color: activeStatus === 'AVAILABLE' ? '#16A34A' : textSecondaryColor },
             ]}
           >
-            <View style={[styles.blipCore, { backgroundColor: radarColor }]} />
-            <Animated.View
-              style={[
-                styles.blipRing,
-                {
-                  borderColor: radarColor,
-                  transform: [{
-                    scale: target1Anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.6, 2.2],
-                    })
-                  }],
-                  opacity: target1Anim.interpolate({
-                    inputRange: [0, 0.2, 1],
-                    outputRange: [0, 0.8, 0],
-                  })
-                }
-              ]}
-            />
-          </Animated.View>
-
-          {/* Target Blip 2 */}
-          <Animated.View
-            style={[
-              styles.submarineBlip,
-              target2Pos,
-              {
-                opacity: target2Anim,
-              },
-            ]}
-          >
-            <View style={[styles.blipCore, { backgroundColor: radarColor }]} />
-            <Animated.View
-              style={[
-                styles.blipRing,
-                {
-                  borderColor: radarColor,
-                  transform: [{
-                    scale: target2Anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.6, 2.2],
-                    })
-                  }],
-                  opacity: target2Anim.interpolate({
-                    inputRange: [0, 0.2, 1],
-                    outputRange: [0, 0.8, 0],
-                  })
-                }
-              ]}
-            />
-          </Animated.View>
-
-          {/* Target Blip 3 */}
-          <Animated.View
-            style={[
-              styles.submarineBlip,
-              target3Pos,
-              {
-                opacity: target3Anim,
-              },
-            ]}
-          >
-            <View style={[styles.blipCore, { backgroundColor: radarColor }]} />
-            <Animated.View
-              style={[
-                styles.blipRing,
-                {
-                  borderColor: radarColor,
-                  transform: [{
-                    scale: target3Anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.6, 2.2],
-                    })
-                  }],
-                  opacity: target3Anim.interpolate({
-                    inputRange: [0, 0.2, 1],
-                    outputRange: [0, 0.8, 0],
-                  })
-                }
-              ]}
-            />
-          </Animated.View>
-
-          {/* Rotating Radar Sweep Slice */}
-          <Animated.View
-            style={[
-              styles.sweepWrapper,
-              {
-                transform: [{ rotate: spin }],
-              },
-            ]}
-          >
-            <Svg width={360} height={360} viewBox="0 0 200 200">
-              <Defs>
-                <RadialGradient id="radarSweep" cx="100" cy="100" r="100" fx="100" fy="100">
-                  <Stop offset="0%" stopColor={radarColor} stopOpacity="0.45" />
-                  <Stop offset="50%" stopColor={radarColor} stopOpacity="0.18" />
-                  <Stop offset="100%" stopColor={radarColor} stopOpacity="0" />
-                </RadialGradient>
-              </Defs>
-              <Path
-                d="M100 100 L170 30 A 100 100 0 0 0 100 0 Z"
-                fill="url(#radarSweep)"
-              />
-            </Svg>
-          </Animated.View>
-
-          {/* Central Beacon Chauffeur Profile or Compass Pin */}
-          <View style={[styles.centralBeacon, { backgroundColor: isDarkMode ? 'rgba(74, 222, 128, 0.12)' : 'rgba(22, 163, 74, 0.09)' }]}>
-            <View style={[styles.centralDot, { backgroundColor: radarColor }]}>
-              <Compass size={20} color="#FFFFFF" strokeWidth={2.5} />
-            </View>
-          </View>
-        </View>
-
-        {/* HUD Info and coordinate logs */}
-        <View style={styles.radarHUDContainer}>
-          <Animated.Text style={[styles.radarStatusText, { color: radarColor, opacity: textOpacity }]}>
-            {isRTL ? 'جاري المسح الراداري للطلبات...' : 'Recherche de courses (Radar)...'}
-          </Animated.Text>
-          <Text style={[styles.radarSubText, { color: colors.textSecondary }]}>
-            {isRTL ? 'تلقائيًا، ستبث أولى الطلبات القريبة إليك' : 'Vous recevrez les demandes à proximité en temps réel'}
+            {activeStatus === 'AVAILABLE'
+              ? (isRTL ? '● متصل (En ligne)' : '● EN LIGNE')
+              : (isRTL ? '○ غير متصل (Hors ligne)' : '○ HORS LIGNE')}
           </Text>
+        </TouchableOpacity>
 
-          {/* Corner tech specs for decoration */}
-          <View style={styles.radarTechFooter}>
-            <Text style={[styles.techSpecText, { color: colors.textMuted }]}>SYS: OK</Text>
-            <Text style={[styles.techSpecText, { color: colors.textMuted }]}>•</Text>
-            <Text style={[styles.techSpecText, { color: colors.textMuted }]}>RANGE: 10 KM</Text>
-            <Text style={[styles.techSpecText, { color: colors.textMuted }]}>•</Text>
-            <Text style={[styles.techSpecText, { color: colors.textMuted }]}>FPS: 60</Text>
-          </View>
-        </View>
+        {/* Refresh / Sync Button */}
+        <TouchableOpacity
+          style={[styles.menuBtn, { backgroundColor: isDarkMode ? '#20232B' : '#F8F7FC' }]}
+          onPress={onRefresh}
+          activeOpacity={0.7}
+        >
+          <RefreshCw size={18} color={textSecondaryColor} />
+        </TouchableOpacity>
       </View>
-    );
-  };
 
-  const renderError = () => (
-    <View style={styles.centered}>
-      <AlertCircle size={44} color={colors.offline} />
-      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>Erreur de synchronisation</Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{errorMsg}</Text>
-      <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.primary }]} onPress={() => fetchOrders()}>
-        <Text style={styles.retryText}>{t('check_again', 'Réessayer')}</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  const renderContent = () => {
-    if (loading)   return renderLoading();
-    if (errorMsg)  return renderError();
-    if (!orders.length) return renderEmpty();
-
-    return (
+      {/* ── 2. Orders List Section (RULE #6: Always visible even when offline) ── */}
       <FlatList
-        data={orders}
+        data={sortedOrders}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <OrderCard order={item as any} onPress={handleCardPress} />
+          <OrderCard
+            order={item}
+            driverStatus={activeStatus}
+            onPress={handleCardPress}
+          />
         )}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews
-        maxToRenderPerBatch={8}
-        windowSize={5}
-        initialNumToRender={5}
+        contentContainerStyle={styles.listPadding}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
+            colors={[primaryBrand]}
+            tintColor={primaryBrand}
           />
         }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <View style={[styles.emptyIconBg, { backgroundColor: isDarkMode ? '#20232B' : '#F3F0FF' }]}>
+              <Compass size={40} color={primaryBrand} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: textPrimaryColor }]}>
+              {isRTL ? 'لا تتوفر طلبات قريبة حالياً' : 'Aucune commande disponible'}
+            </Text>
+            <Text style={[styles.emptySub, { color: textSecondaryColor }]}>
+              {activeStatus === 'OFFLINE'
+                ? (isRTL ? 'أنت غير متصل الآن. قم بالتحويل إلى "متصل" لتلقي إشعارات الطلبات الفورية.' : 'Vous êtes hors ligne. Passez en ligne pour recevoir des demandes directes.')
+                : (isRTL ? 'جاري البحث عن طلبات رحلات جديدة بالقرب منك...' : 'Recherche de nouvelles courses à proximité...')}
+            </Text>
+          </View>
+        }
       />
-    );
-  };
 
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      {renderHeader()}
-
-      <View style={styles.feed}>
-        {renderContent()}
-      </View>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation activeTab={activeTab} onTabPress={setActiveTab} />
-
-      {/* Side Drawer */}
+      {/* ── 3. Side Drawer & Trip Details Sheet ───────────────────────────────── */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      {/* Trip Details Bottom Sheet */}
-      <TripDetailsBottomSheet
-        order={selectedOrder as any}
-        onAccept={handleAccept}
-        onClose={handleCloseSheet}
-      />
+      {selectedOrder && (
+        <TripDetailsBottomSheet
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onAccept={handleAcceptOrder}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -692,213 +391,66 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-  // ── Header ────────────────────────────────────────────────
-  header: {
-    flexDirection:    'row',
-    alignItems:       'center',
-    justifyContent:   'space-between',
-    paddingHorizontal: 16,
-    paddingVertical:   10,
-    borderBottomWidth: 1,
-    height: 58,
-  },
-  headerTitleContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+  headerBar: {
+    height: 64,
     alignItems: 'center',
-    zIndex: -1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+  menuBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  iconBtn: {
-    width:           40,
-    height:          40,
-    borderRadius:    10,
-    alignItems:      'center',
-    justifyContent:  'center',
-  },
-  statusCapsule: {
-    flexDirection:    'row',
-    alignItems:       'center',
-    gap:               7,
-    paddingHorizontal: 14,
-    paddingVertical:    7,
-    borderRadius:      24,
-    borderWidth:        1,
+  statusPill: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 24,
+    borderWidth: 1,
   },
   statusDot: {
-    width:        6,
-    height:       6,
-    borderRadius: 3,
-  },
-  statusLabel: {
-    fontSize:   11,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-
-  // ── Feed ──────────────────────────────────────────────────
-  feed: {
-    flex: 1,
-  },
-  listContent: {
-    paddingBottom: 90,
-  },
-
-  // ── States ────────────────────────────────────────────────
-  centered: {
-    flex:           1,
-    alignItems:     'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    gap:             14,
-  },
-  centeredText: {
-    fontSize: 13,
-  },
-  emptyTitle: {
-    fontSize:   16,
-    fontWeight: '800',
-  },
-  emptySubtitle: {
-    fontSize:   12,
-    textAlign:  'center',
-    lineHeight:  18,
-  },
-  retryBtn: {
-    borderRadius:    10,
-    paddingVertical:  8,
-    paddingHorizontal: 22,
-  },
-  retryText: {
-    color:      '#fff',
-    fontSize:   12,
-    fontWeight: '700',
-  },
-  pureRadarContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: 40,
-  },
-  radarMainFrame: {
-    width: 340,
-    height: 340,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  gridCircle: {
-    position: 'absolute',
-    borderWidth: 1.2,
-    borderStyle: 'dashed',
-  },
-  crosshairLine: {
-    position: 'absolute',
-  },
-  centralBeacon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    elevation: 4,
-  },
-  centralDot: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pulsingRing: {
-    position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    borderWidth: 1.5,
-    top: '50%',
-    left: '50%',
-    marginTop: -110,
-    marginLeft: -110,
-  },
-  sweepWrapper: {
-    position: 'absolute',
-    width: 360,
-    height: 360,
-    top: '50%',
-    left: '50%',
-    marginTop: -180,
-    marginLeft: -180,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  radarHUDContainer: {
-    marginTop: 35,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  radarStatusText: {
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    textShadowColor: 'rgba(0, 0, 0, 0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  radarSubText: {
-    fontSize: 13,
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  radarTechFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 18,
-    opacity: 0.7,
-  },
-  techSpecText: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-  },
-  submarineBlip: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  blipCore: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.35,
-    shadowRadius: 1.5,
-    elevation: 2,
   },
-  blipRing: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 1.5,
+  statusText: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  listPadding: {
+    padding: 14,
+    paddingBottom: 24,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 24,
+  },
+  emptyIconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  emptySub: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 280,
   },
 });
