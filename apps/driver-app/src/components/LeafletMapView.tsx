@@ -192,7 +192,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     <div class="zoom-btn" onclick="map.zoomOut()">−</div>
   </div>
   <script>
-    var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${pickup.lat}, ${pickup.lng}], 14);
+    var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${pickup.lat}, ${pickup.lng}], 12);
 
     L.tileLayer('${tileUrl}', {
       maxZoom: 19,
@@ -283,11 +283,19 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
         : ''
     }
 
-    // 6. FIT BOUNDS SO ALL 3 POINTS ARE VISIBLE ON MAP (Auto-fit Camera)
-    if (allBounds.length > 1) {
-      var bounds = L.latLngBounds(allBounds);
-      map.fitBounds(bounds, { padding: [40, 40] });
+    // 6. GUARANTEED AUTOMATIC FIT BOUNDS (Driver 🚗, Pickup A, Dropoff B)
+    function autoFitCamera() {
+      if (allBounds.length > 1) {
+        map.invalidateSize();
+        var bounds = L.latLngBounds(allBounds);
+        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 15, animate: false });
+      }
     }
+
+    // Execute autoFit immediately and with delayed timeouts to handle WebView layout stabilization
+    autoFitCamera();
+    setTimeout(autoFitCamera, 100);
+    setTimeout(autoFitCamera, 300);
   </script>
 </body>
 </html>
