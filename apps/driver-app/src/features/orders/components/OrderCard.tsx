@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -55,6 +55,47 @@ export const OrderCard = memo(({
 
   const [showActionsMenu, setShowActionsMenu] = useState<boolean>(false);
 
+  // Swipe animation value
+  const translateX = useRef(new Animated.Value(0)).current;
+
+  // Swipe PanResponder: Right -> Hide, Left -> Reveal Actions Menu
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dy) < 20;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Allow horizontal dragging
+        translateX.setValue(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 90) {
+          // Swipe Right -> Hide order directly (Masquer)
+          Animated.timing(translateX, {
+            toValue: 500,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            if (onHideOrder) onHideOrder(order.id);
+          });
+        } else if (gestureState.dx < -60) {
+          // Swipe Left -> Reveal actions bar menu
+          setShowActionsMenu(true);
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        } else {
+          // Reset card position
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
   const { passengerDetail } = order;
   const isMoto = isMotoService(order.serviceType);
   const isDelivery = isDeliveryService(order.serviceType);
@@ -108,7 +149,7 @@ export const OrderCard = memo(({
   };
 
   return (
-    <View style={styles.outerContainer}>
+    <Animated.View style={[styles.outerContainer, { transform: [{ translateX }] }]} {...panResponder.panHandlers}>
       <TouchableOpacity
         style={[
           styles.card,
@@ -223,7 +264,7 @@ export const OrderCard = memo(({
           </View>
         </View>
 
-        {/* ── Screenshot #1 Actions Menu Bar (Revealed on ⋮ tap) ─────────────── */}
+        {/* ── Screenshot #1 Actions Menu Bar (Revealed on ⋮ tap or Swipe Left) ── */}
         {showActionsMenu && (
           <View style={[styles.actionsBarContainer, { backgroundColor: surfaceAltBg, borderColor: cardBorder }]}>
             {/* 1. Choisir sur la carte (📍) */}
@@ -252,7 +293,7 @@ export const OrderCard = memo(({
           </View>
         )}
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 });
 
