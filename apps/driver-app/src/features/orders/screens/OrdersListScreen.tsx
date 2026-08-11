@@ -23,7 +23,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { OrderCard } from '../components/OrderCard';
 import { OrderRadar } from '../components/OrderRadar';
 import { SideDrawer } from '../components/SideDrawer';
-import { TripDetailsBottomSheet } from '../components/TripDetailsBottomSheet';
+import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
 import { useOrdersStore, RideOrder } from '../../../store/useOrdersStore';
 import { useTheme } from '../../../theme/ThemeContext';
 import { socketService } from '../../../services/socket.service';
@@ -387,9 +387,10 @@ export const OrdersListScreen = () => {
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {selectedOrder && (
-        <TripDetailsBottomSheet
+        <PrivateRideAlertModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          onIgnore={() => setSelectedOrder(null)}
           onAccept={handleAcceptOrder}
         />
       )}
