@@ -155,7 +155,7 @@ export const ManualRideDetailsModal = memo(({
             />
             <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
               <Text style={[styles.driverDistanceLabel, { color: textSecondaryColor }]}>
-                ~{order.distanceToPickup || '1.5 km'}
+                {order.tripDistance || '8.8 km'}
               </Text>
 
               <View style={[styles.priceHeaderRow, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
@@ -178,7 +178,7 @@ export const ManualRideDetailsModal = memo(({
                   {(passengerDetail?.rating || 4.35).toFixed(2)} ({passengerDetail?.tripsCount || 137})
                 </Text>
                 <Text style={[styles.etaText, { color: textSecondaryColor }]}>
-                  {order.pickupEta || '2 min.'}
+                  ({isRTL ? 'بعدك عنه:' : 'Pickup:'} ~{order.distanceToPickup || '1.5 km'})
                 </Text>
               </View>
             </View>

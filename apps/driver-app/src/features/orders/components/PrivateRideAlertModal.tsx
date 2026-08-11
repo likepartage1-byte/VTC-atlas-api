@@ -198,7 +198,7 @@ export const PrivateRideAlertModal = memo(({
             <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
               <View style={[styles.priceHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
                 <Text style={[styles.priceValue, { color: textPrimaryColor }]}>
-                  ~{order.distanceToPickup}
+                  {order.tripDistance || '5.4 km'}
                 </Text>
               </View>
 
