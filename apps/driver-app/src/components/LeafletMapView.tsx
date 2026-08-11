@@ -192,7 +192,15 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     <div class="zoom-btn" onclick="map.zoomOut()">−</div>
   </div>
   <script>
-    var map = L.map('map', { zoomControl: false, attributionControl: false }).setView([${pickup.lat}, ${pickup.lng}], 12);
+    var map = L.map('map', {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: true,
+      touchZoom: true,
+      doubleClickZoom: true,
+      scrollWheelZoom: true,
+      tap: true,
+    }).setView([${pickup.lat}, ${pickup.lng}], 12);
 
     L.tileLayer('${tileUrl}', {
       maxZoom: 19,
@@ -310,8 +318,9 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
         style={styles.webview}
         javaScriptEnabled={true}
         domStorageEnabled={true}
-        scrollEnabled={false}
-        overScrollMode="never"
+        scrollEnabled={true}
+        nestedScrollEnabled={true}
+        overScrollMode="always"
         showsHorizontalScrollIndicator={false}
         showsVerticalScrollIndicator={false}
       />
