@@ -23,6 +23,7 @@ import { SideDrawer } from '../components/SideDrawer';
 import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
 import { ManualRideDetailsModal } from '../components/ManualRideDetailsModal';
 import { ReportOrderModal } from '../components/ReportOrderModal';
+import { PassengerProfileModal } from '../components/PassengerProfileModal';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -68,9 +69,10 @@ export const OrdersListScreen = () => {
   const [incomingPrivateAlertOrder, setIncomingPrivateAlertOrder] = useState<MockOrder | null>(null);
   const [manualPreviewOrder, setManualPreviewOrder] = useState<MockOrder | null>(null);
 
-  // Hidden orders & Report Modal states
+  // Hidden orders, Report Modal & Passenger Profile Modal states
   const [hiddenOrderIds, setHiddenOrderIds] = useState<string[]>([]);
   const [selectedReportOrder, setSelectedReportOrder] = useState<MockOrder | null>(null);
+  const [selectedPassengerProfileOrder, setSelectedPassengerProfileOrder] = useState<MockOrder | null>(null);
 
   // Local Mock Orders State
   const [mockOrders, setMockOrders] = useState<MockOrder[]>([]);
@@ -399,6 +401,7 @@ export const OrdersListScreen = () => {
             order={item}
             driverStatus={activeStatus}
             onPress={handleCardPress}
+            onPressAvatar={(order) => setSelectedPassengerProfileOrder(order)}
             onSelectOnMap={handleCardPress}
             onHideOrder={handleHideOrder}
             onReportOrder={handleReportOrder}
@@ -419,7 +422,7 @@ export const OrdersListScreen = () => {
         }
       />
 
-      {/* ── 3. Side Drawer, Private Alert Sheet, Manual Details Modal & Report Modal ── */}
+      {/* ── 3. Side Drawer, Private Alert Sheet, Manual Details Modal, Report Modal & Passenger Profile Modal ── */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {/* A. Automatic Targeted Incoming Alert (With 10-Second Countdown Lifetime Bar) */}
@@ -448,6 +451,15 @@ export const OrdersListScreen = () => {
           visible={!!selectedReportOrder}
           onClose={() => setSelectedReportOrder(null)}
           onSubmitReport={handleSubmitReport}
+        />
+      )}
+
+      {/* D. Passenger Profile Modal (Opened by tapping passenger avatar) */}
+      {selectedPassengerProfileOrder && (
+        <PassengerProfileModal
+          order={selectedPassengerProfileOrder}
+          visible={!!selectedPassengerProfileOrder}
+          onClose={() => setSelectedPassengerProfileOrder(null)}
         />
       )}
     </SafeAreaView>

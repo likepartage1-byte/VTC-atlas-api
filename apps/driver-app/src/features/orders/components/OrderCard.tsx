@@ -25,6 +25,7 @@ import { MockOrder } from '../repositories/mockOrdersRepository';
 interface OrderCardProps {
   order: MockOrder;
   onPress: (order: MockOrder) => void;
+  onPressAvatar?: (order: MockOrder) => void;
   onSelectOnMap?: (order: MockOrder) => void;
   onHideOrder?: (orderId: string) => void;
   onReportOrder?: (order: MockOrder) => void;
@@ -43,6 +44,7 @@ const isDeliveryService = (serviceType?: string) => {
 export const OrderCard = memo(({
   order,
   onPress,
+  onPressAvatar,
   onSelectOnMap,
   onHideOrder,
   onReportOrder,
@@ -198,8 +200,19 @@ export const OrderCard = memo(({
 
         {/* ── Main Body: Passenger Info + Price + Addresses ─────────────────── */}
         <View style={[styles.mainBody, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-          {/* Passenger Profile Col */}
-          <View style={styles.avatarCol}>
+          {/* Passenger Profile Col (Tapping avatar opens Passenger Profile Preview) */}
+          <TouchableOpacity
+            style={styles.avatarCol}
+            onPress={(e) => {
+              e.stopPropagation();
+              if (onPressAvatar) {
+                onPressAvatar(order);
+              } else {
+                onPress(order);
+              }
+            }}
+            activeOpacity={0.8}
+          >
             <Image
               source={{ uri: passengerDetail?.avatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80' }}
               style={[styles.avatar, { borderColor: cardBorder }]}
@@ -213,7 +226,7 @@ export const OrderCard = memo(({
                 {(passengerDetail?.rating || 4.9).toFixed(1)}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Route & Price Info Col */}
           <View style={[styles.infoCol, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
