@@ -24,6 +24,8 @@ import { PrivateRideAlertModal } from '../components/PrivateRideAlertModal';
 import { ManualRideDetailsModal } from '../components/ManualRideDetailsModal';
 import { ReportOrderModal } from '../components/ReportOrderModal';
 import { PassengerProfileModal } from '../components/PassengerProfileModal';
+import { WaitingPassengerConfirmationModal } from '../components/WaitingPassengerConfirmationModal';
+import { ConfirmedTripModal } from '../components/ConfirmedTripModal';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -68,6 +70,17 @@ export const OrdersListScreen = () => {
   // Separate states for Incoming Private Ride Alert vs Manual Card Preview (Rule #14)
   const [incomingPrivateAlertOrder, setIncomingPrivateAlertOrder] = useState<MockOrder | null>(null);
   const [manualPreviewOrder, setManualPreviewOrder] = useState<MockOrder | null>(null);
+
+  // Phase 3 States: Waiting Confirmation & Confirmed Trip Modal
+  const [waitingConfirmationData, setWaitingConfirmationData] = useState<{
+    order: MockOrder;
+    finalPrice: number;
+  } | null>(null);
+
+  const [confirmedTripData, setConfirmedTripData] = useState<{
+    order: MockOrder;
+    finalPrice: number;
+  } | null>(null);
 
   // Hidden orders, Report Modal & Passenger Profile Modal states
   const [hiddenOrderIds, setHiddenOrderIds] = useState<string[]>([]);
@@ -251,21 +264,33 @@ export const OrdersListScreen = () => {
     setManualPreviewOrder(order);
   }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
 
-  // Rule #11: Accept Order in local Mock State
+  // Phase 3 Flow: Driver Accept -> Waiting 15s Passenger Confirmation -> Confirmed Trip Screen
   const handleAcceptOrder = useCallback((orderId: string, finalPrice: number) => {
+    const targetOrder = mockOrders.find((o) => o.id === orderId) || incomingPrivateAlertOrder || manualPreviewOrder;
+    if (!targetOrder) return;
+
     mockOrdersRepository.acceptOrder(orderId);
     refreshLocalMockOrders();
+
     setIncomingPrivateAlertOrder(null);
     setManualPreviewOrder(null);
 
-    Alert.alert(
-      isRTL ? 'تم قبول الطلب بنجاح 🎉' : 'Course acceptée avec succès 🎉',
-      isRTL
-        ? `تم تثبيت الرحلة بقيمة ${finalPrice} د.م. (حالة العرض المحلية: ACCEPTED).`
-        : `La course a été réservée pour ${finalPrice} MAD (Statut local: ACCEPTED).`,
-      [{ text: 'OK' }]
-    );
-  }, [refreshLocalMockOrders, isRTL]);
+    setWaitingConfirmationData({
+      order: { ...targetOrder, offeredPrice: finalPrice },
+      finalPrice,
+    });
+  }, [mockOrders, incomingPrivateAlertOrder, manualPreviewOrder, refreshLocalMockOrders]);
+
+  // Phase 3 Event: Passenger Confirmed during 15s countdown -> Go to Confirmed Trip Screen!
+  const handlePassengerConfirmed = useCallback((order: MockOrder, price: number) => {
+    setWaitingConfirmationData(null);
+    setConfirmedTripData({ order, finalPrice: price });
+  }, []);
+
+  // Phase 3 Event: 15s Timeout expired without confirmation -> Return to DRIVER → ONLINE → ORDERS
+  const handleWaitingTimeoutOrCancel = useCallback(() => {
+    setWaitingConfirmationData(null);
+  }, []);
 
   // Rule #12: Ignore Order in local Mock State
   const handleIgnoreOrder = useCallback((orderId: string) => {
@@ -460,6 +485,28 @@ export const OrdersListScreen = () => {
           order={selectedPassengerProfileOrder}
           visible={!!selectedPassengerProfileOrder}
           onClose={() => setSelectedPassengerProfileOrder(null)}
+        />
+      )}
+
+      {/* E. Phase 3: Waiting Passenger Confirmation Modal (15s Countdown Timer) */}
+      {waitingConfirmationData && (
+        <WaitingPassengerConfirmationModal
+          order={waitingConfirmationData.order}
+          finalPrice={waitingConfirmationData.finalPrice}
+          visible={!!waitingConfirmationData}
+          onPassengerConfirmed={handlePassengerConfirmed}
+          onTimeout={handleWaitingTimeoutOrCancel}
+          onCancel={handleWaitingTimeoutOrCancel}
+        />
+      )}
+
+      {/* F. Phase 3: Confirmed Trip Modal (Course confirmée - Interactive Map & External Navigation) */}
+      {confirmedTripData && (
+        <ConfirmedTripModal
+          order={confirmedTripData.order}
+          finalPrice={confirmedTripData.finalPrice}
+          visible={!!confirmedTripData}
+          onClose={() => setConfirmedTripData(null)}
         />
       )}
     </SafeAreaView>
