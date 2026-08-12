@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   confirmBtnText: {
     fontSize: 15,
