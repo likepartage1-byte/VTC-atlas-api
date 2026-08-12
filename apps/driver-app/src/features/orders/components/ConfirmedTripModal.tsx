@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   confirmedHeaderRow: {
     flexDirection: 'row',
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   mapContainer: {
     flex: 1,
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   pointLetter: {
     fontSize: 11,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
     gap: 10,
     elevation: 3,
   },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
     padding: 24,
   },
   pickerContainer: {
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   pickerOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
