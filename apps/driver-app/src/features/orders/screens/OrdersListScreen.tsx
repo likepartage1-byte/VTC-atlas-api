@@ -473,28 +473,13 @@ export const OrdersListScreen = () => {
           )}
           <Text style={[styles.statusText, { color: '#FFFFFF' }]}>
             {activeStatus === 'AVAILABLE'
-              ? (isRTL ? '● متصل (ONLINE)' : '● EN LIGNE')
-              : (isRTL ? '○ غير متصل (OFFLINE)' : '○ HORS LIGNE')}
+              ? (isRTL ? 'متصل' : rawLang.startsWith('es') ? 'En línea' : rawLang.startsWith('en') ? 'Online' : 'En ligne')
+              : (isRTL ? 'غير متصل' : rawLang.startsWith('es') ? 'Desconectado' : rawLang.startsWith('en') ? 'Offline' : 'Hors ligne')}
           </Text>
         </TouchableOpacity>
 
-        {/* VIP Driver Tier Level Badge */}
-        <TouchableOpacity
-          style={[
-            styles.tierTestBadge,
-            {
-              backgroundColor: driverTier === 'PREMIER' ? '#8B5CF61F' : driverTier === 'GOLD' ? '#F59E0B1F' : (isDarkMode ? '#272042' : '#F3F0FF'),
-              borderColor: driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand,
-            },
-          ]}
-          onPress={cycleDriverTier}
-          activeOpacity={0.8}
-        >
-          <Sparkles size={12} color={driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand} />
-          <Text style={[styles.tierTestText, { color: driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand }]}>
-            {driverTier === 'PREMIER' ? 'PREMIER 👑' : driverTier === 'GOLD' ? 'GOLD ⭐' : 'BASIC ⚡'}
-          </Text>
-        </TouchableOpacity>
+        {/* Empty Placeholder for Balanced Header Layout */}
+        <View style={{ width: 46 }} />
       </View>
 
       {/* ── 2. Orders List Section with Real Order Radar Integration ─────────── */}
