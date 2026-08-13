@@ -240,7 +240,6 @@ export const OTPVerifyScreen = ({ route, navigation }: Props) => {
       } else {
         await useAppModeStore.getState().setActiveMode('DRIVER');
         if (route.params?.isRegistration) {
-          useAppModeStore.getState().setDriverEligible(false);
           navigation.replace('SelectVehicleType');
         } else {
           navigation.replace('Dashboard');

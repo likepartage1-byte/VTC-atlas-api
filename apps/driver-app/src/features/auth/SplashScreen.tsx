@@ -1,13 +1,11 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Colors } from '../../theme/colors';
+import React, { useState } from 'react';
+import { View, StyleSheet, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux';
 import { setAuthenticated } from '../../store';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../../../App';
-
-import { LaserLogo } from '../../components/LaserLogo';
+import { YallaSplashAnimation } from '../../components/YallaSplashAnimation';
 
 type SplashScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Splash'>;
 
@@ -15,41 +13,36 @@ interface Props {
   navigation: SplashScreenNavigationProp;
 }
 
-export const SplashScreen = ({ navigation }: Props) => {
-  const fadeAnim = new Animated.Value(0);
+export const SplashScreen: React.FC<Props> = ({ navigation }) => {
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
-
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const handleAnimationComplete = async () => {
     try {
       const token = await AsyncStorage.getItem('driver_access_token');
-      setTimeout(() => {
-        if (token) {
-          dispatch(setAuthenticated(token));
-          navigation.replace('Dashboard');
+      const activeRole = (await AsyncStorage.getItem('@user_active_role')) || 'PASSENGER';
+
+      if (token) {
+        dispatch(setAuthenticated(token));
+        if (activeRole.toUpperCase() === 'PASSENGER') {
+          navigation.replace('PassengerHome');
         } else {
-          navigation.replace('Login');
+          navigation.replace('Dashboard');
         }
-      }, 2000);
+      } else {
+        navigation.replace('PhoneAuth');
+      }
     } catch (e) {
-      navigation.replace('Login');
+      navigation.replace('PhoneAuth');
     }
   };
 
   return (
     <View style={styles.container}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <LaserLogo fontSize={46} showTagline={true} />
-      </Animated.View>
+      <StatusBar barStyle="light-content" backgroundColor="#0F1117" translucent />
+      <YallaSplashAnimation
+        duration={2500}
+        onAnimationComplete={handleAnimationComplete}
+      />
     </View>
   );
 };
@@ -57,8 +50,6 @@ export const SplashScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#0F172A',
   },
 });
