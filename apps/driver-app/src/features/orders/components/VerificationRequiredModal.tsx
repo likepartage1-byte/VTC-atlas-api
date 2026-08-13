@@ -85,6 +85,54 @@ export const VerificationRequiredModal: React.FC<Props> = ({
         ? 'Continue ➔'
         : 'Continuer ➔');
 
+  const vehicleLabel = isRTL
+    ? 'معلومات المركبة'
+    : rawLang.startsWith('es')
+    ? 'Información del vehículo'
+    : rawLang.startsWith('en')
+    ? 'Vehicle Information'
+    : 'Informations du véhicule';
+
+  const docsLabel = isRTL
+    ? 'الوثائق الأساسية (3)'
+    : rawLang.startsWith('es')
+    ? 'Documentos básicos (3)'
+    : rawLang.startsWith('en')
+    ? 'Basic Documents (3)'
+    : 'Documents de base (3)';
+
+  const statusLabel = isRTL
+    ? 'حالة المراجعة'
+    : rawLang.startsWith('es')
+    ? 'Estado de verificación'
+    : rawLang.startsWith('en')
+    ? 'Verification Status'
+    : 'Statut de vérification';
+
+  const pendingText = isRTL
+    ? 'قيد المراجعة'
+    : rawLang.startsWith('es')
+    ? 'En revisión'
+    : rawLang.startsWith('en')
+    ? 'Under Review'
+    : 'En cours';
+
+  const incompleteText = isRTL
+    ? 'لم تكتمل'
+    : rawLang.startsWith('es')
+    ? 'Incompleto'
+    : rawLang.startsWith('en')
+    ? 'Incomplete'
+    : 'Incomplet';
+
+  const cancelText = isRTL
+    ? 'إلغاء'
+    : rawLang.startsWith('es')
+    ? 'Cancelar'
+    : rawLang.startsWith('en')
+    ? 'Cancel'
+    : 'Annuler';
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
@@ -105,7 +153,7 @@ export const VerificationRequiredModal: React.FC<Props> = ({
               <View style={styles.rowLeft}>
                 <Car size={20} color={state.vehicleVerificationPercentage === 100 ? '#10B981' : primaryBrand} />
                 <Text style={[styles.rowLabel, { color: textPrimary }]}>
-                  {isRTL ? 'معلومات المركبة' : 'Informations du véhicule'}
+                  {vehicleLabel}
                 </Text>
               </View>
               <View style={[styles.badge, { backgroundColor: state.vehicleVerificationPercentage === 100 ? '#10B98118' : '#F59E0B18' }]}>
@@ -120,7 +168,7 @@ export const VerificationRequiredModal: React.FC<Props> = ({
               <View style={styles.rowLeft}>
                 <FileText size={20} color={state.documentVerificationPercentage === 100 ? '#10B981' : primaryBrand} />
                 <Text style={[styles.rowLabel, { color: textPrimary }]}>
-                  {isRTL ? 'الوثائق الأساسية (3)' : 'Documents de base (3)'}
+                  {docsLabel}
                 </Text>
               </View>
               <View style={[styles.badge, { backgroundColor: state.documentVerificationPercentage === 100 ? '#10B98118' : '#F59E0B18' }]}>
@@ -135,14 +183,12 @@ export const VerificationRequiredModal: React.FC<Props> = ({
               <View style={styles.rowLeft}>
                 <Clock size={20} color={state.verificationStatus === 'PENDING_REVIEW' ? '#3B82F6' : textSecondary} />
                 <Text style={[styles.rowLabel, { color: textPrimary }]}>
-                  {isRTL ? 'حالة المراجعة' : 'Statut de vérification'}
+                  {statusLabel}
                 </Text>
               </View>
               <View style={[styles.badge, { backgroundColor: state.verificationStatus === 'PENDING_REVIEW' ? '#3B82F618' : surfaceAlt }]}>
                 <Text style={[styles.badgeText, { color: state.verificationStatus === 'PENDING_REVIEW' ? '#3B82F6' : textSecondary }]}>
-                  {state.verificationStatus === 'PENDING_REVIEW'
-                    ? (isRTL ? 'قيد المراجعة' : 'En cours')
-                    : (isRTL ? 'لم تكتمل' : 'Incomplet')}
+                  {state.verificationStatus === 'PENDING_REVIEW' ? pendingText : incompleteText}
                 </Text>
               </View>
             </View>
@@ -159,7 +205,7 @@ export const VerificationRequiredModal: React.FC<Props> = ({
 
           <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
             <Text style={[styles.cancelBtnText, { color: textSecondary }]}>
-              {isRTL ? 'إلغاء' : 'Annuler'}
+              {cancelText}
             </Text>
           </TouchableOpacity>
         </View>
