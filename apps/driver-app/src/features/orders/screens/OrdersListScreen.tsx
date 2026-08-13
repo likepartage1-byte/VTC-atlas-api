@@ -26,6 +26,8 @@ import { ReportOrderModal } from '../components/ReportOrderModal';
 import { PassengerProfileModal } from '../components/PassengerProfileModal';
 import { WaitingPassengerConfirmationModal } from '../components/WaitingPassengerConfirmationModal';
 import { ConfirmedTripModal } from '../components/ConfirmedTripModal';
+import { VerificationRequiredModal } from '../components/VerificationRequiredModal';
+import { canDriverAccessOrder, DriverVerificationState } from '../../../services/driverVerificationGuard.service';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -236,8 +238,25 @@ export const OrdersListScreen = () => {
     }
   }, [carStatus, carStatusLoading, isRTL]);
 
-  // MANDATORY RULE #5 & #14: Manual Card Press vs Incoming Private Alert
+  // Driver Verification Guard State
+  const [showVerificationModal, setShowVerificationModal] = useState<boolean>(false);
+  const [verificationState, setVerificationState] = useState<DriverVerificationState>({
+    vehicleVerificationPercentage: 0,
+    documentVerificationPercentage: 0,
+    verificationStatus: 'NOT_STARTED',
+    isApproved: false,
+    currentMissingStep: 'VEHICLE',
+  });
+
+  // MANDATORY RULE #16: Verification Guard check before opening any order
   const handleCardPress = useCallback(async (order: MockOrder) => {
+    const { allowed, state } = await canDriverAccessOrder();
+    if (!allowed) {
+      setVerificationState(state);
+      setShowVerificationModal(true);
+      return;
+    }
+
     if (activeStatus === 'OFFLINE') {
       Alert.alert(
         isRTL ? 'تنشيط الوضع متصل' : 'Passer en ligne',
@@ -263,6 +282,23 @@ export const OrdersListScreen = () => {
     }
     setManualPreviewOrder(order);
   }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
+
+  const handleContinueVerification = useCallback(() => {
+    setShowVerificationModal(false);
+    if (verificationState.currentMissingStep === 'VEHICLE') {
+      navigation.navigate('VehicleInfo');
+    } else if (verificationState.currentMissingStep === 'DOCUMENTS') {
+      navigation.navigate('Documents');
+    } else if (verificationState.currentMissingStep === 'PENDING_REVIEW') {
+      Alert.alert(
+        isRTL ? 'تم إرسال وثائقك للمراجعة ⏳' : 'Documents en cours de vérification ⏳',
+        isRTL
+          ? 'تم استلام معلومات المركبة والوثائق الرسمية بنجاح. سيتم مراجعتها من فريق YALLA VTC وسيتم إشعارك فور التفعيل.'
+          : 'Vos informations et documents ont été reçus avec succès. Notre équipe YALLA VTC va les examiner.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [navigation, verificationState, isRTL]);
 
   // Phase 3 Flow: Driver Accept -> Waiting 15s Passenger Confirmation -> Confirmed Trip Screen
   const handleAcceptOrder = useCallback((orderId: string, finalPrice: number) => {
@@ -529,6 +565,16 @@ export const OrdersListScreen = () => {
           finalPrice={confirmedTripData.finalPrice}
           visible={!!confirmedTripData}
           onClose={() => setConfirmedTripData(null)}
+        />
+      )}
+
+      {/* G. Rule #16 Driver Verification Guard Modal */}
+      {showVerificationModal && (
+        <VerificationRequiredModal
+          visible={showVerificationModal}
+          onClose={() => setShowVerificationModal(false)}
+          onContinue={handleContinueVerification}
+          state={verificationState}
         />
       )}
     </SafeAreaView>
