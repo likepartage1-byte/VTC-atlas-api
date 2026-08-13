@@ -33,9 +33,36 @@ export const getDriverVerificationState = async (): Promise<DriverVerificationSt
     ];
 
     const docKeyAliases: Record<string, string[]> = {
-      'driver_license': ['driver_license', 'license'],
-      'national_id_or_passport': ['national_id_or_passport', 'cin_recto', 'cin_verso', 'cin', 'passport'],
-      'vehicle_registration': ['vehicle_registration', 'vehicle_grey_card', 'carte_grise', 'grey_card'],
+      'driver_license': [
+        'driver_license',
+        'DRIVER_LICENSE',
+        'DRIVING_LICENSE',
+        'license',
+        'LICENSE'
+      ],
+      'national_id_or_passport': [
+        'national_id_or_passport',
+        'NATIONAL_ID_OR_PASSPORT',
+        'IDENTITY_CARD',
+        'PASSPORT',
+        'CIN',
+        'cin',
+        'cin_recto',
+        'cin_verso',
+        'CIN_RECTO',
+        'CIN_VERSO'
+      ],
+      'vehicle_registration': [
+        'vehicle_registration',
+        'VEHICLE_REGISTRATION',
+        'CARTE_GRISE',
+        'carte_grise',
+        'vehicle_grey_card',
+        'VEHICLE_GREY_CARD',
+        'grey_card',
+        'GREY_CARD',
+        'REGISTRATION_CARD'
+      ],
     };
 
     let uploadedCount = 0;
