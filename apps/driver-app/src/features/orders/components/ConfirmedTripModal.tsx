@@ -189,34 +189,41 @@ export const ConfirmedTripModal = memo(({
   // Open External Navigation App (Google Maps / Waze / Apple Maps)
   const handleOpenExternalNavigation = async (navAppChoice?: NavAppType) => {
     const targetApp = navAppChoice || preferredNavApp;
-    const destLat = order.pickupLat || 31.6342;
-    const destLng = order.pickupLng || -8.0089;
 
-    let url = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+    // Phase 4 Dynamic Destination:
+    // If trip is IN_PROGRESS -> Navigate to Dropoff B (Destination)
+    // Otherwise -> Navigate to Pickup A (Passenger Location)
+    const isHeadingToDestination = rideStatus === 'IN_PROGRESS';
+    const targetLat = isHeadingToDestination ? (order.dropoffLat || 31.6410) : (order.pickupLat || 31.6342);
+    const targetLng = isHeadingToDestination ? (order.dropoffLng || -8.0190) : (order.pickupLng || -8.0089);
+
+    let primaryUrl = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
 
     if (targetApp === 'waze') {
-      url = `https://waze.com/ul?ll=${destLat},${destLng}&navigate=yes`;
+      // Waze native URI scheme for direct navigation launch
+      primaryUrl = `waze://?ll=${targetLat},${targetLng}&navigate=yes`;
     } else if (targetApp === 'apple_maps' && Platform.OS === 'ios') {
-      url = `maps://maps.apple.com/?daddr=${destLat},${destLng}`;
+      primaryUrl = `maps://maps.apple.com/?daddr=${targetLat},${targetLng}&dirflg=d`;
     } else if (targetApp === 'google_maps' && Platform.OS === 'android') {
-      url = `google.navigation:q=${destLat},${destLng}`;
+      primaryUrl = `google.navigation:q=${targetLat},${targetLng}`;
     }
 
     try {
-      const canOpen = await Linking.canOpenURL(url);
+      const canOpen = await Linking.canOpenURL(primaryUrl);
       if (canOpen) {
-        await Linking.openURL(url);
+        await Linking.openURL(primaryUrl);
       } else {
-        // Fallback to web Google Maps URL
-        const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`;
+        // Fallback for Waze or Google Maps if native app scheme isn't directly registered
+        const fallbackUrl = targetApp === 'waze'
+          ? `https://waze.com/ul?ll=${targetLat},${targetLng}&navigate=yes`
+          : `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
+
         await Linking.openURL(fallbackUrl);
       }
     } catch (_) {
-      Alert.alert(
-        isRTL ? 'تطبيق الملاحة' : 'Navigation',
-        isRTL ? 'تعذر فتح تطبيق الخرائط. سيتم فتح خرائط جوجل على المتصفح.' : 'Impossible d’ouvrir l’application. Ouverture dans le navigateur.',
-        [{ text: 'OK' }]
-      );
+      // Final fallback to web Google Maps
+      const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
+      await Linking.openURL(webUrl).catch(() => {});
     }
   };
 
