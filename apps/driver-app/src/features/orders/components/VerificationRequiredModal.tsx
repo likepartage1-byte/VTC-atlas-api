@@ -120,7 +120,7 @@ export const VerificationRequiredModal: React.FC<Props> = ({
               <View style={styles.rowLeft}>
                 <FileText size={20} color={state.documentVerificationPercentage === 100 ? '#10B981' : primaryBrand} />
                 <Text style={[styles.rowLabel, { color: textPrimary }]}>
-                  {isRTL ? 'الوثائق الرسمية' : 'Documents officiels'}
+                  {isRTL ? 'الوثائق الأساسية (3)' : 'Documents de base (3)'}
                 </Text>
               </View>
               <View style={[styles.badge, { backgroundColor: state.documentVerificationPercentage === 100 ? '#10B98118' : '#F59E0B18' }]}>

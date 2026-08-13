@@ -351,19 +351,17 @@ export const DocumentsScreen = () => {
       let docsData = res?.data || { uploadedDocuments: [], verificationStatus: 'PENDING', progressPercentage: 0 };
       if (!docsData.uploadedDocuments) docsData.uploadedDocuments = [];
 
-      // Check local storage for warm-cached uploads matching all key aliases
+      // Check local storage for warm-cached uploads matching all key aliases (EXACTLY 3 Basic Required Docs)
       const mandatoryBasicKeys = [
         'driver_license',
         'national_id_or_passport',
         'vehicle_registration',
-        'insurance_certificate',
       ];
 
       const keyAliases: Record<string, string[]> = {
         'driver_license': ['driver_license', 'DRIVING_LICENSE', 'license'],
         'national_id_or_passport': ['national_id_or_passport', 'IDENTITY_CARD', 'PASSPORT', 'CIN', 'cin_recto', 'cin_verso'],
         'vehicle_registration': ['vehicle_registration', 'CARTE_GRISE', 'vehicle_grey_card', 'grey_card'],
-        'insurance_certificate': ['insurance_certificate', 'INSURANCE', 'insurance', 'assurance'],
       };
 
       for (const mainKey of mandatoryBasicKeys) {
@@ -405,6 +403,22 @@ export const DocumentsScreen = () => {
       }).length;
 
       docsData.progressPercentage = Math.round((uploadedCount / mandatoryBasicKeys.length) * 100);
+
+      // Ensure basicRequired contains EXACTLY 3 basic required documents
+      docsData.basicRequired = ['IDENTITY_CARD', 'DRIVING_LICENSE', 'CARTE_GRISE'];
+      docsData.optionalTypes = [
+        'INSURANCE_POLICY',
+        'TECHNICAL_INSPECTION',
+        'PROFESSIONAL_PERMIT',
+        'TAXI_AUTHORIZATION',
+        'MUNICIPAL_AUTHORIZATION',
+        'SPECIAL_AUTHORIZATION',
+        'REGISTRE_COMMERCE',
+        'RENTAL_AGREEMENT',
+        'COMPANY_DOCS',
+        'FLEET_PERMIT',
+        'ADDITIONAL_DOC',
+      ];
 
       // Force PENDING status if at least one doc uploaded
       if (uploadedCount > 0 && docsData.verificationStatus !== 'APPROVED' && docsData.verificationStatus !== 'REJECTED') {

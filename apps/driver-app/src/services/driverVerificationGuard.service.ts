@@ -25,19 +25,17 @@ export const getDriverVerificationState = async (): Promise<DriverVerificationSt
       }
     }
 
-    // 2. Mandatory Basic Documents Verification Check (Only 4 basic required docs count for 100%)
+    // 2. Mandatory Basic Documents Verification Check (EXACTLY 3 basic required docs count for 100%)
     const mandatoryBasicDocKeys = [
       'driver_license',
       'national_id_or_passport',
       'vehicle_registration',
-      'insurance_certificate',
     ];
 
     const docKeyAliases: Record<string, string[]> = {
       'driver_license': ['driver_license', 'license'],
       'national_id_or_passport': ['national_id_or_passport', 'cin_recto', 'cin_verso', 'cin', 'passport'],
       'vehicle_registration': ['vehicle_registration', 'vehicle_grey_card', 'carte_grise', 'grey_card'],
-      'insurance_certificate': ['insurance_certificate', 'insurance', 'assurance'],
     };
 
     let uploadedCount = 0;
