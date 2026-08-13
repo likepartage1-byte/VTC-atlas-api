@@ -120,6 +120,72 @@ export class RideService extends BaseApplicationService {
       }),
     );
 
+    // ── Single-Phone Development Test Mode Guard ───────────────────────────────
+    // If running in development mode, automatically assign test driver for physical phone testing
+    if (process.env.NODE_ENV !== 'production') {
+      try {
+        let devDriver = await this.prisma.driver.findFirst({
+          include: { user: true },
+        });
+
+        if (!devDriver) {
+          const testUser = await this.prisma.user.create({
+            data: {
+              fullName: 'Sami Driver (Test)',
+              phoneNumber: '+212600000000',
+              role: 'DRIVER',
+            },
+          });
+          devDriver = await this.prisma.driver.create({
+            data: {
+              userId: testUser.id,
+              status: 'AVAILABLE',
+              vehicleInfo: { make: 'Dacia', model: 'Logan', plate: 'Marrakech 44-A-12345' },
+            },
+            include: { user: true },
+          });
+        }
+
+        // Apply official state machine transition: REQUESTED -> DRIVER_ACCEPTED
+        RideStateMachine.transition('REQUESTED', 'DRIVER_ACCEPTED');
+
+        const updatedRide = await this.prisma.ride.update({
+          where: { id: ride.id },
+          data: {
+            status: 'DRIVER_ACCEPTED',
+            driverId: devDriver.id,
+            acceptedAt: new Date(),
+          },
+          include: {
+            driver: {
+              include: { user: true },
+            },
+          },
+        });
+
+        await this.prisma.rideStatusHistory.create({
+          data: {
+            rideId: ride.id,
+            fromStatus: 'REQUESTED',
+            toStatus: 'DRIVER_ACCEPTED',
+          },
+        });
+
+        await this.eventBus.publish(
+          new RideStatusChangedEvent(ride.id, {
+            from: 'REQUESTED' as any,
+            to: 'DRIVER_ACCEPTED' as any,
+            timestamp: new Date(),
+          }),
+        );
+
+        this.logger.log(`[DEV TEST MODE] Ride [${ride.id}] auto-assigned to Test Driver [${devDriver.id}]`);
+        return this.mapToResponseDto(updatedRide);
+      } catch (devErr: any) {
+        this.logger.warn(`[DEV TEST MODE Warning] ${devErr.message}`);
+      }
+    }
+
     return this.mapToResponseDto(ride);
   }
 
@@ -136,6 +202,13 @@ export class RideService extends BaseApplicationService {
         passengerId: userId,
         status: { in: ['REQUESTED', 'DISPATCHED', 'DRIVER_ACCEPTED', 'ARRIVED', 'IN_PROGRESS'] },
       },
+      include: {
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+      },
       orderBy: { requestedAt: 'desc' },
     });
 
@@ -143,12 +216,48 @@ export class RideService extends BaseApplicationService {
     return this.mapToResponseDto(ride);
   }
 
+  async getActiveRideForDriver(driverUserId: string): Promise<RideResponseDto | null> {
+    const ride = await this.prisma.ride.findFirst({
+      where: {
+        driver: { userId: driverUserId },
+        status: { in: ['DRIVER_ACCEPTED', 'ARRIVED', 'IN_PROGRESS'] },
+      },
+      include: {
+        passenger: true,
+        driver: {
+          include: {
+            user: true,
+          },
+        },
+      },
+      orderBy: { requestedAt: 'desc' },
+    });
+
+    if (!ride) return null;
+    return this.mapToResponseDto(ride);
+  }
+
+  async getRideHistoryForPassenger(userId: string): Promise<RideResponseDto[]> {
+    const rides = await this.prisma.ride.findMany({
+      where: { passengerId: userId },
+      orderBy: { requestedAt: 'desc' },
+      take: 50,
+    });
+    return rides.map((ride) => this.mapToResponseDto(ride));
+  }
+
   private mapToResponseDto(ride: any): RideResponseDto {
+    const driverUser = ride.driver?.user;
+    const vehicleInfo = ride.driver?.vehicleInfo || { make: 'Dacia', model: 'Logan', plate: 'Marrakech 44-A-12345' };
+
     return {
       id: ride.id,
       status: ride.status,
       passengerId: ride.passengerId,
       driverId: ride.driverId,
+      driverName: driverUser?.fullName || 'Sami Driver',
+      driverPhone: driverUser?.phoneNumber || '+212600000000',
+      driverVehicle: vehicleInfo,
       pickupLat: Number(ride.pickupLat),
       pickupLng: Number(ride.pickupLng),
       pickupAddress: ride.pickupAddress,
@@ -158,6 +267,6 @@ export class RideService extends BaseApplicationService {
       estimatedPrice: Number(ride.estimatedPrice),
       verificationCode: ride.status === 'ARRIVED' ? ride.otpCode : undefined,
       createdAt: ride.requestedAt,
-    };
+    } as any;
   }
 }

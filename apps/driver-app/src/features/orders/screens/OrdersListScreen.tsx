@@ -281,10 +281,32 @@ export const OrdersListScreen = () => {
     });
   }, [mockOrders, incomingPrivateAlertOrder, manualPreviewOrder, refreshLocalMockOrders]);
 
+  // Active Ride Restoration Effect on App Launch / Resume (Phase 4.1)
+  useEffect(() => {
+    (async () => {
+      try {
+        const storedTripJson = await AsyncStorage.getItem('@active_driver_trip_v1');
+        if (storedTripJson) {
+          const parsed = JSON.parse(storedTripJson);
+          if (parsed && parsed.order) {
+            setConfirmedTripData({ order: parsed.order, finalPrice: parsed.finalPrice || parsed.order.priceOffer });
+          }
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
   // Phase 3 Event: Passenger Confirmed during 15s countdown -> Go to Confirmed Trip Screen!
   const handlePassengerConfirmed = useCallback((order: MockOrder, price: number) => {
+    const activeTrip = { order, finalPrice: price, status: 'DRIVER_ACCEPTED' };
+    AsyncStorage.setItem('@active_driver_trip_v1', JSON.stringify(activeTrip)).catch(() => {});
     setWaitingConfirmationData(null);
     setConfirmedTripData({ order, finalPrice: price });
+  }, []);
+
+  const handleCloseConfirmedTrip = useCallback(() => {
+    AsyncStorage.removeItem('@active_driver_trip_v1').catch(() => {});
+    setConfirmedTripData(null);
   }, []);
 
   // Phase 3 Event: 15s Timeout expired without confirmation -> Return to DRIVER → ONLINE → ORDERS

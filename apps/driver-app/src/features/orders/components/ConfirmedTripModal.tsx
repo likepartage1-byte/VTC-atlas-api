@@ -45,6 +45,8 @@ interface ConfirmedTripModalProps {
 
 type NavAppType = 'google_maps' | 'waze' | 'apple_maps';
 
+export type RideLifecycleStatus = 'DRIVER_ACCEPTED' | 'ARRIVED' | 'IN_PROGRESS' | 'COMPLETED';
+
 export const ConfirmedTripModal = memo(({
   order,
   finalPrice,
@@ -62,9 +64,16 @@ export const ConfirmedTripModal = memo(({
   const [showNavPicker, setShowNavPicker] = useState<boolean>(false);
   const [isBackgroundedNotificationSent, setIsBackgroundedNotificationSent] = useState<boolean>(false);
 
+  // Phase 4 Lifecycle States
+  const [rideStatus, setRideStatus] = useState<RideLifecycleStatus>('DRIVER_ACCEPTED');
+  const [isCountdownActive, setIsCountdownActive] = useState<boolean>(false);
+  const [countdownSeconds, setCountdownSeconds] = useState<number>(5);
+  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [driverGivenRating, setDriverGivenRating] = useState<number>(5);
+
   const { passengerDetail } = order;
 
-  // Mock driver current GPS position (Approaching pickup A)
+  // Mock driver current GPS position
   const driverLat = (order.pickupLat || 31.6342) - 0.005;
   const driverLng = (order.pickupLng || -8.0089) - 0.005;
 
@@ -76,7 +85,7 @@ export const ConfirmedTripModal = memo(({
   const textPrimaryColor = isDarkMode ? '#F9FAFB' : '#111827';
   const textSecondaryColor = isDarkMode ? '#A1A1AA' : '#6B7280';
 
-  // Load saved navigation app preference
+  // Load saved navigation app preference & initial status
   useEffect(() => {
     (async () => {
       try {
@@ -84,9 +93,83 @@ export const ConfirmedTripModal = memo(({
         if (savedNav === 'google_maps' || savedNav === 'waze' || savedNav === 'apple_maps') {
           setPreferredNavApp(savedNav as NavAppType);
         }
+        const storedTripJson = await AsyncStorage.getItem('@active_driver_trip_v1');
+        if (storedTripJson) {
+          const parsed = JSON.parse(storedTripJson);
+          if (parsed && parsed.status) {
+            setRideStatus(parsed.status as RideLifecycleStatus);
+          }
+        }
       } catch (_) {}
     })();
   }, []);
+
+  // Sync active trip status to AsyncStorage cache
+  const updateStatusAndSave = async (newStatus: RideLifecycleStatus) => {
+    setRideStatus(newStatus);
+    try {
+      const activeTrip = { order, finalPrice, status: newStatus };
+      await AsyncStorage.setItem('@active_driver_trip_v1', JSON.stringify(activeTrip));
+    } catch (_) {}
+  };
+
+  // Phase 4.2: Driver Arrived ("وصلت / Je suis arrivé")
+  const handleDriverArrived = async () => {
+    await updateStatusAndSave('ARRIVED');
+    // Simulated Passenger Notification
+    const arrivalMsg = isRTL
+      ? 'وصل السائق إلى موقعك.'
+      : rawLang.startsWith('es')
+      ? 'Tu conductor ha llegado a tu ubicación.'
+      : rawLang.startsWith('en')
+      ? 'Your driver has arrived at your location.'
+      : 'Votre chauffeur est arrivé à votre position.';
+
+    Alert.alert(
+      isRTL ? 'إشعار الراكب 🔔' : 'Notification passager 🔔',
+      arrivalMsg,
+      [{ text: 'OK' }]
+    );
+  };
+
+  // Phase 4.3: Start Trip Trigger (Countdown 5s with Cancel option)
+  const handleTriggerStartTrip = () => {
+    if (isCountdownActive) return;
+    setIsCountdownActive(true);
+    setCountdownSeconds(5);
+  };
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (isCountdownActive && countdownSeconds > 0) {
+      timer = setTimeout(() => {
+        setCountdownSeconds((prev) => prev - 1);
+      }, 1000);
+    } else if (isCountdownActive && countdownSeconds === 0) {
+      setIsCountdownActive(false);
+      updateStatusAndSave('IN_PROGRESS');
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [isCountdownActive, countdownSeconds]);
+
+  const handleCancelCountdown = () => {
+    setIsCountdownActive(false);
+    setCountdownSeconds(5);
+  };
+
+  // Phase 4.5: Complete Ride ("إنهاء الرحلة / Terminer la course")
+  const handleCompleteRide = async () => {
+    await updateStatusAndSave('COMPLETED');
+    setShowRatingModal(true);
+  };
+
+  const handleFinishRating = async () => {
+    await AsyncStorage.removeItem('@active_driver_trip_v1').catch(() => {});
+    setShowRatingModal(false);
+    onClose();
+  };
 
   // System Notification when driver locks phone or sends app to background (Rule #14)
   useEffect(() => {
@@ -166,19 +249,21 @@ export const ConfirmedTripModal = memo(({
 
           <View style={{ alignItems: 'center' }}>
             <View style={styles.confirmedHeaderRow}>
-              <CheckCircle2 size={16} color="#16A34A" />
+              <CheckCircle2 size={16} color={rideStatus === 'IN_PROGRESS' ? '#3B82F6' : '#16A34A'} />
               <Text style={[styles.headerTitle, { color: textPrimaryColor }]}>
-                {isRTL
-                  ? 'الرحلة مؤكدة ✓'
-                  : rawLang.startsWith('es')
-                  ? 'Viaje confirmado ✓'
-                  : rawLang.startsWith('en')
-                  ? 'Trip Confirmed ✓'
-                  : 'Course confirmée ✓'}
+                {rideStatus === 'IN_PROGRESS'
+                  ? (isRTL ? 'الرحلة جارية' : rawLang.startsWith('es') ? 'Viaje en curso' : rawLang.startsWith('en') ? 'Ride in progress' : 'Course en cours')
+                  : rideStatus === 'ARRIVED'
+                  ? (isRTL ? 'وصلت لموقع الزبون' : rawLang.startsWith('es') ? 'He llegado' : rawLang.startsWith('en') ? 'I’ve Arrived' : 'Je suis arrivé')
+                  : (isRTL ? 'الرحلة مؤكدة ✓' : rawLang.startsWith('es') ? 'Viaje confirmado ✓' : rawLang.startsWith('en') ? 'Trip Confirmed ✓' : 'Course confirmée ✓')}
               </Text>
             </View>
             <Text style={[styles.headerSubtitle, { color: textSecondaryColor }]}>
-              {isRTL ? 'أنت الآن في الطريق إلى الراكب' : 'En route vers le passager'}
+              {rideStatus === 'IN_PROGRESS'
+                ? (isRTL ? 'في الطريق إلى الوجهة النهائيّة (B)' : 'En route vers la destination (B)')
+                : rideStatus === 'ARRIVED'
+                ? (isRTL ? 'في انتظار صعود الزبون' : 'En attente du passager')
+                : (isRTL ? 'أنت الآن في الطريق إلى الراكب' : 'En route vers le passager')}
             </Text>
           </View>
 
@@ -208,14 +293,16 @@ export const ConfirmedTripModal = memo(({
               latitude: driverLat,
               longitude: driverLng,
             }}
-            height={SCREEN_H * 0.42}
+            height={SCREEN_H * 0.40}
           />
 
           {/* Floating Driver ETA Pill over map */}
-          <View style={[styles.floatingEtaPill, { backgroundColor: primaryBrand }]}>
+          <View style={[styles.floatingEtaPill, { backgroundColor: rideStatus === 'IN_PROGRESS' ? '#3B82F6' : primaryBrand }]}>
             <Car size={14} color="#FFFFFF" />
             <Text style={styles.floatingEtaText}>
-              {isRTL ? 'وصولك له:' : 'Approche:'} {order.distanceToPickup || '1.5 km'} ({order.pickupEta || '4 min'})
+              {rideStatus === 'IN_PROGRESS'
+                ? (isRTL ? 'الوجهة (B):' : 'Destination B:') + ` ${order.distance || '8.8 km'} (${order.eta || '14 min'})`
+                : (isRTL ? 'وصولك له:' : 'Approche:') + ` ${order.distanceToPickup || '1.5 km'} (${order.pickupEta || '4 min'})`}
             </Text>
           </View>
         </View>
@@ -278,13 +365,92 @@ export const ConfirmedTripModal = memo(({
             </View>
           </View>
 
-          {/* ── 4. Open External Navigation Action Button ──────────────────── */}
+          {/* ── 4. Phase 4 Dynamic Action Buttons ───────────────────────────── */}
+          {/* A. Phase 4.2: Driver En Route -> Button "Je suis arrivé / وصلت" */}
+          {rideStatus === 'DRIVER_ACCEPTED' && (
+            <TouchableOpacity
+              style={[styles.primaryLifecycleBtn, { backgroundColor: '#10B981' }]}
+              onPress={handleDriverArrived}
+              activeOpacity={0.88}
+            >
+              <CheckCircle2 size={20} color="#FFFFFF" />
+              <Text style={styles.primaryLifecycleBtnText}>
+                {isRTL
+                  ? 'وصلت (Je suis arrivé)'
+                  : rawLang.startsWith('es')
+                  ? 'He llegado'
+                  : rawLang.startsWith('en')
+                  ? 'I’ve Arrived'
+                  : 'Je suis arrivé'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* B. Phase 4.3: Driver Arrived -> Button "Démarrer la course / بدء الرحلة" with 5m Countdown */}
+          {rideStatus === 'ARRIVED' && !isCountdownActive && (
+            <TouchableOpacity
+              style={[styles.primaryLifecycleBtn, { backgroundColor: primaryBrand }]}
+              onPress={handleTriggerStartTrip}
+              activeOpacity={0.88}
+            >
+              <Car size={20} color="#FFFFFF" />
+              <Text style={styles.primaryLifecycleBtnText}>
+                {isRTL
+                  ? 'بدء الرحلة (Démarrer la course)'
+                  : rawLang.startsWith('es')
+                  ? 'Iniciar viaje'
+                  : rawLang.startsWith('en')
+                  ? 'Start Ride'
+                  : 'Démarrer la course'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* C. Countdown Active State (5s timer with Cancel button) */}
+          {rideStatus === 'ARRIVED' && isCountdownActive && (
+            <View style={styles.countdownContainer}>
+              <View style={[styles.countdownBar, { backgroundColor: '#8B5CF6' }]}>
+                <Text style={styles.countdownText}>
+                  {isRTL
+                    ? `جاري تأكيد لبدء الرحلة... (${countdownSeconds}s)`
+                    : `Démarrage dans... (${countdownSeconds}s)`}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.cancelCountdownBtn} onPress={handleCancelCountdown}>
+                <Text style={styles.cancelCountdownText}>
+                  {isRTL ? 'إلغاء (Annuler)' : 'Annuler / Cancel'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* D. Phase 4.5: Trip In Progress -> Button "Terminer la course / إنهاء الرحلة" */}
+          {rideStatus === 'IN_PROGRESS' && (
+            <TouchableOpacity
+              style={[styles.primaryLifecycleBtn, { backgroundColor: '#EF4444' }]}
+              onPress={handleCompleteRide}
+              activeOpacity={0.88}
+            >
+              <CheckCircle2 size={20} color="#FFFFFF" />
+              <Text style={styles.primaryLifecycleBtnText}>
+                {isRTL
+                  ? 'إنهاء الرحلة (Terminer la course)'
+                  : rawLang.startsWith('es')
+                  ? 'Finalizar viaje'
+                  : rawLang.startsWith('en')
+                  ? 'End Ride'
+                  : 'Terminer la course'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* E. Open External Navigation Action Button */}
           <TouchableOpacity
-            style={[styles.openNavBtn, { backgroundColor: '#CCFF00' }]}
+            style={[styles.openNavBtn, { backgroundColor: '#CCFF00', marginTop: 10 }]}
             onPress={() => handleOpenExternalNavigation()}
             activeOpacity={0.88}
           >
-            <Navigation size={20} color="#111827" />
+            <Navigation size={18} color="#111827" />
             <Text style={styles.openNavBtnText}>
               {isRTL
                 ? 'فتح الخريطة (Google Maps / Waze)'
@@ -294,7 +460,7 @@ export const ConfirmedTripModal = memo(({
                 ? 'Open Navigation'
                 : 'Ouvrir la navigation'}
             </Text>
-            <ExternalLink size={18} color="#111827" />
+            <ExternalLink size={16} color="#111827" />
           </TouchableOpacity>
         </View>
 
@@ -334,6 +500,70 @@ export const ConfirmedTripModal = memo(({
                 )}
               </View>
             </TouchableOpacity>
+          </Modal>
+        {/* ── 6. Phase 4.6: Driver Passenger Rating Modal ─────────────────── */}
+        {showRatingModal && (
+          <Modal visible={showRatingModal} transparent animationType="slide">
+            <View style={styles.ratingOverlay}>
+              <View style={[styles.ratingCard, { backgroundColor: cardBg, borderColor: borderColor }]}>
+                <View style={[styles.ratingHeaderBadge, { backgroundColor: primaryLightBg }]}>
+                  <CheckCircle2 size={32} color={primaryBrand} />
+                </View>
+
+                <Text style={[styles.ratingTitle, { color: textPrimaryColor }]}>
+                  {isRTL
+                    ? 'تم إنهاء الرحلة بنجاح 🎉'
+                    : rawLang.startsWith('es')
+                    ? 'Viaje completado 🎉'
+                    : rawLang.startsWith('en')
+                    ? 'Ride Completed 🎉'
+                    : 'Course terminée 🎉'}
+                </Text>
+                <Text style={[styles.ratingSubtitle, { color: textSecondaryColor }]}>
+                  {isRTL
+                    ? 'قيّم الراكب:'
+                    : rawLang.startsWith('es')
+                    ? 'Califica al pasajero:'
+                    : rawLang.startsWith('en')
+                    ? 'Rate the passenger:'
+                    : 'Évaluez le passager :'} {passengerDetail?.name || 'Passager'}
+                </Text>
+
+                {/* 5-Star Rating Row */}
+                <View style={styles.starsContainer}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() => setDriverGivenRating(star)}
+                      activeOpacity={0.7}
+                      style={{ padding: 4 }}
+                    >
+                      <Star
+                        size={34}
+                        color="#F59E0B"
+                        fill={star <= driverGivenRating ? '#F59E0B' : 'transparent'}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.primaryLifecycleBtn, { backgroundColor: primaryBrand, marginTop: 16 }]}
+                  onPress={handleFinishRating}
+                  activeOpacity={0.88}
+                >
+                  <Text style={styles.primaryLifecycleBtnText}>
+                    {isRTL
+                      ? 'إرسال التقييم (Envoyer)'
+                      : rawLang.startsWith('es')
+                      ? 'Enviar valoración'
+                      : rawLang.startsWith('en')
+                      ? 'Submit Rating'
+                      : 'Envoyer l’évaluation'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </Modal>
         )}
       </SafeAreaView>
@@ -530,5 +760,87 @@ const styles = StyleSheet.create({
   pickerOptionText: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  primaryLifecycleBtn: {
+    width: '100%',
+    height: 52,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    elevation: 3,
+  },
+  primaryLifecycleBtnText: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  countdownContainer: {
+    width: '100%',
+    gap: 8,
+    alignItems: 'center',
+  },
+  countdownBar: {
+    width: '100%',
+    height: 50,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  countdownText: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  cancelCountdownBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  cancelCountdownText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444',
+  },
+  ratingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  ratingCard: {
+    width: '100%',
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
+  },
+  ratingHeaderBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  ratingTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  ratingSubtitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginVertical: 12,
   },
 });

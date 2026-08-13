@@ -1,9 +1,10 @@
-import { Controller, Post, Patch, Body, Param, UseGuards, Version, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, UseGuards, Version, BadRequestException } from '@nestjs/common';
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
 import { Roles } from '../../../identity/presentation/decorators/roles.decorator';
 import { CurrentUser } from '../../../identity/presentation/decorators/current-user.decorator';
 import { RideOrchestrator } from '../../application/orchestration/ride.orchestrator';
+import { RideService } from '../../application/ride.service';
 import { UpdateDriverStatusDto } from '../dtos/update-driver-status.dto';
 
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -14,7 +15,18 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 @UseGuards(AuthGuard, RolesGuard)
 @Roles('DRIVER')
 export class DriverRideController {
-  constructor(private readonly orchestrator: RideOrchestrator) {}
+  constructor(
+    private readonly orchestrator: RideOrchestrator,
+    private readonly rideService: RideService,
+  ) {}
+
+  @Get('active')
+  @Version('1')
+  async getActiveRide(
+    @CurrentUser('userId') driverId: string,
+  ) {
+    return this.rideService.getActiveRideForDriver(driverId);
+  }
 
   @Post(':id/accept')
   @Version('1')
