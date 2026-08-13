@@ -16,10 +16,16 @@ import {
   ActivityIndicator,
   Animated,
   StatusBar,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ChevronLeft,
   Camera as CameraIcon,
@@ -34,11 +40,20 @@ import {
   ArrowRight,
   RefreshCw,
   Check,
+  Sparkles,
+  FolderPlus,
+  X,
+  ChevronDown,
+  User,
+  CheckCircle,
+  Pencil,
 } from 'lucide-react-native';
 import { useTheme } from '../../theme/ThemeContext';
 import { api } from '../../api/axios.instance';
 import i18n from '../../i18n';
+import { DrawerHeader } from '../../components/DrawerHeader';
 import { useCallback } from 'react';
+import { useVehicleMode } from '../../hooks/useVehicleMode';
 
 // ── Register Locales ──────────────────────────────────────────────────────────
 const registerDocumentLocales = () => {
@@ -287,6 +302,21 @@ const getDocumentConfig = (type: string, t: (k: string) => string) => {
 const daysLeft = (expiresAt: string) =>
   Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86400000);
 
+export const clearDocumentStorageCache = async () => {
+  try {
+    const keys = [
+      '@uploaded_doc_IDENTITY_CARD',
+      '@uploaded_doc_PASSPORT',
+      '@uploaded_doc_CIN',
+      '@uploaded_doc_DRIVING_LICENSE',
+      '@uploaded_doc_DRIVER_LICENSE',
+      '@uploaded_doc_CARTE_GRISE',
+      '@uploaded_doc_VEHICLE_REGISTRATION',
+    ];
+    await AsyncStorage.multiRemove(keys);
+  } catch (_) {}
+};
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export const DocumentsScreen = () => {
   useEffect(() => { registerDocumentLocales(); }, []);
@@ -298,6 +328,14 @@ export const DocumentsScreen = () => {
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [showOptionalModal, setShowOptionalModal] = useState(false);
+
+  // ── Full Name Modal (shown when fullName is missing before submit) ────────
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   // Refetch every time screen is focused (e.g. after returning from DocumentDetailScreen)
   useFocusEffect(
@@ -309,8 +347,71 @@ export const DocumentsScreen = () => {
   const fetchDocumentsSummary = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/driver/documents');
-      setData(res.data);
+      const res = await api.get('/driver/documents').catch(() => null);
+      let docsData = res?.data || { uploadedDocuments: [], verificationStatus: 'PENDING', progressPercentage: 0 };
+      if (!docsData.uploadedDocuments) docsData.uploadedDocuments = [];
+
+      // Check local storage for warm-cached uploads matching all key aliases
+      const mandatoryBasicKeys = [
+        'driver_license',
+        'national_id_or_passport',
+        'vehicle_registration',
+        'insurance_certificate',
+      ];
+
+      const keyAliases: Record<string, string[]> = {
+        'driver_license': ['driver_license', 'DRIVING_LICENSE', 'license'],
+        'national_id_or_passport': ['national_id_or_passport', 'IDENTITY_CARD', 'PASSPORT', 'CIN', 'cin_recto', 'cin_verso'],
+        'vehicle_registration': ['vehicle_registration', 'CARTE_GRISE', 'vehicle_grey_card', 'grey_card'],
+        'insurance_certificate': ['insurance_certificate', 'INSURANCE', 'insurance', 'assurance'],
+      };
+
+      for (const mainKey of mandatoryBasicKeys) {
+        const aliases = keyAliases[mainKey] || [mainKey];
+        let foundStored: string | null = null;
+        for (const alias of aliases) {
+          const stored = await AsyncStorage.getItem(`@uploaded_doc_${alias}`);
+          if (stored) {
+            foundStored = stored;
+            break;
+          }
+        }
+        if (foundStored) {
+          try {
+            const parsed = JSON.parse(foundStored);
+            const exists = docsData.uploadedDocuments.some((d: any) => {
+              const dt = (d.type || d.documentType || '').toLowerCase();
+              return aliases.some(a => a.toLowerCase() === dt);
+            });
+            if (!exists) {
+              docsData.uploadedDocuments.push({
+                type: mainKey,
+                status: parsed.status || 'PENDING',
+                expiresAt: parsed.expiresAt,
+                documentType: mainKey,
+              });
+            }
+          } catch (_) {}
+        }
+      }
+
+      // Calculate progress percentage dynamically for basic required documents ONLY (optional docs do NOT alter 100%)
+      const uploadedCount = mandatoryBasicKeys.filter(mainKey => {
+        const aliases = keyAliases[mainKey] || [mainKey];
+        return docsData.uploadedDocuments.some((d: any) => {
+          const dt = (d.type || d.documentType || '').toLowerCase();
+          return aliases.some(a => a.toLowerCase() === dt);
+        });
+      }).length;
+
+      docsData.progressPercentage = Math.round((uploadedCount / mandatoryBasicKeys.length) * 100);
+
+      // Force PENDING status if at least one doc uploaded
+      if (uploadedCount > 0 && docsData.verificationStatus !== 'APPROVED' && docsData.verificationStatus !== 'REJECTED') {
+        docsData.verificationStatus = 'PENDING';
+      }
+
+      setData(docsData);
     } catch (err) {
       console.error('[DocumentsScreen] Fetch error:', err);
     } finally {
@@ -318,30 +419,127 @@ export const DocumentsScreen = () => {
     }
   };
 
+  // ── Submit with Name Check ────────────────────────────────────────────────
+  /**
+   * Called when the user presses the submit/confirm button on any doc flow.
+   * If driver has no fullName yet, we show the name modal first.
+   * After saving the name, the original submit action proceeds automatically.
+   */
+  const checkFullNameThenProceed = async (onProceed: () => void) => {
+    try {
+      const res = await api.get('/driver/profile');
+      const profile = res.data;
+      if (!profile?.fullName || profile.fullName.trim() === '') {
+        // Store the callback so we can call it after name is saved
+        setPendingSubmit(true);
+        setShowNameModal(true);
+        // Save callback via a ref trick using state
+        (checkFullNameThenProceed as any)._pendingCb = onProceed;
+      } else {
+        onProceed();
+      }
+    } catch {
+      // If profile fetch fails, let the original action proceed
+      onProceed();
+    }
+  };
+
+  const handleSaveNameAndSubmit = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert(
+        i18n.language === 'ar' ? 'تنبيه' : 'Required',
+        i18n.language === 'ar'
+          ? 'يرجى إدخال الاسم الشخصي والاسم العائلي.'
+          : 'Please enter both first name and last name.',
+      );
+      return;
+    }
+    try {
+      setIsSavingName(true);
+      await api.patch('/driver/profile', {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        fullName: `${firstName.trim()} ${lastName.trim()}`,
+      });
+      setShowNameModal(false);
+      setPendingSubmit(false);
+      // Call the pending submit action
+      const cb = (checkFullNameThenProceed as any)._pendingCb;
+      if (cb) {
+        (checkFullNameThenProceed as any)._pendingCb = null;
+        cb();
+      }
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        (i18n.language === 'ar' ? 'فشل حفظ الاسم. حاول مجدداً.' : 'Failed to save name. Please try again.');
+      Alert.alert(i18n.language === 'ar' ? 'خطأ' : 'Error', msg);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const { isMotorcycleMode, vehicleType: cachedModeType } = useVehicleMode();
+
   // Navigate to document detail
-  const openDetail = (type: string) => {
+  const openDetail = async (type: string) => {
     const uploaded = data?.uploadedDocuments?.find((d: any) => d.type === type) || null;
-    navigation.navigate('DocumentDetail', { type, uploadedDoc: uploaded });
+    if (type === 'IDENTITY_CARD' || type === 'PASSPORT') {
+      navigation.navigate('IdentityCard', { uploadedDoc: uploaded });
+    } else if (type === 'DRIVING_LICENSE' || type === 'DRIVER_LICENSE') {
+      navigation.navigate('DriverLicense', { uploadedDoc: uploaded });
+    } else if (type === 'CARTE_GRISE' || type === 'VEHICLE_REGISTRATION' || type === 'REGISTRATION_CARD') {
+      const storedVehicleType = await AsyncStorage.getItem('registered_vehicle_type');
+      if (
+        isMotorcycleMode ||
+        cachedModeType === 'MOTORCYCLE' ||
+        storedVehicleType === 'MOTORCYCLE' ||
+        data?.vehicleType === 'MOTORCYCLE' ||
+        data?.vehicle?.type === 'MOTORCYCLE'
+      ) {
+        navigation.navigate('MotorcycleInfo');
+      } else {
+        navigation.navigate('VehicleInfo');
+      }
+    } else {
+      navigation.navigate('DocumentDetail', { type, uploadedDoc: uploaded });
+    }
   };
 
   const getStatusDetails = (status: string) => {
+    const isArabic = i18n.language === 'ar';
+    const isFrench = i18n.language === 'fr';
+    const isSpanish = i18n.language === 'es';
+
     switch (status) {
-      case 'APPROVED': return { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', badge: t('approved'),    icon: <CheckCircle2 size={16} color="#22C55E" /> };
-      case 'REJECTED': return { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', badge: t('rejected'),    icon: <XCircle size={16} color="#EF4444" />     };
-      case 'EXPIRED':  return { color: '#F97316', bg: 'rgba(249,115,22,0.10)', badge: t('expired'),    icon: <AlertTriangle size={16} color="#F97316" />};
-      case 'PENDING':  return { color: '#F59E0B', bg: 'rgba(245,158,11,0.10)', badge: t('under_review'), icon: <Clock size={16} color="#F59E0B" />    };
-      default:         return { color: colors.textMuted, bg: colors.surfaceAlt, badge: '',              icon: null                                     };
+      case 'APPROVED': return { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', badge: isArabic ? 'مكتملة ومقبولة ✅' : (isFrench ? 'Approuvé ✅' : (isSpanish ? 'Aprobado ✅' : 'Approved ✅')), icon: <CheckCircle2 size={16} color="#22C55E" /> };
+      case 'REJECTED': return { color: '#EF4444', bg: 'rgba(239,68,68,0.10)', badge: t('rejected'), icon: <XCircle size={16} color="#EF4444" /> };
+      case 'EXPIRED':  return { color: '#F97316', bg: 'rgba(249,115,22,0.10)', badge: t('expired'), icon: <AlertTriangle size={16} color="#F97316" />};
+      case 'PENDING':  return { color: '#22C55E', bg: 'rgba(34,197,94,0.10)', badge: isArabic ? 'مكتملة (قيد المراجعة) ✅' : (isFrench ? 'Complété (En révision) ✅' : (isSpanish ? 'Completado (En revisión) ✅' : 'Completed (Under Review) ✅')), icon: <CheckCircle2 size={16} color="#22C55E" /> };
+      default:         return { color: colors.textMuted, bg: colors.surfaceAlt, badge: '', icon: null };
     }
   };
 
   const getVerificationHeader = () => {
-    switch (data?.verificationStatus) {
+    const isArabic = i18n.language === 'ar';
+    const isFrench = i18n.language === 'fr';
+    const isSpanish = i18n.language === 'es';
+
+    const hasAnyDoc = (data?.uploadedDocuments?.length || 0) > 0 || (data?.progressPercentage || 0) > 0;
+    const effStatus = data?.verificationStatus || (hasAnyDoc ? 'PENDING' : 'INCOMPLETE');
+
+    switch (effStatus) {
       case 'APPROVED':
         return { title: t('approved'), desc: t('verification_status_approved'), color: '#22C55E', icon: <CheckCircle2 size={30} color="#22C55E" /> };
       case 'REJECTED':
         return { title: t('rejected'), desc: t('verification_status_rejected'), color: '#EF4444', icon: <XCircle size={30} color="#EF4444" />     };
       case 'PENDING':
-        return { title: t('under_review'), desc: t('verification_status_pending'), color: '#F59E0B', icon: <Clock size={30} color="#F59E0B" />    };
+        return {
+          title: t('under_review'),
+          desc: isArabic ? 'قيد مراجعة الإدارة (تم استقبال الوثائق)' : (isFrench ? 'Examen administratif en cours' : (isSpanish ? 'Examen administrativo en curso' : 'Under administrative review')),
+          color: '#F59E0B',
+          icon: <Clock size={30} color="#F59E0B" />
+        };
       default:
         return { title: t('verification_status'), desc: t('verification_status_incomplete'), color: '#94A3B8', icon: <AlertTriangle size={30} color="#94A3B8" /> };
     }
@@ -350,7 +548,14 @@ export const DocumentsScreen = () => {
   // ── Render Document Card ──────────────────────────────────────────────────
   const renderCard = (type: string) => {
     const cfg = getDocumentConfig(type, t);
-    const uploaded = data?.uploadedDocuments?.find((d: any) => d.type === type);
+    const uploaded = data?.uploadedDocuments?.find((d: any) => {
+      const dt = (d.type || d.documentType || '').toUpperCase();
+      const target = (type || '').toUpperCase();
+      if (target === 'IDENTITY_CARD') return dt === 'IDENTITY_CARD' || dt === 'PASSPORT' || dt === 'CIN';
+      if (target === 'DRIVING_LICENSE') return dt === 'DRIVING_LICENSE' || dt === 'DRIVER_LICENSE' || dt === 'LICENSE';
+      if (target === 'CARTE_GRISE') return dt === 'CARTE_GRISE' || dt === 'VEHICLE_REGISTRATION' || dt === 'REGISTRATION_CARD';
+      return dt === target;
+    });
     const remaining = uploaded?.expiresAt ? daysLeft(uploaded.expiresAt) : null;
     const isExpired = uploaded?.status === 'EXPIRED' || (remaining !== null && remaining <= 0);
     const isRejected = uploaded?.status === 'REJECTED';
@@ -442,6 +647,17 @@ export const DocumentsScreen = () => {
             <ArrowRight size={13} color={st.color} style={{ marginLeft: 'auto' as any, transform: [{ scaleX: isRTL ? -1 : 1 }] }} />
           </View>
         )}
+
+        {/* Direct action footer for completed/uploaded docs: Edit button */}
+        {!needsAction && (
+          <View style={[styles.actionFooter, { borderTopColor: colors.primary + '30', backgroundColor: colors.primary + '0D' }]}>
+            <Pencil size={13} color={colors.primary} style={{ marginRight: 6 }} />
+            <Text style={[styles.actionFooterText, { color: colors.primary, fontWeight: '700' }]}>
+              {isRTL ? 'مكتملة — انقر لتعديل الوثيقة ✏️' : (i18n.language === 'fr' ? 'Complété — Appuyez pour modifier ✏️' : 'Completed — Tap to edit ✏️')}
+            </Text>
+            <ChevronLeft size={14} color={colors.primary} style={{ marginLeft: 'auto', transform: [{ scaleX: isRTL ? 1 : -1 }] }} />
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -453,13 +669,7 @@ export const DocumentsScreen = () => {
   if (loading) {
     return (
       <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <ChevronLeft size={24} style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('documents_title')}</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <DrawerHeader title={t('documents_title')} />
         <View style={styles.skeletonWrap}>
           {[1, 2, 3, 4].map(i => (
             <View key={i} style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -476,14 +686,8 @@ export const DocumentsScreen = () => {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
 
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <ChevronLeft size={24} style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('documents_title')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      {/* Drawer-aware Header */}
+      <DrawerHeader title={t('documents_title')} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -525,19 +729,250 @@ export const DocumentsScreen = () => {
           </View>
         )}
 
-        {/* ── Optional Documents ─────────────────────────────────────────── */}
+        {/* ── 3D Button Card for Optional Additional Documents ──────────── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionHeading, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('optional_docs_section')}
-          </Text>
-          <Text style={[styles.sectionDesc, { color: colors.textMuted, textAlign: isRTL ? 'right' : 'left' }]}>
-            {t('optional_docs_desc')}
-          </Text>
-          {data?.optionalTypes?.map((type: string) => renderCard(type))}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => setShowOptionalModal(true)}
+            style={[
+              styles.btn3DCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.primary + '55',
+                shadowColor: colors.primary,
+              },
+            ]}
+          >
+            {/* Top Gloss Highlight Accent */}
+            <View style={[styles.card3DGlossAccent, { backgroundColor: colors.primary }]} />
+
+            <View style={[styles.card3DBody, isRTL && { flexDirection: 'row-reverse' }]}>
+              {/* Glowing Circle Icon */}
+              <View style={[styles.card3DIconBadge, { backgroundColor: colors.primary + '18' }]}>
+                <Sparkles size={24} color={colors.primary} />
+              </View>
+
+              <View style={[styles.card3DText, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+                <View style={[styles.card3DTitleRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                  <Text style={[styles.card3DTitle, { color: colors.textPrimary }]}>
+                    {t('optional_docs_section')}
+                  </Text>
+                  <View style={[styles.badgePill3D, { backgroundColor: colors.primary + '20', borderColor: colors.primary + '50' }]}>
+                    <Text style={[styles.badgePill3DText, { color: colors.primary }]}>
+                      {data?.optionalTypes?.filter((type: string) => data?.uploadedDocuments?.some((d: any) => d.type === type)).length || 0} / {data?.optionalTypes?.length || 11}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={[styles.card3DDesc, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]} numberOfLines={2}>
+                  {t('optional_docs_desc')}
+                </Text>
+              </View>
+
+              {/* Action Circle */}
+              <View style={[styles.roundAction3DBtn, { backgroundColor: colors.primary }]}>
+                <Plus size={18} color="#FFFFFF" />
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* ── Modal Bottom Sheet for Optional Documents Selection ───────────── */}
+      <Modal
+        visible={showOptionalModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowOptionalModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowOptionalModal(false)}
+          />
+          <View style={[styles.modalSheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+            {/* Modal Drag Handle */}
+            <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+
+            {/* Modal Header */}
+            <View style={[styles.modalHeaderRow, isRTL && { flexDirection: 'row-reverse' }]}>
+              <View style={{ flex: 1, alignItems: isRTL ? 'flex-end' : 'flex-start' }}>
+                <View style={{ flexDirection: isRTL ? 'row-reverse' : 'row', alignItems: 'center', gap: 8 }}>
+                  <Sparkles size={20} color={colors.primary} />
+                  <Text style={[styles.modalHeaderTitle, { color: colors.textPrimary }]}>
+                    {t('optional_docs_section')}
+                  </Text>
+                </View>
+                <Text style={[styles.modalHeaderSub, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {t('optional_docs_desc')}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceAlt }]}
+                onPress={() => setShowOptionalModal(false)}
+              >
+                <X size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* List of Optional Documents */}
+            <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+              {data?.optionalTypes?.map((type: string) => (
+                <TouchableOpacity
+                  key={type}
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    setShowOptionalModal(false);
+                    openDetail(type);
+                  }}
+                >
+                  {renderCard(type)}
+                </TouchableOpacity>
+              ))}
+              <View style={{ height: 30 }} />
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Full Name Modal ─────────────────────────────────────────────── */}
+      <Modal
+        visible={showNameModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowNameModal(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={StyleSheet.absoluteFill}
+              activeOpacity={1}
+              onPress={() => !isSavingName && setShowNameModal(false)}
+            />
+            <View style={[styles.nameModalSheet, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
+              {/* Drag Handle */}
+              <View style={[styles.modalHandle, { backgroundColor: colors.border }]} />
+
+              {/* Header */}
+              <View style={[styles.nameModalHeader, isRTL && { alignItems: 'flex-end' }]}>
+                <View style={[styles.nameModalIconBadge, { backgroundColor: colors.primary + '18' }]}>
+                  <User size={24} color={colors.primary} />
+                </View>
+                <Text style={[styles.nameModalTitle, { color: colors.textPrimary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {isRTL || currentI18n.language === 'ar'
+                    ? 'أكمل معلوماتك الشخصية'
+                    : currentI18n.language === 'fr'
+                    ? 'Complétez vos informations'
+                    : 'Complete Your Profile'}
+                </Text>
+                <Text style={[styles.nameModalSub, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                  {isRTL || currentI18n.language === 'ar'
+                    ? 'لإرسال طلب التسجيل، نحتاج إلى اسمك الحقيقي كما هو مكتوب في بطاقة الهوية.'
+                    : currentI18n.language === 'fr'
+                    ? `Pour soumettre votre dossier, nous avons besoin de votre nom réel tel qu'il figure sur votre pièce d'identité.`
+                    : 'To submit your registration, we need your full legal name as it appears on your ID.'}
+                </Text>
+              </View>
+
+              {/* Inputs */}
+              <View style={[styles.nameModalInputsRow, isRTL && { flexDirection: 'row-reverse' }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.nameInputLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {isRTL || currentI18n.language === 'ar' ? 'الاسم الشخصي *' : currentI18n.language === 'fr' ? 'Prénom *' : 'First Name *'}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.nameInput,
+                      {
+                        backgroundColor: colors.surfaceAlt,
+                        color: colors.textPrimary,
+                        borderColor: firstName.trim() ? colors.primary + '80' : colors.border,
+                        textAlign: isRTL ? 'right' : 'left',
+                      },
+                    ]}
+                    placeholder={isRTL || currentI18n.language === 'ar' ? 'مثال: محمد' : 'e.g. John'}
+                    placeholderTextColor={colors.textMuted}
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    autoCapitalize="words"
+                    returnKeyType="next"
+                  />
+                </View>
+                <View style={{ width: 12 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.nameInputLabel, { color: colors.textSecondary, textAlign: isRTL ? 'right' : 'left' }]}>
+                    {isRTL || currentI18n.language === 'ar' ? 'الاسم العائلي *' : currentI18n.language === 'fr' ? 'Nom *' : 'Last Name *'}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.nameInput,
+                      {
+                        backgroundColor: colors.surfaceAlt,
+                        color: colors.textPrimary,
+                        borderColor: lastName.trim() ? colors.primary + '80' : colors.border,
+                        textAlign: isRTL ? 'right' : 'left',
+                      },
+                    ]}
+                    placeholder={isRTL || currentI18n.language === 'ar' ? 'مثال: العمري' : 'e.g. Doe'}
+                    placeholderTextColor={colors.textMuted}
+                    value={lastName}
+                    onChangeText={setLastName}
+                    autoCapitalize="words"
+                    returnKeyType="done"
+                    onSubmitEditing={handleSaveNameAndSubmit}
+                  />
+                </View>
+              </View>
+
+              {/* Preview of full name */}
+              {firstName.trim() && lastName.trim() && (
+                <View style={[styles.namePreviewRow, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+                  <CheckCircle size={14} color={colors.primary} />
+                  <Text style={[styles.namePreviewText, { color: colors.primary }]}>
+                    {firstName.trim()} {lastName.trim()}
+                  </Text>
+                </View>
+              )}
+
+              {/* Confirm Button */}
+              <TouchableOpacity
+                style={[
+                  styles.nameConfirmBtn,
+                  {
+                    backgroundColor: firstName.trim() && lastName.trim() ? colors.primary : colors.surfaceAlt,
+                    opacity: isSavingName ? 0.7 : 1,
+                  },
+                ]}
+                onPress={handleSaveNameAndSubmit}
+                disabled={isSavingName || !firstName.trim() || !lastName.trim()}
+                activeOpacity={0.85}
+              >
+                {isSavingName ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[
+                    styles.nameConfirmBtnText,
+                    { color: firstName.trim() && lastName.trim() ? '#fff' : colors.textMuted },
+                  ]}>
+                    {isRTL || currentI18n.language === 'ar'
+                      ? 'متابعة وإرسال الوثائق'
+                      : currentI18n.language === 'fr'
+                      ? 'Continuer et soumettre'
+                      : 'Continue & Submit Documents'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <View style={{ height: 20 }} />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -623,4 +1058,196 @@ const styles = StyleSheet.create({
   timelineDot: { width: 8, height: 8, borderRadius: 4 },
   timelineLabel: { fontSize: 10.5, fontWeight: '600', textAlign: 'center', lineHeight: 14 },
   timelineConnector: { flex: 1, height: 2, marginBottom: 20 },
+
+  // 3D Card Styles
+  btn3DCard: {
+    borderRadius: 20,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+    elevation: 6,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    marginVertical: 4,
+  },
+  card3DGlossAccent: {
+    height: 4,
+    width: '100%',
+    opacity: 0.9,
+  },
+  card3DBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  card3DIconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card3DText: {
+    flex: 1,
+  },
+  card3DTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+    gap: 8,
+  },
+  card3DTitle: {
+    fontSize: 15.5,
+    fontWeight: '700',
+  },
+  card3DDesc: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  badgePill3D: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  badgePill3DText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  roundAction3DBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+
+  // Modal Bottom Sheet Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    maxHeight: '82%',
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+  },
+  modalHandle: {
+    width: 44,
+    height: 5,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(150,150,150,0.15)',
+  },
+  modalHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  modalHeaderSub: {
+    fontSize: 12.5,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalScroll: {
+    paddingBottom: 20,
+  },
+
+  // ── Full Name Modal Styles ───────────────────────────────────────────────
+  nameModalSheet: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  nameModalHeader: {
+    marginBottom: 20,
+    paddingTop: 6,
+  },
+  nameModalIconBadge: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  nameModalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    marginBottom: 6,
+    lineHeight: 26,
+  },
+  nameModalSub: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  nameModalInputsRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  nameInputLabel: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    marginBottom: 7,
+  },
+  nameInput: {
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  namePreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+  },
+  namePreviewText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  nameConfirmBtn: {
+    height: 56,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  nameConfirmBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
 });

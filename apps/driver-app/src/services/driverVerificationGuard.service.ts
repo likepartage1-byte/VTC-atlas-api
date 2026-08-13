@@ -25,14 +25,37 @@ export const getDriverVerificationState = async (): Promise<DriverVerificationSt
       }
     }
 
-    // 2. Documents Verification Check
-    const docKeys = ['cin_recto', 'cin_verso', 'driver_license', 'vehicle_grey_card', 'insurance'];
+    // 2. Mandatory Basic Documents Verification Check (Only 4 basic required docs count for 100%)
+    const mandatoryBasicDocKeys = [
+      'driver_license',
+      'national_id_or_passport',
+      'vehicle_registration',
+      'insurance_certificate',
+    ];
+
+    const docKeyAliases: Record<string, string[]> = {
+      'driver_license': ['driver_license', 'license'],
+      'national_id_or_passport': ['national_id_or_passport', 'cin_recto', 'cin_verso', 'cin', 'passport'],
+      'vehicle_registration': ['vehicle_registration', 'vehicle_grey_card', 'carte_grise', 'grey_card'],
+      'insurance_certificate': ['insurance_certificate', 'insurance', 'assurance'],
+    };
+
     let uploadedCount = 0;
-    for (const key of docKeys) {
-      const stored = await AsyncStorage.getItem(`@uploaded_doc_${key}`);
-      if (stored) uploadedCount++;
+    for (const mainKey of mandatoryBasicDocKeys) {
+      const aliases = docKeyAliases[mainKey] || [mainKey];
+      let isUploaded = false;
+      for (const aliasKey of aliases) {
+        const stored = await AsyncStorage.getItem(`@uploaded_doc_${aliasKey}`);
+        if (stored) {
+          isUploaded = true;
+          break;
+        }
+      }
+      if (isUploaded) uploadedCount++;
     }
-    const documentPercentage = Math.round((uploadedCount / docKeys.length) * 100);
+
+    // Only mandatory basic required documents count for 100% completion (optional docs do NOT alter 100%)
+    const documentPercentage = Math.round((uploadedCount / mandatoryBasicDocKeys.length) * 100);
 
     // 3. Verification Status Check
     const storedStatus = await AsyncStorage.getItem('@driver_verification_status');
@@ -41,8 +64,7 @@ export const getDriverVerificationState = async (): Promise<DriverVerificationSt
     if (storedStatus) {
       verificationStatus = storedStatus as any;
     } else if (vehiclePercentage === 100 && documentPercentage === 100) {
-      // Default to PENDING_REVIEW once both vehicle and docs are 100% submitted
-      verificationStatus = 'PENDING_REVIEW';
+      verificationStatus = 'COMPLETED';
     } else if (vehiclePercentage > 0 || documentPercentage > 0) {
       verificationStatus = 'IN_PROGRESS';
     }
