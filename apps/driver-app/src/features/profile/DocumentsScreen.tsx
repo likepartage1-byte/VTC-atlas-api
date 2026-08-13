@@ -565,9 +565,15 @@ export const DocumentsScreen = () => {
     const uploaded = data?.uploadedDocuments?.find((d: any) => {
       const dt = (d.type || d.documentType || '').toUpperCase();
       const target = (type || '').toUpperCase();
-      if (target === 'IDENTITY_CARD') return dt === 'IDENTITY_CARD' || dt === 'PASSPORT' || dt === 'CIN';
-      if (target === 'DRIVING_LICENSE') return dt === 'DRIVING_LICENSE' || dt === 'DRIVER_LICENSE' || dt === 'LICENSE';
-      if (target === 'CARTE_GRISE') return dt === 'CARTE_GRISE' || dt === 'VEHICLE_REGISTRATION' || dt === 'REGISTRATION_CARD';
+      if (target === 'IDENTITY_CARD' || target === 'NATIONAL_ID_OR_PASSPORT' || target === 'PASSPORT' || target === 'CIN') {
+        return dt === 'IDENTITY_CARD' || dt === 'PASSPORT' || dt === 'CIN' || dt === 'NATIONAL_ID_OR_PASSPORT' || dt === 'CIN_RECTO' || dt === 'CIN_VERSO';
+      }
+      if (target === 'DRIVING_LICENSE' || target === 'DRIVER_LICENSE') {
+        return dt === 'DRIVING_LICENSE' || dt === 'DRIVER_LICENSE' || dt === 'LICENSE';
+      }
+      if (target === 'CARTE_GRISE' || target === 'VEHICLE_REGISTRATION') {
+        return dt === 'CARTE_GRISE' || dt === 'VEHICLE_REGISTRATION' || dt === 'VEHICLE_GREY_CARD' || dt === 'GREY_CARD' || dt === 'REGISTRATION_CARD';
+      }
       return dt === target;
     });
     const remaining = uploaded?.expiresAt ? daysLeft(uploaded.expiresAt) : null;
