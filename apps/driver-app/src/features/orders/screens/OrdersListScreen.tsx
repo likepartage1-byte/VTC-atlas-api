@@ -154,7 +154,10 @@ export const OrdersListScreen = () => {
 
     if (activeStatus === 'AVAILABLE' && MOCK_CONFIG.USE_MOCK_ORDERS) {
       // Simulate natural search delay (1.8s) before triggering nearest eligible ride
-      incomingTimerRef.current = setTimeout(() => {
+      incomingTimerRef.current = setTimeout(async () => {
+        const { allowed } = await canDriverAccessOrder();
+        if (!allowed) return; // Unapproved drivers do not receive private ride popups
+
         const { order, priorityWindowSeconds } = mockOrdersRepository.getNearestEligiblePrivateOrder(driverTier);
         if (order) {
           soundService.playNewOrderSound(order.id);
@@ -301,7 +304,16 @@ export const OrdersListScreen = () => {
   }, [navigation, verificationState, isRTL]);
 
   // Phase 3 Flow: Driver Accept -> Waiting 15s Passenger Confirmation -> Confirmed Trip Screen
-  const handleAcceptOrder = useCallback((orderId: string, finalPrice: number) => {
+  const handleAcceptOrder = useCallback(async (orderId: string, finalPrice: number) => {
+    const { allowed, state } = await canDriverAccessOrder();
+    if (!allowed) {
+      setIncomingPrivateAlertOrder(null);
+      setManualPreviewOrder(null);
+      setVerificationState(state);
+      setShowVerificationModal(true);
+      return;
+    }
+
     const targetOrder = mockOrders.find((o) => o.id === orderId) || incomingPrivateAlertOrder || manualPreviewOrder;
     if (!targetOrder) return;
 
