@@ -446,50 +446,54 @@ export const OrdersListScreen = () => {
           <Menu size={22} color={primaryBrand} />
         </TouchableOpacity>
 
-        {/* Centered Driver Status Pill */}
+        {/* 3D Glassmorphic Online / Offline Switch Button */}
         <TouchableOpacity
           disabled={isMotorcycleMode ? motoStatusLoading : carStatusLoading}
           style={[
             styles.statusPill,
             {
               flexDirection: isRTL ? 'row-reverse' : 'row',
-              backgroundColor: activeStatus === 'AVAILABLE' ? (isDarkMode ? '#14291F' : '#ECFDF5') : (isDarkMode ? '#20232B' : '#F8F7FC'),
-              borderColor: activeStatus === 'AVAILABLE' ? '#16A34A' : '#E5E7EB',
+              backgroundColor: activeStatus === 'AVAILABLE' ? '#10B981' : (isDarkMode ? '#2D3038' : '#374151'),
+              borderColor: activeStatus === 'AVAILABLE' ? '#059669' : '#1F2937',
+              shadowColor: activeStatus === 'AVAILABLE' ? '#10B981' : '#000000',
             },
           ]}
           onPress={isMotorcycleMode ? toggleMotoStatus : toggleCarStatus}
           activeOpacity={0.85}
         >
           {(isMotorcycleMode ? motoStatusLoading : carStatusLoading) ? (
-            <ActivityIndicator size="small" color={activeStatus === 'AVAILABLE' ? '#16A34A' : textSecondaryColor} />
+            <ActivityIndicator size="small" color="#FFFFFF" />
           ) : (
             <View
               style={[
                 styles.statusDot,
-                { backgroundColor: activeStatus === 'AVAILABLE' ? '#16A34A' : '#6B7280' },
+                { backgroundColor: activeStatus === 'AVAILABLE' ? '#FFFFFF' : '#9CA3AF' },
               ]}
             />
           )}
-          <Text
-            style={[
-              styles.statusText,
-              { color: activeStatus === 'AVAILABLE' ? '#16A34A' : textSecondaryColor },
-            ]}
-          >
+          <Text style={[styles.statusText, { color: '#FFFFFF' }]}>
             {activeStatus === 'AVAILABLE'
-              ? (isRTL ? '● متصل (En ligne)' : '● EN LIGNE')
-              : (isRTL ? '○ غير متصل (Hors ligne)' : '○ HORS LIGNE')}
+              ? (isRTL ? '● متصل (ONLINE)' : '● EN LIGNE')
+              : (isRTL ? '○ غير متصل (OFFLINE)' : '○ HORS LIGNE')}
           </Text>
         </TouchableOpacity>
 
-        {/* Tier Test Badge Switcher (BASIC / GOLD / PREMIER) */}
+        {/* VIP Driver Tier Level Badge */}
         <TouchableOpacity
-          style={[styles.tierTestBadge, { backgroundColor: isDarkMode ? '#272042' : '#F3F0FF', borderColor: primaryBrand }]}
+          style={[
+            styles.tierTestBadge,
+            {
+              backgroundColor: driverTier === 'PREMIER' ? '#8B5CF61F' : driverTier === 'GOLD' ? '#F59E0B1F' : (isDarkMode ? '#272042' : '#F3F0FF'),
+              borderColor: driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand,
+            },
+          ]}
           onPress={cycleDriverTier}
           activeOpacity={0.8}
         >
-          <Sparkles size={12} color={primaryBrand} />
-          <Text style={[styles.tierTestText, { color: primaryBrand }]}>{driverTier}</Text>
+          <Sparkles size={12} color={driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand} />
+          <Text style={[styles.tierTestText, { color: driverTier === 'PREMIER' ? '#8B5CF6' : driverTier === 'GOLD' ? '#F59E0B' : primaryBrand }]}>
+            {driverTier === 'PREMIER' ? 'PREMIER 👑' : driverTier === 'GOLD' ? 'GOLD ⭐' : 'BASIC ⚡'}
+          </Text>
         </TouchableOpacity>
       </View>
 
