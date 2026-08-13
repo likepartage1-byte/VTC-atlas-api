@@ -238,8 +238,26 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
   }, [isOpen]);
 
   const handleSwitchRole = async (targetRole: 'DRIVER' | 'PASSENGER') => {
-    if (targetRole === 'DRIVER' && !isDriverEligible) {
-      onClose();
+    await setActiveMode(targetRole);
+    await AsyncStorage.setItem('@user_active_role', targetRole);
+    await AsyncStorage.setItem('@yalla_active_app_mode', targetRole);
+    onClose();
+
+    if (targetRole === 'PASSENGER') {
+      setTimeout(() => {
+        if (navigationRef.isReady()) {
+          navigationRef.reset({
+            index: 0,
+            routes: [{ name: 'PassengerHome' }],
+          });
+        } else {
+          navigation.navigate('PassengerHome');
+        }
+      }, 150);
+      return;
+    }
+
+    if (targetRole === 'DRIVER') {
       const { getDriverVerificationState } = await import('../../../services/driverVerificationGuard.service');
       const state = await getDriverVerificationState();
 
@@ -262,18 +280,16 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
       } else {
         setTimeout(() => {
           if (navigationRef.isReady()) {
-            navigationRef.navigate('Dashboard');
+            navigationRef.reset({
+              index: 0,
+              routes: [{ name: 'Dashboard' }],
+            });
           } else {
             navigation.navigate('Dashboard');
           }
         }, 150);
       }
-      return;
     }
-
-    await setActiveMode(targetRole);
-    await AsyncStorage.setItem('@user_active_role', targetRole);
-    onClose();
   };
 
   useEffect(() => {
