@@ -1322,21 +1322,13 @@ export const VehicleInfoScreen = () => {
 
       setHasPendingRequest(true);
       setRejectionReason(null);
-      Alert.alert(t('success'), t('profile_update_submitted'), [
-        {
-          text: t('continue', 'متابعة'),
-          onPress: () => navigation.navigate('Documents' as never),
-        },
-      ]);
+      
+      // Directly navigate to Official Documents Screen upon saving vehicle info
+      navigation.navigate('Documents' as never);
     } catch (err: any) {
       console.error('[Vehicle Info] Submit handler error:', err);
       setHasPendingRequest(true);
-      Alert.alert(t('success'), t('profile_update_submitted'), [
-        {
-          text: t('continue', 'متابعة'),
-          onPress: () => navigation.navigate('Documents' as never),
-        },
-      ]);
+      navigation.navigate('Documents' as never);
     } finally {
       setSubmitting(false);
     }

@@ -240,27 +240,34 @@ export const SideDrawer = memo(({ isOpen, onClose }: SideDrawerProps) => {
   const handleSwitchRole = async (targetRole: 'DRIVER' | 'PASSENGER') => {
     if (targetRole === 'DRIVER' && !isDriverEligible) {
       onClose();
-      setTimeout(() => {
-        Alert.alert(
-          getDrawerTr('driver_registration_title', lang),
-          getDrawerTr('driver_registration_msg', lang),
-          [
-            { text: 'إلغاء', style: 'cancel' },
-            {
-              text: 'متابعة التسجيل ➔',
-              onPress: () => {
-                setTimeout(() => {
-                  if (navigationRef.isReady()) {
-                    navigationRef.navigate('SelectVehicleType');
-                  } else {
-                    navigation.navigate('SelectVehicleType');
-                  }
-                }, 100);
-              },
-            },
-          ]
-        );
-      }, 200);
+      const { getDriverVerificationState } = await import('../../../services/driverVerificationGuard.service');
+      const state = await getDriverVerificationState();
+
+      if (state.vehicleVerificationPercentage < 100) {
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('SelectVehicleType');
+          } else {
+            navigation.navigate('SelectVehicleType');
+          }
+        }, 150);
+      } else if (state.documentVerificationPercentage < 100) {
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Documents');
+          } else {
+            navigation.navigate('Documents');
+          }
+        }, 150);
+      } else {
+        setTimeout(() => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Dashboard');
+          } else {
+            navigation.navigate('Dashboard');
+          }
+        }, 150);
+      }
       return;
     }
 
