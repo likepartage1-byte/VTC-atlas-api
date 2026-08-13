@@ -10,7 +10,7 @@ import { DocumentType } from '@prisma/client';
 
 @Controller('driver/verification')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('DRIVER')
+@Roles('DRIVER', 'PASSENGER')
 export class DriverVerificationController {
   constructor(
     private readonly verificationService: DriverVerificationService,
@@ -54,10 +54,18 @@ export class DriverVerificationController {
     let driverId: string | null = null;
 
     if (userId) {
-      const driver = await this.prisma.driver.findUnique({
+      let driver = await this.prisma.driver.findUnique({
         where: { userId },
         select: { id: true },
       });
+      if (!driver) {
+        try {
+          driver = await this.prisma.driver.create({
+            data: { userId, status: 'OFFLINE', rating: 5.0, vehicleInfo: {} },
+            select: { id: true },
+          });
+        } catch (_) {}
+      }
       driverId = driver?.id || null;
     }
 

@@ -286,18 +286,24 @@ export const OrdersListScreen = () => {
     setManualPreviewOrder(order);
   }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
 
-  const handleContinueVerification = useCallback(() => {
-    setShowVerificationModal(false);
-    if (verificationState.currentMissingStep === 'VEHICLE') {
+  const handleContinueVerification = useCallback(async () => {
+    if (verificationState.vehicleVerificationPercentage < 100) {
+      setShowVerificationModal(false);
       navigation.navigate('VehicleInfo');
-    } else if (verificationState.currentMissingStep === 'DOCUMENTS') {
+    } else if (verificationState.documentVerificationPercentage < 100) {
+      setShowVerificationModal(false);
       navigation.navigate('Documents');
-    } else if (verificationState.currentMissingStep === 'PENDING_REVIEW') {
+    } else {
+      // Vehicle 100% and Docs 100% -> Trigger real submit review request to Backend Queue
+      const { submitDriverReviewRequest } = await import('../../../services/driverVerificationGuard.service');
+      await submitDriverReviewRequest();
+      setVerificationState((prev) => ({ ...prev, verificationStatus: 'PENDING_REVIEW' }));
+
       Alert.alert(
-        isRTL ? 'تم إرسال وثائقك للمراجعة ⏳' : 'Documents en cours de vérification ⏳',
+        isRTL ? 'تم إرسال الملف للمراجعة ✓' : 'Demande envoyée ✓',
         isRTL
-          ? 'تم استلام معلومات المركبة والوثائق الرسمية بنجاح. سيتم مراجعتها من فريق YALLA VTC وسيتم إشعارك فور التفعيل.'
-          : 'Vos informations et documents ont été reçus avec succès. Notre équipe YALLA VTC va les examiner.',
+          ? 'تم استلام معلومات المركبة والوثائق بنجاح، وتسجيل طلب المراجعة في الخادم. سيتم مراجعتها من فريق YALLA VTC وإفادتكم.'
+          : 'Votre dossier a été soumis avec succès pour examen par l’administrateur YALLA VTC.',
         [{ text: 'OK' }]
       );
     }

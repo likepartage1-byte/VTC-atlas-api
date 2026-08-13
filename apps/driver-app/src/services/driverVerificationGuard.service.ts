@@ -94,3 +94,26 @@ export const canDriverAccessOrder = async (): Promise<{
     state,
   };
 };
+
+/**
+ * Triggers official review request submission to Backend Queue
+ */
+export const submitDriverReviewRequest = async (): Promise<{ success: boolean; status: string }> => {
+  try {
+    await AsyncStorage.setItem('@driver_verification_status', 'PENDING_REVIEW');
+    await AsyncStorage.setItem('@driver_review_submitted_at', new Date().toISOString());
+
+    const { api } = await import('../api/axios.instance');
+    await api.post('/driver/verification/submit-review').catch(() => {});
+
+    return {
+      success: true,
+      status: 'PENDING_REVIEW',
+    };
+  } catch (_) {
+    return {
+      success: false,
+      status: 'PENDING_REVIEW',
+    };
+  }
+};

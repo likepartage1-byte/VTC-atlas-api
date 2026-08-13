@@ -31,6 +31,9 @@ export const VerificationRequiredModal: React.FC<Props> = ({
   const rawLang = (i18n.language || 'fr').toLowerCase();
   const isRTL = rawLang.startsWith('ar');
 
+  const isBothCompleted = state.vehicleVerificationPercentage === 100 && state.documentVerificationPercentage === 100;
+  const isPendingReview = state.verificationStatus === 'PENDING_REVIEW';
+
   const cardBg = isDarkMode ? '#181A20' : '#FFFFFF';
   const surfaceAlt = isDarkMode ? '#22252D' : '#F8F7FC';
   const borderColor = isDarkMode ? '#2D3038' : '#E5E7EB';
@@ -38,29 +41,49 @@ export const VerificationRequiredModal: React.FC<Props> = ({
   const textPrimary = isDarkMode ? '#F9FAFB' : '#111827';
   const textSecondary = isDarkMode ? '#A1A1AA' : '#6B7280';
 
-  const titleText = isRTL
-    ? 'أكمل تسجيل مركبتك أولاً'
-    : rawLang.startsWith('es')
-    ? 'Completa primero el registro de tu vehículo'
-    : rawLang.startsWith('en')
-    ? 'Complete your vehicle registration first'
-    : "Complétez d'abord l'enregistrement de votre véhicule";
+  const titleText = isBothCompleted
+    ? (isRTL
+        ? 'الملف قيد المراجعة'
+        : rawLang.startsWith('es')
+        ? 'Perfil en revisión'
+        : rawLang.startsWith('en')
+        ? 'Profile Under Review'
+        : "Dossier en cours d'examen")
+    : (isRTL
+        ? 'أكمل تسجيل مركبتك أولاً'
+        : rawLang.startsWith('es')
+        ? 'Completa primero el registro de tu vehículo'
+        : rawLang.startsWith('en')
+        ? 'Complete your vehicle registration first'
+        : "Complétez d'abord l'enregistrement de votre véhicule");
 
-  const messageText = isRTL
-    ? 'للوصول إلى تفاصيل الطلبات والبدء في استقبال الرحلات، يجب عليك إكمال معلومات المركبة والوثائق الرسمية وانتظار مراجعتها.'
-    : rawLang.startsWith('es')
-    ? 'Para acceder a los detalles de los viajes y empezar a recibir solicitudes, debes completar la información de tu vehículo y tus documentos oficiales y esperar la verificación.'
-    : rawLang.startsWith('en')
-    ? 'To access ride details and start receiving requests, you must complete your vehicle information and official documents and wait for verification.'
-    : 'Pour accéder aux détails des courses et commencer à recevoir des demandes, vous devez compléter les informations de votre véhicule et vos documents officiels, puis attendre leur validation.';
+  const messageText = isBothCompleted
+    ? (isRTL
+        ? 'تم استكمال معلومات المركبة والوثائق بنجاح، ولكن ملفك لا يزال قيد المراجعة من طرف مسؤول الحساب. لا يمكنك قبول الرحلات حتى تتم الموافقة على ملفك.'
+        : rawLang.startsWith('es')
+        ? 'Tus datos y documentos han sido completados con éxito, pero tu perfil está en revisión por el administrador. No puedes aceptar viajes hasta su aprobación.'
+        : rawLang.startsWith('en')
+        ? 'Your vehicle information and documents were completed successfully, but your profile is currently under review by the account administrator. You cannot accept rides until approved.'
+        : "Les informations de votre véhicule et vos documents ont été complétés avec succès, mais votre dossier est en cours de révision par l'administrateur. Vous ne pouvez pas accepter de courses avant validation.")
+    : (isRTL
+        ? 'للوصول إلى تفاصيل الطلبات والبدء في استقبال الرحلات، يجب عليك إكمال معلومات المركبة والوثائق الرسمية وانتظار مراجعتها.'
+        : rawLang.startsWith('es')
+        ? 'Para acceder a los detalles de los viajes y empezar a recibir solicitudes, debes completar la información de tu vehículo y tus documentos oficiales y esperar la verificación.'
+        : rawLang.startsWith('en')
+        ? 'To access ride details and start receiving requests, you must complete your vehicle information and official documents and wait for verification.'
+        : 'Pour accéder aux détails des courses et commencer à recevoir des demandes, vous devez compléter les informations de votre véhicule et vos documents officiels, puis attendre leur validation.');
 
-  const continueBtnText = isRTL
-    ? 'متابعة ➔'
-    : rawLang.startsWith('es')
-    ? 'Continuar ➔'
-    : rawLang.startsWith('en')
-    ? 'Continue ➔'
-    : 'Continuer ➔';
+  const continueBtnText = isBothCompleted
+    ? (isPendingReview
+        ? (isRTL ? 'تم إرسال الملف للمراجعة ✓' : rawLang.startsWith('es') ? 'Solicitud enviada ✓' : rawLang.startsWith('en') ? 'Review Submitted ✓' : 'Demande envoyée ✓')
+        : (isRTL ? 'إرسال للمراجعة ➔' : rawLang.startsWith('es') ? 'Enviar a revisión ➔' : rawLang.startsWith('en') ? 'Submit for Review ➔' : 'Envoyer pour révision ➔'))
+    : (isRTL
+        ? 'متابعة ➔'
+        : rawLang.startsWith('es')
+        ? 'Continuar ➔'
+        : rawLang.startsWith('en')
+        ? 'Continue ➔'
+        : 'Continuer ➔');
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
