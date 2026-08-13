@@ -200,8 +200,8 @@ export const ConfirmedTripModal = memo(({
     let primaryUrl = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
 
     if (targetApp === 'waze') {
-      // Waze native URI scheme for direct navigation launch
-      primaryUrl = `waze://?ll=${targetLat},${targetLng}&navigate=yes`;
+      // Waze Universal Deep Link for exact coordinate navigation
+      primaryUrl = `https://waze.com/ul?ll=${targetLat},${targetLng}&navigate=yes`;
     } else if (targetApp === 'apple_maps' && Platform.OS === 'ios') {
       primaryUrl = `maps://maps.apple.com/?daddr=${targetLat},${targetLng}&dirflg=d`;
     } else if (targetApp === 'google_maps' && Platform.OS === 'android') {
@@ -213,15 +213,16 @@ export const ConfirmedTripModal = memo(({
       if (canOpen) {
         await Linking.openURL(primaryUrl);
       } else {
-        // Fallback for Waze or Google Maps if native app scheme isn't directly registered
         const fallbackUrl = targetApp === 'waze'
-          ? `https://waze.com/ul?ll=${targetLat},${targetLng}&navigate=yes`
+          ? `waze://?ll=${targetLat},${targetLng}&navigate=yes`
           : `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
 
-        await Linking.openURL(fallbackUrl);
+        await Linking.openURL(fallbackUrl).catch(async () => {
+          const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
+          await Linking.openURL(webUrl);
+        });
       }
     } catch (_) {
-      // Final fallback to web Google Maps
       const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
       await Linking.openURL(webUrl).catch(() => {});
     }
