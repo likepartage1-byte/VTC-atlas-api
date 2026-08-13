@@ -508,7 +508,9 @@ export const ConfirmedTripModal = memo(({
               </View>
             </TouchableOpacity>
           </Modal>
-        {/* ── 6. Phase 4.6: Driver Passenger Rating Modal ─────────────────── */}
+        )}
+
+        {/* Phase 4.6: Driver Passenger Rating Modal */}
         {showRatingModal && (
           <Modal visible={showRatingModal} transparent animationType="slide">
             <View style={styles.ratingOverlay}>
