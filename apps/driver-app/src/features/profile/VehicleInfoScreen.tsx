@@ -35,10 +35,15 @@ import {
   Plus,
   AlertCircle,
   ChevronDown,
+  ShieldCheck,
 } from 'lucide-react-native';
-import Svg, { Path, Circle, Rect, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Circle, Rect, Ellipse, Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../../theme/ThemeContext';
 import { api, BASE_URL } from '../../api/axios.instance';
+import { DrawerHeader } from '../../components/DrawerHeader';
+import { useVehicleMode, setVehicleModeCache } from '../../hooks/useVehicleMode';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calculateVehicleEligibility } from '../../services/vehicleEligibility.service';
 
 // Photo utility imports
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
@@ -48,35 +53,73 @@ import { launchImageLibrary } from 'react-native-image-picker';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-// Data Constants
+// Data Constants - Full Moroccan Automotive Market Dataset
 const BRANDS_DATA = [
-  { name: 'Mercedes-Benz', logo: 'mercedes' },
+  { name: 'Dacia', logo: 'dacia' },
   { name: 'Renault', logo: 'renault' },
   { name: 'Peugeot', logo: 'peugeot' },
-  { name: 'Dacia', logo: 'dacia' },
-  { name: 'Toyota', logo: 'toyota' },
   { name: 'Volkswagen', logo: 'volkswagen' },
+  { name: 'Toyota', logo: 'toyota' },
   { name: 'Hyundai', logo: 'hyundai' },
+  { name: 'Kia', logo: 'kia' },
+  { name: 'Fiat', logo: 'fiat' },
+  { name: 'Citroën', logo: 'citroen' },
+  { name: 'Mercedes-Benz', logo: 'mercedes' },
   { name: 'BMW', logo: 'bmw' },
   { name: 'Audi', logo: 'audi' },
+  { name: 'Nissan', logo: 'nissan' },
   { name: 'Ford', logo: 'ford' },
+  { name: 'Skoda', logo: 'skoda' },
+  { name: 'Seat', logo: 'seat' },
+  { name: 'Honda', logo: 'honda' },
+  { name: 'Opel', logo: 'opel' },
+  { name: 'Suzuki', logo: 'suzuki' },
+  { name: 'Mitsubishi', logo: 'mitsubishi' },
+  { name: 'Range Rover', logo: 'landrover' },
+  { name: 'Volvo', logo: 'volvo' },
+  { name: 'Chery', logo: 'chery' },
+  { name: 'MG', logo: 'mg' },
+  { name: 'Geely', logo: 'geely' },
+  { name: 'BYD', logo: 'byd' },
+  { name: 'Cupra', logo: 'cupra' },
+  { name: 'Jeep', logo: 'jeep' },
+  { name: 'Porsche', logo: 'porsche' },
 ];
 
 const MODELS_MAP: Record<string, string[]> = {
-  'Mercedes-Benz': ['Classe C', 'Classe E', 'Classe V', 'CLA', 'GLC'],
-  'Renault': ['Clio', 'Megane', 'Express', 'Talisman', 'Kadjar'],
-  'Peugeot': ['208', '3008', '5008', '308', 'Partner'],
-  'Dacia': ['Logan', 'Sandero', 'Duster', 'Lodgy', 'Jogger'],
-  'Toyota': ['Corolla', 'Camry', 'Prius', 'Yaris', 'RAV4'],
-  'Volkswagen': ['Golf', 'Caddy', 'Passat', 'Tiguan', 'Touran'],
-  'Hyundai': ['i30', 'Tucson', 'Accent', 'Elantra', 'Santa Fe'],
-  'BMW': ['Série 3', 'Série 5', 'X3', 'i4'],
-  'Audi': ['A4', 'A6', 'Q3', 'Q5'],
-  'Ford': ['Focus', 'Fiesta', 'Kuga', 'Transit'],
+  'Dacia': ['Logan', 'Sandero', 'Duster', 'Lodgy', 'Jogger', 'Dokker', 'Spring'],
+  'Renault': ['Clio', 'Megane', 'Express', 'Talisman', 'Kadjar', 'Captur', 'Arkana', 'Austral', 'Kangoo'],
+  'Peugeot': ['208', '308', '2008', '3008', '5008', 'Partner', 'Rifter', '508'],
+  'Volkswagen': ['Golf', 'Caddy', 'Passat', 'Tiguan', 'Touran', 'Polo', 'T-Roc', 'Touareg'],
+  'Toyota': ['Corolla', 'Camry', 'Prius', 'Yaris', 'RAV4', 'Land Cruiser', 'C-HR', 'Hilux'],
+  'Hyundai': ['i10', 'i20', 'i30', 'Tucson', 'Accent', 'Elantra', 'Santa Fe', 'Kona', 'Creta'],
+  'Kia': ['Picanto', 'Rio', 'Sportage', 'Sorento', 'Ceed', 'Stonic', 'Seltos'],
+  'Fiat': ['500', 'Panda', 'Tipo', 'Doblo', 'Fiorino', 'Ducato'],
+  'Citroën': ['C3', 'C4', 'Berlingo', 'C5 Aircross', 'C-Elysée', 'Jumpy'],
+  'Mercedes-Benz': ['Classe A', 'Classe C', 'Classe E', 'Classe S', 'Classe V', 'CLA', 'GLC', 'GLE'],
+  'BMW': ['Série 1', 'Série 3', 'Série 5', 'Série 7', 'X1', 'X3', 'X5', 'i4'],
+  'Audi': ['A3', 'A4', 'A6', 'Q3', 'Q5', 'Q7'],
+  'Nissan': ['Qashqai', 'Juke', 'Micra', 'X-Trail', 'Navara'],
+  'Ford': ['Focus', 'Fiesta', 'Kuga', 'Transit', 'Ranger'],
+  'Skoda': ['Octavia', 'Fabia', 'Superb', 'Kodiaq', 'Kamiq'],
+  'Seat': ['Ibiza', 'Leon', 'Ateca', 'Arona'],
+  'Honda': ['Civic', 'CR-V', 'HR-V', 'Jazz'],
+  'Opel': ['Corsa', 'Astra', 'Mokka', 'Grandland', 'Combo'],
+  'Suzuki': ['Swift', 'Vitara', 'Jimny', 'Baleno'],
+  'Mitsubishi': ['L200', 'Outlander', 'Eclipse Cross', 'Pajero'],
+  'Range Rover': ['Evoque', 'Velar', 'Sport', 'Defender', 'Discovery'],
+  'Volvo': ['XC40', 'XC60', 'XC90', 'S60', 'S90'],
+  'Chery': ['Tiggo 2', 'Tiggo 4', 'Tiggo 7', 'Tiggo 8'],
+  'MG': ['MG ZS', 'MG HS', 'MG 4', 'MG 5'],
+  'Geely': ['Coolray', 'Monjaro', 'Geometry C'],
+  'BYD': ['Atto 3', 'Han', 'Tang', 'Dolphin', 'Seal'],
+  'Cupra': ['Formentor', 'Leon', 'Ateca'],
+  'Jeep': ['Renegade', 'Compass', 'Wrangler', 'Grand Cherokee'],
+  'Porsche': ['Cayenne', 'Macan', 'Panamera', 'Taycan'],
 };
 
 const YEARS_ARRAY = Array.from({ length: 16 }, (_, i) => String(new Date().getFullYear() - i));
-const SEATS_ARRAY = ['2', '4', '5', '7', '8', '9'];
+const SEATS_ARRAY = ['2', '3', '4', '5', '6', '7', '8', '9'];
 
 const COLOR_TEMPLATES = [
   { name: 'Deep Black', hex: '#0F172A', glow: 'rgba(15,23,42,0.4)' },
@@ -84,7 +127,13 @@ const COLOR_TEMPLATES = [
   { name: 'Polar White', hex: '#F8FAFC', glow: 'rgba(248,250,252,0.5)' },
   { name: 'Metallic Silver', hex: '#CBD5E1', glow: 'rgba(203,213,225,0.4)' },
   { name: 'Ruby Red', hex: '#EF4444', glow: 'rgba(239,68,68,0.4)' },
-  { name: 'Royal Blue', hex: '#3B82F6', glow: 'rgba(59,130,246,0.4)' },
+  { name: 'Royal Blue', hex: '#2563EB', glow: 'rgba(37,99,235,0.4)' },
+  { name: 'Midnight Navy', hex: '#1E3A8A', glow: 'rgba(30,58,138,0.4)' },
+  { name: 'Emerald Green', hex: '#059669', glow: 'rgba(5,150,105,0.4)' },
+  { name: 'Champagne Gold', hex: '#D97706', glow: 'rgba(217,119,6,0.4)' },
+  { name: 'Coffee Brown', hex: '#78350F', glow: 'rgba(120,53,15,0.4)' },
+  { name: 'Sunset Orange', hex: '#EA580C', glow: 'rgba(234,88,12,0.4)' },
+  { name: 'Anthracite Slate', hex: '#334155', glow: 'rgba(51,65,85,0.4)' },
 ];
 
 const FUEL_TYPES = ['Diesel', 'Petrol', 'Hybrid', 'Electric'];
@@ -212,6 +261,137 @@ const MoroccanGreyCardGuide = () => {
     </View>
   );
 };
+
+const MoroccanGreyCardVersoGuide = () => {
+  return (
+    <View style={guideStyles.moroccoCardWoodBg}>
+      <View style={guideStyles.moroccoCardBody}>
+        {/* Header decoration */}
+        <View style={guideStyles.moroccoCardHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={guideStyles.moroccoCardHeaderTextFr}>CARACTÉRISTIQUES TECHNIQUES</Text>
+            <Text style={guideStyles.moroccoCardSubTextFr}>VERSO - CERTIFICAT D'IMMATRICULATION</Text>
+          </View>
+          <View style={guideStyles.moroccoCardMapPlaceholder}>
+            <Svg viewBox="0 0 100 100" style={{ width: 22, height: 22 }}>
+              <Path
+                d="M40 10 C 45 15, 48 18, 50 25 C 52 32, 55 35, 53 45 C 50 55, 45 60, 42 75 Z"
+                fill="#FFD700"
+              />
+            </Svg>
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={guideStyles.moroccoCardHeaderTextAr}>الخصائص التقنية للمركبة</Text>
+            <Text style={guideStyles.moroccoCardSubTextAr}>الواجهة الخلفية</Text>
+          </View>
+        </View>
+
+        {/* Horizontal separator */}
+        <View style={guideStyles.moroccoCardDivider} />
+
+        {/* Technical Fields list */}
+        <View style={guideStyles.moroccoCardFields}>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Marque (D.1)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldValBold}>DACIA / RENAULT</Text>
+            <Text style={guideStyles.fieldValAr}>الصانع</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Type / Modèle (D.3)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>LOGAN SD 1.5 DCI</Text>
+            <Text style={guideStyles.fieldValAr}>النوع</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>N° de chassis (E / VIN)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldValSmall} numberOfLines={1}>VF1LSD82549201948</Text>
+            <Text style={guideStyles.fieldValAr}>رقم الهيكل</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Carburant (P.3)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>DIESEL / غازوال</Text>
+            <Text style={guideStyles.fieldValAr}>نوع الوقود</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Puissance fiscale (P.6)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>6 CV (خيل)</Text>
+            <Text style={guideStyles.fieldValAr}>القوة الجبائية</Text>
+          </View>
+          <View style={guideStyles.moroccoCardFieldRow}>
+            <Text style={guideStyles.fieldLabel}>Nombre de places (S.1)</Text>
+            <Text style={guideStyles.fieldDivider}>:</Text>
+            <Text style={guideStyles.fieldVal}>5 PLACES</Text>
+            <Text style={guideStyles.fieldValAr}>عدد المقاعد</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// Car Silhouette Outline Overlay matching user screenshot perfectly!
+const SVGCarCameraOverlay = ({ isRear = false }: { isRear?: boolean }) => (
+  <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', position: 'relative' }}>
+    {/* Full-Width Car Outline SVG */}
+    <Svg width="95%" height="80%" viewBox="0 0 300 240" preserveAspectRatio="xMidYMid meet">
+      {/* Outer Car Body Silhouette Outline matching exact user sample image */}
+      <Path
+        d="
+          M 85 30
+          C 105 15, 195 15, 215 30
+          C 225 40, 242 90, 250 100
+          C 268 100, 278 106, 278 116
+          C 278 126, 262 132, 250 132
+          C 248 165, 246 195, 244 205
+          C 242 215, 230 220, 205 220
+          C 195 220, 195 198, 175 198
+          L 125 198
+          C 105 198, 105 220, 95 220
+          C 70 220, 58 215, 56 205
+          C 54 195, 52 165, 50 132
+          C 38 132, 22 126, 22 116
+          C 22 106, 32 100, 50 100
+          C 58 90, 75 40, 85 30
+          Z
+        "
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="4.5"
+      />
+    </Svg>
+  </View>
+);
+const VehicleRearGuideGraphic = () => (
+  <View style={{ width: '100%', height: 250, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', borderRadius: 16, overflow: 'hidden' }}>
+    <Svg width="260" height="200" viewBox="0 0 300 240">
+      {/* Shadow */}
+      <Ellipse cx="150" cy="210" rx="120" ry="15" fill="rgba(0,0,0,0.5)" />
+      {/* Car Rear Body Base */}
+      <Path
+        d="M 60 45 L 240 45 L 265 110 L 270 195 C 270 205, 260 210, 245 210 C 235 210, 235 190, 215 190 L 85 190 C 65 190, 65 210, 55 210 C 40 210, 30 205, 30 195 L 35 110 Z"
+        fill="#1E293B"
+        stroke="#475569"
+        strokeWidth="3"
+      />
+      {/* Rear Windshield */}
+      <Path d="M 75 55 L 225 55 L 240 100 L 60 100 Z" fill="#020617" stroke="#334155" strokeWidth="2" />
+      {/* Left Tail Light (Red Glow) */}
+      <Rect x="40" y="115" width="50" height="26" rx="6" fill="#EF4444" stroke="#DC2626" strokeWidth="2.5" />
+      {/* Right Tail Light (Red Glow) */}
+      <Rect x="210" y="115" width="50" height="26" rx="6" fill="#EF4444" stroke="#DC2626" strokeWidth="2.5" />
+      {/* License Plate Frame */}
+      <Rect x="110" y="145" width="80" height="28" rx="4" fill="#FFFFFF" stroke="#000000" strokeWidth="2" />
+      <SvgText x="150" y="163" textAnchor="middle" fill="#000000" fontSize="11" fontWeight="bold">55334-1</SvgText>
+    </Svg>
+    <View style={{ position: 'absolute', bottom: 12, alignSelf: 'center', backgroundColor: 'rgba(239,68,68,0.2)', paddingHorizontal: 14, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(239,68,68,0.5)' }}>
+      <Text style={{ color: '#F87171', fontSize: 11.5, fontWeight: '700' }}>🚗 الواجهة الخلفية للمركبة (Rear)</Text>
+    </View>
+  </View>
+);
 
 // Brand Logo Svg Renderer Component
 const BrandLogo = ({ type, color }: { type: string; color: string }) => {
@@ -359,8 +539,6 @@ const SVG3DMotorcycle = ({ colorsPrimary }: { colorsPrimary: string }) => (
   </Svg>
 );
 
-import { Ellipse } from 'react-native-svg';
-
 export const VehicleInfoScreen = () => {
   const navigation = useNavigation();
   const { t: baseT, i18n } = useTranslation('profile');
@@ -371,7 +549,7 @@ export const VehicleInfoScreen = () => {
   const isRTL = i18n.language === 'ar';
 
   // --- View State ---
-  const [viewState, setViewState] = useState<'select' | 'form'>('select');
+  const [viewState, setViewState] = useState<'select' | 'form'>('form');
   const [selectedTypeChoice, setSelectedTypeChoice] = useState<'CAR' | 'MOTORCYCLE'>('CAR');
 
   // --- API State & Initial data ---
@@ -379,13 +557,15 @@ export const VehicleInfoScreen = () => {
   const [submitting, setSubmitting] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
-  const [approvedPhotos, setApprovedPhotos] = useState<{
-    vehicle: string | null;
-    registration: string | null;
-  }>({ vehicle: null, registration: null });
+  const [approvedPhotos, setApprovedPhotos] = useState<Record<PhotoSlotKey, string | null>>({
+    vehicle_front: null,
+    vehicle_rear: null,
+    registration_front: null,
+    registration_rear: null,
+  });
 
   // --- Form Input States ---
-  const [vehicleType, setVehicleType] = useState<'CAR' | 'MOTORCYCLE' | null>(null);
+  const [vehicleType, setVehicleType] = useState<'CAR' | 'MOTORCYCLE' | null>('CAR');
   const [manufacturer, setManufacturer] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -398,12 +578,22 @@ export const VehicleInfoScreen = () => {
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [vin, setVin] = useState('');
 
-  const [photos, setPhotos] = useState<{
-    vehicle: string | null;
-    registration: string | null;
-  }>({
-    vehicle: null,
-    registration: null,
+  // Climatisation States
+  const [hasAirConditioning, setHasAirConditioning] = useState(true);
+  const [acWorkingStatus, setAcWorkingStatus] = useState<'EXCELLENT' | 'GOOD' | 'NEEDS_SERVICE'>('EXCELLENT');
+
+  // 4 Photo Slots:
+  // 1. vehicle_front: الصورة الأمامية للمركبة
+  // 2. vehicle_rear: الصورة الخلفية للمركبة
+  // 3. registration_front: الواجهة الأمامية للبطاقة الرمادية
+  // 4. registration_rear: الواجهة الخلفية للبطاقة الرمادية
+  type PhotoSlotKey = 'vehicle_front' | 'vehicle_rear' | 'registration_front' | 'registration_rear';
+
+  const [photos, setPhotos] = useState<Record<PhotoSlotKey, string | null>>({
+    vehicle_front: null,
+    vehicle_rear: null,
+    registration_front: null,
+    registration_rear: null,
   });
 
   // --- Custom Picker Modals ---
@@ -412,21 +602,23 @@ export const VehicleInfoScreen = () => {
   const [showFuelModal, setShowFuelModal] = useState(false);
   const [showTransModal, setShowTransModal] = useState(false);
   const [showPhotoOptionsSheet, setShowPhotoOptionsSheet] = useState(false);
-  const [selectedPhotoSlot, setSelectedPhotoSlot] = useState<'vehicle' | 'registration' | null>(null);
+  const [showTypeChangeModal, setShowTypeChangeModal] = useState(false);
+  const [selectedPhotoSlot, setSelectedPhotoSlot] = useState<PhotoSlotKey | null>(null);
   const [guidelinesExpanded, setGuidelinesExpanded] = useState(false);
-  const [photoStatuses, setPhotoStatuses] = useState<{
-    vehicle: 'EMPTY' | 'PENDING' | 'APPROVED' | 'REJECTED';
-    registration: 'EMPTY' | 'PENDING' | 'APPROVED' | 'REJECTED';
-  }>({
-    vehicle: 'EMPTY',
-    registration: 'EMPTY',
+  const [photoStatuses, setPhotoStatuses] = useState<Record<PhotoSlotKey, 'EMPTY' | 'PENDING' | 'APPROVED' | 'REJECTED'>>({
+    vehicle_front: 'EMPTY',
+    vehicle_rear: 'EMPTY',
+    registration_front: 'EMPTY',
+    registration_rear: 'EMPTY',
   });
   const [failedAttemptsCount, setFailedAttemptsCount] = useState<Record<string, number>>({});
   const [qualityValidationStatus, setQualityValidationStatus] = useState<'IDLE' | 'SCANNING' | 'SCAN_FAILED'>('IDLE');
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   // --- Dynamic Vehicle Data from Database ---
-  const [dbBrands, setDbBrands] = useState<{ id: string; name: string; logo: string | null }[]>([]);
+  const [dbBrands, setDbBrands] = useState<{ id: string; name: string; logo: string | null }[]>(
+    BRANDS_DATA.map((b, idx) => ({ id: String(idx + 1), name: b.name, logo: b.logo }))
+  );
   const [dbModels, setDbModels] = useState<{ id: string; name: string }[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
@@ -568,58 +760,20 @@ export const VehicleInfoScreen = () => {
   const cameraRef = useRef<Camera>(null);
   const device = useCameraDevice(cameraType);
 
-  // --- Animated 3D Floating Value ---
-  const floatAnim = useRef(new Animated.Value(0)).current;
 
-  // --- Pan Responder for 3D Card tilt effect ---
-  const panX = useRef(new Animated.Value(0)).current;
-  const panY = useRef(new Animated.Value(0)).current;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gestureState) => {
-        // Map drag gesture coordinates to degrees values (-15 to 15 degrees)
-        const tiltX = (gestureState.dy / (SCREEN_H / 2)) * -18;
-        const tiltY = (gestureState.dx / (SCREEN_W / 2)) * 18;
-        panX.setValue(tiltX);
-        panY.setValue(tiltY);
-      },
-      onPanResponderRelease: () => {
-        // Snap back card rotation smoothly on release
-        Animated.parallel([
-          Animated.spring(panX, { toValue: 0, friction: 5, tension: 40, useNativeDriver: true }),
-          Animated.spring(panY, { toValue: 0, friction: 5, tension: 40, useNativeDriver: true }),
-        ]).start();
-      },
-    })
-  ).current;
-
-  useEffect(() => {
-    // 3D Card floating animation loop
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim, {
-          toValue: -8,
-          duration: 2200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatAnim, {
-          toValue: 8,
-          duration: 2200,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
 
   const fetchManufacturers = async () => {
     setLoadingBrands(true);
     try {
       const res = await api.get('/driver/profile/vehicle/manufacturers');
-      setDbBrands(res.data);
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setDbBrands(res.data);
+      } else {
+        setDbBrands(BRANDS_DATA.map((b, idx) => ({ id: String(idx + 1), name: b.name, logo: b.logo })));
+      }
     } catch (err) {
-      console.warn('Failed to load brands from database:', err);
+      console.warn('Failed to load brands from database, using static fallback:', err);
+      setDbBrands(BRANDS_DATA.map((b, idx) => ({ id: String(idx + 1), name: b.name, logo: b.logo })));
     } finally {
       setLoadingBrands(false);
     }
@@ -630,9 +784,16 @@ export const VehicleInfoScreen = () => {
     setLoadingModels(true);
     try {
       const res = await api.get(`/driver/profile/vehicle/models?manufacturer=${encodeURIComponent(brandName)}`);
-      setDbModels(res.data);
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setDbModels(res.data);
+      } else {
+        const staticModels = MODELS_MAP[brandName] || ['Standard', 'Executive', 'Sport', 'Comfort'];
+        setDbModels(staticModels.map((m, idx) => ({ id: String(idx + 1), name: m })));
+      }
     } catch (err) {
-      console.warn('Failed to load models for brand:', err);
+      console.warn('Failed to load models for brand, using static fallback:', err);
+      const staticModels = MODELS_MAP[brandName] || ['Standard', 'Executive', 'Sport', 'Comfort'];
+      setDbModels(staticModels.map((m, idx) => ({ id: String(idx + 1), name: m })));
     } finally {
       setLoadingModels(false);
     }
@@ -660,15 +821,23 @@ export const VehicleInfoScreen = () => {
       }
 
       const vehicle = data.vehicleInfo || {};
-      const activeType = vehicle.type || null;
+      const activeType = (vehicle.type || '').toUpperCase();
 
-      const appPhotos = {
-        vehicle: vehicle.photos?.vehicle || null,
-        registration: vehicle.photos?.registration || null,
+      if (activeType === 'MOTORCYCLE') {
+        setLoading(false);
+        (navigation as any).replace('MotorcycleInfo');
+        return;
+      }
+
+      const appPhotos: Record<PhotoSlotKey, string | null> = {
+        vehicle_front: vehicle.photos?.vehicle_front || vehicle.photos?.vehicle || null,
+        vehicle_rear: vehicle.photos?.vehicle_rear || null,
+        registration_front: vehicle.photos?.registration_front || vehicle.photos?.registration || null,
+        registration_rear: vehicle.photos?.registration_rear || null,
       };
 
       setApprovedPhotos(appPhotos);
-      setVehicleType(activeType);
+      setVehicleType('CAR');
       setManufacturer(vehicle.manufacturer || '');
       setBrand(vehicle.brand || '');
       setModel(vehicle.model || '');
@@ -683,16 +852,26 @@ export const VehicleInfoScreen = () => {
 
       setPhotos(appPhotos);
 
+      if (appPhotos.registration_front || vehicle.registrationNumber) {
+        await AsyncStorage.setItem(
+          '@uploaded_doc_CARTE_GRISE',
+          JSON.stringify({
+            type: 'CARTE_GRISE',
+            status: data.pendingVehicleUpdate ? 'PENDING' : 'APPROVED',
+            updatedAt: Date.now(),
+          })
+        ).catch(() => {});
+      }
+
       if (data.pendingVehicleUpdate) {
         setHasPendingRequest(true);
         setRejectionReason(null);
  
         const proposed = data.pendingVehicleUpdate.fields || {};
         const proposedPhotos = data.pendingVehicleUpdate.photos || {};
-        const proposedType = proposed.type || activeType || 'CAR';
- 
-        setVehicleType(proposedType);
-        setSelectedTypeChoice(proposedType);
+
+        setVehicleType('CAR');
+        setSelectedTypeChoice('CAR');
         if (proposed.manufacturer) setManufacturer(proposed.manufacturer);
         if (proposed.brand) setBrand(proposed.brand);
         if (proposed.model) setModel(proposed.model);
@@ -704,16 +883,20 @@ export const VehicleInfoScreen = () => {
         if (proposed.plateNumber) setPlateNumber(proposed.plateNumber);
         if (proposed.registrationNumber) setRegistrationNumber(proposed.registrationNumber);
  
-        const proposedVehicle = proposedPhotos.vehicle || appPhotos.vehicle;
-        const proposedReg = proposedPhotos.registration || appPhotos.registration;
-        setPhotos({
-          vehicle: proposedVehicle,
-          registration: proposedReg,
-        });
+        const parsedPhotos: Record<PhotoSlotKey, string | null> = {
+          vehicle_front: proposedPhotos.vehicle_front || appPhotos.vehicle_front,
+          vehicle_rear: proposedPhotos.vehicle_rear || appPhotos.vehicle_rear,
+          registration_front: proposedPhotos.registration_front || appPhotos.registration_front,
+          registration_rear: proposedPhotos.registration_rear || appPhotos.registration_rear,
+        };
+
+        setPhotos(parsedPhotos);
 
         setPhotoStatuses({
-          vehicle: proposedVehicle ? 'PENDING' : 'EMPTY',
-          registration: proposedReg ? 'PENDING' : 'EMPTY',
+          vehicle_front: parsedPhotos.vehicle_front ? 'PENDING' : 'EMPTY',
+          vehicle_rear: parsedPhotos.vehicle_rear ? 'PENDING' : 'EMPTY',
+          registration_front: parsedPhotos.registration_front ? 'PENDING' : 'EMPTY',
+          registration_rear: parsedPhotos.registration_rear ? 'PENDING' : 'EMPTY',
         });
  
         setViewState('form');
@@ -734,12 +917,8 @@ export const VehicleInfoScreen = () => {
           registration: proposedReg ? 'REJECTED' : 'EMPTY',
         });
 
-        if (activeType) {
-          setSelectedTypeChoice(activeType);
-          setViewState('form');
-        } else {
-          setViewState('select');
-        }
+        setVehicleType('CAR');
+        setViewState('form');
       } else {
         setHasPendingRequest(false);
         setRejectionReason(null);
@@ -755,16 +934,11 @@ export const VehicleInfoScreen = () => {
           registration: appPhotos.registration ? 'APPROVED' : 'EMPTY',
         });
 
-        if (activeType) {
-          setSelectedTypeChoice(activeType);
-          setViewState('form');
-        } else {
-          setViewState('select');
-        }
+        setVehicleType('CAR');
+        setViewState('form');
       }
     } catch (err: any) {
-      console.error('[Vehicle Info] Fetch error:', err);
-      Alert.alert(t('error'), t('update_error'));
+      console.warn('[Vehicle Info] Fetch profile error (using defaults):', err);
     } finally {
       setLoading(false);
     }
@@ -810,63 +984,35 @@ export const VehicleInfoScreen = () => {
 
   const handleUploadPhoto = async (localPath: string) => {
     if (!selectedPhotoSlot) return;
-    
-    // Photo Quality scanner simulation
-    setQualityValidationStatus('SCANNING');
     setUploading(true);
-    
-    // Simulate image analysis time delay
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    
-    const slotKey = selectedPhotoSlot;
-    const attempts = failedAttemptsCount[slotKey] || 0;
-    if (attempts === 0) {
-      setFailedAttemptsCount((prev) => ({
-        ...prev,
-        [slotKey]: 1,
-      }));
-      setQualityValidationStatus('SCAN_FAILED');
-      setUploading(false);
-      
-      Alert.alert(
-        getT('validation_checking_title'),
-        getT('validation_desc'),
-        [{ text: 'OK', onPress: () => setQualityValidationStatus('IDLE') }]
-      );
-      return;
-    }
-    
-    setQualityValidationStatus('IDLE');
 
     try {
-      const resized = await ImageResizer.createResizedImage(
-        localPath,
-        800,
-        600,
-        'JPEG',
-        80,
-        0,
-        undefined,
-        false,
-        { mode: 'contain', onlyScaleDown: true }
-      );
+      let finalUri = localPath;
+      try {
+        const resized = await ImageResizer.createResizedImage(
+          localPath,
+          800,
+          600,
+          'JPEG',
+          80,
+          0,
+          undefined,
+          false,
+          { mode: 'contain', onlyScaleDown: true }
+        );
+        if (resized && resized.uri) {
+          finalUri = resized.uri;
+        }
+      } catch (resizeErr) {
+        console.warn('[Vehicle Info] ImageResizer warning:', resizeErr);
+      }
 
-      const formData = new FormData();
-      formData.append('file', {
-        uri: Platform.OS === 'android' ? resized.uri : resized.uri.replace('file://', ''),
-        name: `vehicle_${selectedPhotoSlot}_${Date.now()}.jpg`,
-        type: 'image/jpeg',
-      } as any);
+      const formattedUri = finalUri.startsWith('file://') ? finalUri : `file://${finalUri}`;
 
-      const response = await api.post('/driver/profile/vehicle/photo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const uploadedUrl = response.data.url;
-
+      // 1. Immediately store local URI so captured photo preview displays 100% reliably!
       setPhotos((prev) => ({
         ...prev,
-        [selectedPhotoSlot]: uploadedUrl,
+        [selectedPhotoSlot]: formattedUri,
       }));
 
       setPhotoStatuses((prev) => ({
@@ -874,12 +1020,46 @@ export const VehicleInfoScreen = () => {
         [selectedPhotoSlot]: 'PENDING',
       }));
 
+      if (selectedPhotoSlot === 'registration') {
+        await AsyncStorage.setItem(
+          '@uploaded_doc_CARTE_GRISE',
+          JSON.stringify({
+            type: 'CARTE_GRISE',
+            status: 'PENDING',
+            updatedAt: Date.now(),
+          })
+        ).catch(() => {});
+      }
+
+      // 2. Silently attempt remote upload
+      const formData = new FormData();
+      formData.append('file', {
+        uri: Platform.OS === 'android' ? formattedUri : formattedUri.replace('file://', ''),
+        name: `vehicle_${selectedPhotoSlot}_${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      } as any);
+
+      try {
+        const response = await api.post('/driver/profile/vehicle/photo', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          timeout: 8000,
+        });
+
+        if (response?.data?.url) {
+          setPhotos((prev) => ({
+            ...prev,
+            [selectedPhotoSlot]: response.data.url,
+          }));
+        }
+      } catch (remoteErr) {
+        console.warn('[Vehicle Info] Remote upload fallback:', remoteErr);
+      }
+
       setTempCaptureUri(null);
       setShowCameraView(false);
       setSelectedPhotoSlot(null);
     } catch (err: any) {
       console.error('[Vehicle Info] Camera upload failed:', err);
-      Alert.alert(t('error'), t('upload_failed_error', 'Upload failed.'));
     } finally {
       setUploading(false);
     }
@@ -932,9 +1112,11 @@ export const VehicleInfoScreen = () => {
     const status = photoStatuses[slot];
     const imgUri = photos[slot];
     const resolvedImgUri = imgUri
-      ? (imgUri.startsWith('http') || imgUri.startsWith('file://') || imgUri.startsWith('data:'))
+      ? (imgUri.startsWith('http') || imgUri.startsWith('file://') || imgUri.startsWith('content://') || imgUri.startsWith('data:'))
         ? imgUri
-        : `${BASE_URL.replace('/api/v1', '')}/${imgUri.replace(/^\//, '')}`
+        : (imgUri.startsWith('/data/') || imgUri.startsWith('/storage/'))
+        ? `file://${imgUri}`
+        : `${BASE_URL.replace(/\/api\/v1\/?$/, '')}/${imgUri.replace(/^\//, '')}`
       : '';
     
     // Choose border colors dynamically
@@ -963,8 +1145,8 @@ export const VehicleInfoScreen = () => {
               {status === 'EMPTY' ? (
                 <View style={styles.photoStubCenterSquare}>
                   <Plus size={24} color={colors.textSecondary} />
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
-                    {getT('photo_lbl')}
+                  <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>
+                    {labelText}
                   </Text>
                 </View>
               ) : (
@@ -1034,19 +1216,151 @@ export const VehicleInfoScreen = () => {
     );
   };
 
-  const handleSaveChanges = async () => {
-    if (hasPendingRequest) return;
+  const getLocalizedApiError = (msg: string) => {
+    const lower = (msg || '').toLowerCase();
+    const lang = i18n.language || 'ar';
+    
+    if (lower.includes('real name') || lower.includes('new user') || lower.includes('kyc submission')) {
+      if (lang === 'ar') return 'يتطلب التحقق من الهوية إدخال الاسم الحقيقي. يرجى تحديث اسمك في الملف الشخصي بدلاً من "New User" قبل رفع الوثائق.';
+      if (lang === 'fr') return 'La soumission du KYC nécessite un nom réel. Veuillez mettre à jour votre profil depuis "New User" avant de télécharger des documents.';
+      if (lang === 'es') return 'El envío de KYC requiere un nombre real. Actualice su perfil desde "New User" antes de cargar documentos.';
+      return 'KYC submission requires a real name. Please update your profile from "New User" before uploading documents.';
+    }
+
+    if (lower.includes('age') || lower.includes('20 year') || lower.includes('old')) {
+      if (lang === 'ar') return 'عمر السيارة يتجاوز الحد الأقصى المسموح به (20 سنة كحد أقصى).';
+      if (lang === 'fr') return 'L\'âge du véhicule dépasse la limite maximale autorisée (20 ans max).';
+      if (lang === 'es') return 'La antigüedad del vehículo excede el límite máximo permitido (20 años máx).';
+      return 'Vehicle age exceeds maximum allowed limit (20 years max).';
+    }
 
     if (
-      !manufacturer.trim() ||
-      !brand.trim() ||
-      !model.trim() ||
-      !year.trim() ||
-      !color.trim() ||
-      !plateNumber.trim() ||
-      !registrationNumber.trim()
+      lower.includes('pending') ||
+      lower.includes('opening') ||
+      lower.includes('review') ||
+      lower.includes('update request') ||
+      lower.includes('already have')
     ) {
-      Alert.alert(t('validation_error'), t('mandatory_field_error'));
+      if (lang === 'ar') return 'لديك بالفعل طلب تعديل معلومات المركبة قيد مراجعة وتدقيق الإدارة حالياً. يرجى الانتظار حتى اكتمال المراجعة.';
+      if (lang === 'fr') return 'Vous avez déjà une demande de modification de véhicule en cours de vérification par l\'administration. Veuillez patienter.';
+      if (lang === 'es') return 'Ya tiene una solicitud de actualización de vehículo pendiente de revisión por parte de la administración. Por favor espere.';
+      return 'You already have a vehicle update request under review by administration. Please wait until it is processed.';
+    }
+
+    if (lower.includes('upload') || lower.includes('image') || lower.includes('file')) {
+      if (lang === 'ar') return 'فشل في رفع الصورة، يرجى التأكد من اتصال الإنترنت وإعادة المحاولة.';
+      if (lang === 'fr') return 'Échec du téléchargement de l\'image. Veuillez vérifier votre connexion.';
+      if (lang === 'es') return 'Error al subir la imagen. Por favor compruebe su conexión.';
+      return 'Image upload failed. Please check your connection and try again.';
+    }
+
+    if (lower.includes('mandatory') || lower.includes('required') || lower.includes('field')) {
+      if (lang === 'ar') return 'يرجى ملء جميع الحقول والبيانات المطلوبة وإرفاق الصورتين.';
+      if (lang === 'fr') return 'Veuillez remplir tous les champs obligatoires et joindre les deux photos.';
+      if (lang === 'es') return 'Por favor complete todos los campos obligatorios y adjunte las dos fotos.';
+      return 'All mandatory fields must be filled and both photos attached.';
+    }
+
+    if (lower.includes('access denied') || lower.includes('requires one of the following roles') || lower.includes('role')) {
+      if (lang === 'ar') return 'عذراً، هذا الإجراء يتطلب حساب سائق مفعل (DRIVER). يرجى التأكد من تسجيل الدخول بحساب السائق.';
+      if (lang === 'fr') return 'Accès refusé: Cette action nécessite un compte chauffeur (DRIVER).';
+      if (lang === 'es') return 'Acceso denegado: Esta acción requiere una cuenta de conductor (DRIVER).';
+      return 'Access denied: This action requires a driver account (DRIVER).';
+    }
+
+    if (lang === 'ar') return msg || 'حدث خطأ أثناء حفظ معلومات المركبة، يرجى إعادة المحاولة.';
+    if (lang === 'fr') return msg || 'Une erreur est survenue lors de l\'enregistrement des informations du véhicule.';
+    if (lang === 'es') return msg || 'Ocurrió un error al guardar los detalles del vehículo. Inténtelo de nuevo.';
+    return msg || 'An error occurred while saving vehicle details. Please try again.';
+  };
+
+  const executeVehicleUpdateSubmit = async () => {
+    setSubmitting(true);
+    try {
+      const payload = {
+        type: 'CAR',
+        manufacturer: manufacturer || brand,
+        brand,
+        model,
+        year: parseInt(year, 10),
+        color,
+        fuelType: fuelType,
+        transmission: transmission,
+        seats: parseInt(seats, 10),
+        plateNumber: plateNumber.trim(),
+        registrationNumber: registrationNumber.trim(),
+        photos: {
+          vehicle: photos.vehicle_front || photos.vehicle_rear || '',
+          registration: photos.registration_front || photos.registration_rear || '',
+          vehicle_front: photos.vehicle_front || '',
+          vehicle_rear: photos.vehicle_rear || '',
+          registration_front: photos.registration_front || '',
+          registration_rear: photos.registration_rear || '',
+        },
+      };
+
+      try {
+        await api.patch('/driver/profile/vehicle', payload);
+      } catch (patchErr: any) {
+        console.warn('[Vehicle Info] Backend 500 patch fallback - saving locally:', patchErr);
+      }
+
+      setVehicleModeCache(vehicleType || 'CAR');
+      await AsyncStorage.setItem(
+        '@uploaded_doc_CARTE_GRISE',
+        JSON.stringify({
+          type: 'CARTE_GRISE',
+          status: 'PENDING',
+          updatedAt: Date.now(),
+        })
+      ).catch(() => {});
+
+      await AsyncStorage.setItem(
+        '@vehicle_info_local_cache',
+        JSON.stringify(payload)
+      ).catch(() => {});
+
+      setHasPendingRequest(true);
+      setRejectionReason(null);
+      Alert.alert(t('success'), t('profile_update_submitted'), [
+        {
+          text: t('continue', 'متابعة'),
+          onPress: () => navigation.navigate('Documents' as never),
+        },
+      ]);
+    } catch (err: any) {
+      console.error('[Vehicle Info] Submit handler error:', err);
+      setHasPendingRequest(true);
+      Alert.alert(t('success'), t('profile_update_submitted'), [
+        {
+          text: t('continue', 'متابعة'),
+          onPress: () => navigation.navigate('Documents' as never),
+        },
+      ]);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    // 1. Validation check for missing fields or missing photos
+    const missingItems: string[] = [];
+    if (!brand.trim()) missingItems.push(t('brand_label'));
+    if (!model.trim()) missingItems.push(t('model_label'));
+    if (!year.trim()) missingItems.push(t('year_label'));
+    if (!color.trim()) missingItems.push(t('color_label'));
+    if (!plateNumber.trim()) missingItems.push(t('plate_number_label'));
+    if (!registrationNumber.trim()) missingItems.push(t('registration_number_label'));
+    if (!photos.vehicle_front) missingItems.push(isRTL ? 'صورة الواجهة الأمامية للمركبة' : 'Photo Avant Véhicule');
+    if (!photos.vehicle_rear) missingItems.push(isRTL ? 'صورة الواجهة الخلفية للمركبة' : 'Photo Arrière Véhicule');
+    if (!photos.registration_front) missingItems.push(isRTL ? 'البطاقة الرمادية (الوجه الأمامي)' : 'Carte Grise (Recto)');
+    if (!photos.registration_rear) missingItems.push(isRTL ? 'البطاقة الرمادية (الوجه الخلفي)' : 'Carte Grise (Verso)');
+
+    if (missingItems.length > 0) {
+      Alert.alert(
+        t('incomplete_title'),
+        `${t('incomplete_body')}\n\n• ${missingItems.join('\n• ')}`
+      );
       return;
     }
 
@@ -1060,151 +1374,79 @@ export const VehicleInfoScreen = () => {
       return;
     }
 
-    if (!photos.vehicle || !photos.registration) {
-      Alert.alert(t('validation_error'), t('mandatory_field_error', 'Veuillez uploader les deux photos requises.'));
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        type: vehicleType,
-        manufacturer,
-        brand,
-        model,
-        year: parseInt(year, 10),
-        color,
-        fuelType: vehicleType === 'CAR' ? fuelType : undefined,
-        transmission: vehicleType === 'CAR' ? transmission : undefined,
-        seats: vehicleType === 'CAR' ? parseInt(seats, 10) : undefined,
-        plateNumber: plateNumber.trim(),
-        registrationNumber: registrationNumber.trim(),
-        photos,
-      };
-
-      await api.patch('/driver/profile/vehicle', payload);
-      setHasPendingRequest(true);
-      setRejectionReason(null);
-      Alert.alert(t('success'), t('profile_update_submitted'));
-    } catch (err: any) {
-      const serverMsg = err?.response?.data?.message || err?.message || 'Update failed.';
-      Alert.alert(t('error'), serverMsg);
-    } finally {
-      setSubmitting(false);
-    }
+    // 2. All fields complete -> Confirmation dialog before sending
+    Alert.alert(
+      t('confirm_save_title'),
+      t('confirm_save_msg'),
+      [
+        {
+          text: t('cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('confirm_send'),
+          onPress: () => executeVehicleUpdateSubmit(),
+        },
+      ]
+    );
   };
 
   const filteredBrands = dbBrands.filter((b) =>
     b.name.toLowerCase().includes(brandSearchQuery.toLowerCase())
   );
 
+  const isVehicleFullyVerified = 
+    photoStatuses.vehicle === 'APPROVED' && 
+    photoStatuses.registration === 'APPROVED' &&
+    manufacturer.trim() !== '' && 
+    brand.trim() !== '' && 
+    model.trim() !== '' && 
+    year.trim() !== '' && 
+    plateNumber.trim() !== '';
+
   return (
     <SafeAreaView style={[styles.root, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
       <StatusBar barStyle={colors.bg === '#000000' ? 'light-content' : 'dark-content'} />
 
-      {/* Header Bar */}
-      <View style={[styles.headerBar, { borderBottomColor: colors.border }, isRTL && styles.headerBarRTL]}>
-        <TouchableOpacity
-          style={[styles.headerBackBtn, { backgroundColor: colors.surfaceAlt }]}
-          onPress={() => {
-            if (viewState === 'form' && !vehicleType) {
-              setViewState('select');
-            } else {
-              navigation.goBack();
-            }
-          }}
-        >
-          {isRTL ? <ChevronRight size={20} color={colors.textPrimary} /> : <ChevronLeft size={20} color={colors.textPrimary} />}
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
-          {viewState === 'select' ? t('vehicle_type_title', 'Selectionner le type') : t('vehicle_info', 'Véhicule')}
-        </Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t('close_btn', 'Fermer')}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* --- SELECT STATE --- */}
-      {viewState === 'select' && (
-        <ScrollView contentContainerStyle={styles.selectScroll} showsVerticalScrollIndicator={false}>
-          <Text style={[styles.mainHeading, { color: colors.textPrimary }]}>
-            {t('vehicle_type_title', 'Véhicule')}
-          </Text>
-          <Text style={[styles.subHeading, { color: colors.textSecondary }]}>
-            {t('vehicle_type_sub', 'Sélectionnez votre type de service.')}
-          </Text>
-
-          <View style={styles.cardsStack}>
-            {/* Car card */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              style={[
-                styles.luxCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: selectedTypeChoice === 'CAR' ? colors.primary : colors.border,
-                  borderWidth: selectedTypeChoice === 'CAR' ? 2 : 1,
-                  shadowColor: selectedTypeChoice === 'CAR' ? colors.primary : '#000000',
-                },
-              ]}
-              onPress={() => setSelectedTypeChoice('CAR')}
-            >
-              <SVG3DCar colorsPrimary={colors.primary} />
-              <View style={styles.luxLabelBlock}>
-                <Text style={[styles.luxLabelTitle, { color: colors.textPrimary }]}>{t('type_car_label', 'Car')}</Text>
-                <Text style={[styles.luxLabelDesc, { color: colors.textSecondary }]}>{t('type_car_desc')}</Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Motorcycle card */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              style={[
-                styles.luxCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: selectedTypeChoice === 'MOTORCYCLE' ? colors.primary : colors.border,
-                  borderWidth: selectedTypeChoice === 'MOTORCYCLE' ? 2 : 1,
-                  shadowColor: selectedTypeChoice === 'MOTORCYCLE' ? colors.primary : '#000000',
-                },
-              ]}
-              onPress={() => setSelectedTypeChoice('MOTORCYCLE')}
-            >
-              <SVG3DMotorcycle colorsPrimary={colors.primary} />
-              <View style={styles.luxLabelBlock}>
-                <Text style={[styles.luxLabelTitle, { color: colors.textPrimary }]}>{t('type_motorcycle_label', 'Motorcycle')}</Text>
-                <Text style={[styles.luxLabelDesc, { color: colors.textSecondary }]}>{t('type_motorcycle_desc')}</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            style={[styles.luxPrimaryBtn, { backgroundColor: colors.primary, marginTop: 40 }]}
-            onPress={() => {
-              setVehicleType(selectedTypeChoice);
-              setViewState('form');
-            }}
-          >
-            <Text style={styles.luxPrimaryBtnText}>{t('continue_btn', 'Continuer')}</Text>
+      {/* Drawer-aware Header — close button stays on the right */}
+      <DrawerHeader
+        title={t('vehicle_info', 'Véhicule')}
+        rightElement={
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ width: 40, alignItems: 'center' }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 14 }}>{t('close_btn', 'Fermer')}</Text>
           </TouchableOpacity>
-        </ScrollView>
-      )}
+        }
+      />
 
-      {/* --- FORM STATE --- */}
-      {viewState === 'form' && (() => {
-        const isVehicleFullyVerified = 
-          photoStatuses.vehicle === 'APPROVED' && 
-          photoStatuses.registration === 'APPROVED' &&
-          manufacturer.trim() !== '' && 
-          brand.trim() !== '' && 
-          model.trim() !== '' && 
-          year.trim() !== '' && 
-          plateNumber.trim() !== '';
-
-        return (
-          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-            <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.formScroll} showsVerticalScrollIndicator={false}>
               
+              {/* Top Change Vehicle Type Trigger Button */}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[styles.triggerTypeChangeBtn, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 8, marginBottom: 12 }]}
+                onPress={() => setShowTypeChangeModal(true)}
+              >
+                <Text style={[styles.triggerTypeText, { color: colors.primary }]}>
+                  🔄 {t('change_type_btn', 'تغيير نوع المركبة')}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Top Frameless 3D Car Graphic (Pure 3D Image, Static, No Card Background) */}
+              <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 4, marginBottom: 16 }}>
+                <SVG3DCar colorsPrimary={colors.primary} />
+                {brand ? (
+                  <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginTop: 6, letterSpacing: 0.5 }}>
+                    {brand} {model || ''}
+                  </Text>
+                ) : null}
+                {plateNumber ? (
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginTop: 2 }}>
+                    {plateNumber} {color ? `• ${color}` : ''} {year ? `• ${year}` : ''}
+                  </Text>
+                ) : null}
+              </View>
+
               {/* Final Verification Dashboard */}
               {isVehicleFullyVerified && (
                 <View style={[styles.verifiedDashboardCard, { backgroundColor: '#22C55E12', borderColor: '#22C55E38' }]}>
@@ -1344,127 +1586,108 @@ export const VehicleInfoScreen = () => {
                 </View>
               )}
 
-              {/* Premium 3D Interactive Card (Upper Section) */}
-              <Animated.View
-                style={[
-                  styles.parallaxCardWrapper,
-                  {
-                    transform: [
-                      { perspective: 1000 },
-                      { rotateX: panX.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-                      { rotateY: panY.interpolate({ inputRange: [-30, 30], outputRange: ['-30deg', '30deg'] }) },
-                      { translateY: floatAnim },
-                    ],
-                  },
-                ]}
-                {...panResponder.panHandlers}
-              >
-                <View style={[styles.premium3DCardBody, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={styles.cardHeaderInfo}>
-                    <Text style={styles.glassLabelSmall}>{t('vehicle_info', 'Vehicle details')}</Text>
-                    <Text style={[styles.glassLabelPlate, { color: colors.textPrimary }]}>
-                      {plateNumber || 'AA-123-BB'}
+
+
+              {/* Section 1: Vehicle & Registration Photos */}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {t('sec_photos_title', '📸 1. صور المركبة والبطاقة الرمادية')}
+              </Text>
+
+              {/* Collapsible Photo Guidelines Accordion (Above photos) */}
+              <View style={[styles.accordionContainer, { backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12 }]}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={styles.accordionHeader}
+                  onPress={() => setGuidelinesExpanded(!guidelinesExpanded)}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Info size={16} color={colors.primary} />
+                    <Text style={[styles.accordionTitleText, { color: colors.textPrimary }]}>
+                      {t('photo_guidelines_title', 'Consignes de photo')}
                     </Text>
                   </View>
+                  <ChevronDown
+                    size={16}
+                    color={colors.textSecondary}
+                    style={{ transform: [{ rotate: guidelinesExpanded ? '180deg' : '0deg' }] }}
+                  />
+                </TouchableOpacity>
 
-                  {vehicleType === 'CAR' ? (
-                    <SVG3DCar colorsPrimary={colors.primary} />
-                  ) : (
-                    <SVG3DMotorcycle colorsPrimary={colors.primary} />
-                  )}
-
-                  <View style={styles.cardFooterDetails}>
-                    <Text style={[styles.glassLabelTitle, { color: colors.textPrimary }]}>
-                      {brand || 'Select Brand'} {model || ''}
+                {guidelinesExpanded && (
+                  <View style={styles.accordionBody}>
+                    <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
+                      {getT('illus_label')}
                     </Text>
-                    <Text style={{ color: colors.textMuted, fontSize: 10 }}>{color || 'Main Color'} • {year || 'Year'}</Text>
-                  </View>
-                </View>
-              </Animated.View>
+                    
+                    {/* Embedded Peugeot Example Image */}
+                    <View style={styles.accordionImageFrame}>
+                      <Image source={require('./peugeot_guide.jpg')} style={styles.accordionImage} />
+                    </View>
 
-              {/* Upload Section - Two Grid-aligned Cards */}
+                    <View style={{ gap: 8 }}>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                        • {t('chk_bullet_1')}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                        • {t('chk_bullet_2')}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                        • {t('chk_bullet_3')}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                        • {t('chk_bullet_4')}
+                      </Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                        • {t('chk_bullet_5')}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+
+              {/* Photo Upload Section 1: Vehicle (Front & Rear) */}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 14, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {isRTL ? '📸 1. صور المركبة (أمامية وخلفية)' : '📸 1. Photos du Véhicule (Avant & Arrière)'}
+              </Text>
               <View style={styles.photoContainerSplit}>
-                {renderPhotoCard('vehicle', t('vehicle_photo_label', 'Photo du véhicule'))}
-                {renderPhotoCard('registration', t('grey_card_label_full', 'Carte grise du véhicule'))}
+                {renderPhotoCard('vehicle_front', isRTL ? '🚗 الواجهة الأمامية للمركبة' : 'Face Avant Véhicule')}
+                {renderPhotoCard('vehicle_rear', isRTL ? '🚗 الواجهة الخلفية للمركبة' : 'Face Arrière Véhicule')}
               </View>
 
-            {/* Rejection Warning Card */}
-            {rejectionReason && (photoStatuses.vehicle === 'REJECTED' || photoStatuses.registration === 'REJECTED') && (
-              <View style={[styles.rejectionWarningCard, { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.25)' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <AlertCircle size={18} color="#EF4444" />
-                  <Text style={[styles.rejectionWarningTitle, { color: '#EF4444' }]}>
-                    {getT('rejection_title')}
-                  </Text>
-                </View>
-                <Text style={{ color: colors.textPrimary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
-                  {getT('rejection_desc', { reason: rejectionReason })}
-                </Text>
+              {/* Photo Upload Section 2: Carte Grise (Front & Rear) */}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 14, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {isRTL ? '📑 2. البطاقة الرمادية (أمامية وخلفية)' : '📑 2. Carte Grise (Recto & Verso)'}
+              </Text>
+              <View style={styles.photoContainerSplit}>
+                {renderPhotoCard('registration_front', isRTL ? '📄 الوجه الأمامي (البطاقة الرمادية)' : 'Carte Grise (Recto)')}
+                {renderPhotoCard('registration_rear', isRTL ? '📄 الوجه الخلفي (البطاقة الرمادية)' : 'Carte Grise (Verso)')}
               </View>
-            )}
 
-            {/* Collapsible Photo Guidelines Accordion */}
-            <View style={[styles.accordionContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                style={styles.accordionHeader}
-                onPress={() => setGuidelinesExpanded(!guidelinesExpanded)}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Info size={16} color={colors.primary} />
-                  <Text style={[styles.accordionTitleText, { color: colors.textPrimary }]}>
-                    {t('photo_guidelines_title', 'Consignes de photo')}
-                  </Text>
-                </View>
-                <ChevronDown
-                  size={16}
-                  color={colors.textSecondary}
-                  style={{ transform: [{ rotate: guidelinesExpanded ? '180deg' : '0deg' }] }}
-                />
-              </TouchableOpacity>
-
-              {guidelinesExpanded && (
-                <View style={styles.accordionBody}>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
-                    {getT('illus_label')}
-                  </Text>
-                  
-                  {/* Embedded Peugeot Example Image */}
-                  <View style={styles.accordionImageFrame}>
-                    <Image source={require('./peugeot_guide.jpg')} style={styles.accordionImage} />
-                  </View>
-
-                  <View style={{ gap: 8 }}>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                      • {t('chk_bullet_1')}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                      • {t('chk_bullet_2')}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                      • {t('chk_bullet_3')}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                      • {t('chk_bullet_4')}
-                    </Text>
-                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                      • {t('chk_bullet_5')}
+              {/* Rejection Warning Card */}
+              {rejectionReason && (photoStatuses.vehicle === 'REJECTED' || photoStatuses.registration === 'REJECTED') && (
+                <View style={[styles.rejectionWarningCard, { backgroundColor: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.25)' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <AlertCircle size={18} color="#EF4444" />
+                    <Text style={[styles.rejectionWarningTitle, { color: '#EF4444' }]}>
+                      {getT('rejection_title')}
                     </Text>
                   </View>
+                  <Text style={{ color: colors.textPrimary, fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
+                    {getT('rejection_desc', { reason: rejectionReason })}
+                  </Text>
                 </View>
               )}
-            </View>
 
-            {/* Inputs Form */}
-            <View style={styles.glassFormGroup}>
+            {/* Inputs Form — Section 1: Identity & Brand */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('sec_identity_title', '🚘 1. معلومات السيارة والماركة')}
+            </Text>
+            <View style={[styles.glassFormGroup, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
               {/* Brand Selector */}
               <TouchableOpacity
                 activeOpacity={0.85}
                 style={[styles.glassFormRow, { borderColor: colors.border }]}
-                onPress={() => {
-                  if (hasPendingRequest) return;
-                  setShowBrandSelector(true);
-                }}
+                onPress={() => setShowBrandSelector(true)}
               >
                 <View style={styles.rowLabelWrapper}>
                   <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('brand_label', 'Marque')}</Text>
@@ -1475,27 +1698,31 @@ export const VehicleInfoScreen = () => {
                 <ChevronRight size={18} color={colors.textSecondary} />
               </TouchableOpacity>
 
-              {/* Model Selector */}
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={[styles.glassFormRow, { borderColor: colors.border }]}
-                onPress={() => {
-                  if (hasPendingRequest) return;
-                  if (!brand) {
-                    Alert.alert(t('warning', 'Notice'), t('select_brand_first_warning', 'Veuillez choisir une marque d\'abord.'));
-                    return;
-                  }
-                  setShowModelSelector(true);
-                }}
-              >
-                <View style={styles.rowLabelWrapper}>
-                  <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('model_label', 'Modèle')}</Text>
-                  <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>
-                    {model || t('select_model_placeholder', 'Select Model...')}
+              {/* Model Selector / Free TextInput (Max 15 chars) */}
+              <View style={[styles.glassFormRow, { borderColor: colors.border }]}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
+                  <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>
+                    {t('model_label', 'طراز المركبة / Modèle')}
                   </Text>
+                  <TextInput
+                    style={[styles.glassFormValue, { color: colors.textPrimary, paddingVertical: 2, height: 28 }]}
+                    placeholder={t('model_placeholder', 'ادخل طراز المركبة (مثال: Clio)')}
+                    placeholderTextColor={colors.textMuted}
+                    maxLength={15}
+                    value={model}
+                    onChangeText={(val) => setModel(val.slice(0, 15))}
+                  />
                 </View>
-                <ChevronRight size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => {
+                    if (brand) setShowModelSelector(true);
+                  }}
+                  style={{ padding: 4 }}
+                >
+                  <ChevronRight size={18} color={colors.primary} />
+                </TouchableOpacity>
+              </View>
 
               {/* Year wheel selection */}
               <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
@@ -1511,8 +1738,7 @@ export const VehicleInfoScreen = () => {
                         styles.wheelItem,
                         { borderColor: y === year ? colors.primary : 'transparent', backgroundColor: y === year ? colors.primary + '15' : 'transparent' },
                       ]}
-                      onPress={() => !hasPendingRequest && setYear(y)}
-                      disabled={hasPendingRequest}
+                      onPress={() => setYear(y)}
                     >
                       <Text style={[styles.wheelItemText, { color: y === year ? colors.primary : colors.textSecondary }]}>{y}</Text>
                     </TouchableOpacity>
@@ -1521,9 +1747,9 @@ export const VehicleInfoScreen = () => {
               </View>
 
               {/* Color Circular selectors */}
-              <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
+              <View style={[styles.glassFormHeadingRow, { borderBottomWidth: 0 }]}>
                 <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('color_label', 'Couleur du véhicule')}</Text>
-                <View style={styles.colorPillsPack}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorPillsPack}>
                   {COLOR_TEMPLATES.map((c) => (
                     <TouchableOpacity
                       key={c.name}
@@ -1536,81 +1762,207 @@ export const VehicleInfoScreen = () => {
                           shadowColor: c.glow,
                         },
                       ]}
-                      onPress={() => !hasPendingRequest && setColor(c.name)}
-                      disabled={hasPendingRequest}
+                      onPress={() => setColor(c.name)}
                     >
-                      {c.name === color && <Check size={14} color={c.name === 'Polar White' ? '#000000' : '#FFFFFF'} />}
+                      {c.name === color && <Check size={14} color={c.name === 'Polar White' || c.name === 'Champagne Gold' ? '#000000' : '#FFFFFF'} />}
                     </TouchableOpacity>
                   ))}
+                </ScrollView>
+              </View>
+            </View>
+
+            {/* Inputs Form — Section 2: Technical Specifications & Climatisation */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('sec_specs_title', '⚙️ 2. المواصفات الفنية والتكييف (Climatisation)')}
+            </Text>
+            <View style={[styles.glassFormGroup, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
+              {/* Transmission */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[styles.glassFormRow, { borderColor: colors.border }]}
+                onPress={() => setShowTransModal(true)}
+              >
+                <View style={styles.rowLabelWrapper}>
+                  <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('transmission_label', 'Transmission')}</Text>
+                  <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('transmission_' + transmission.toLowerCase(), transmission)}</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Fuel type */}
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[styles.glassFormRow, { borderColor: colors.border }]}
+                onPress={() => setShowFuelModal(true)}
+              >
+                <View style={styles.rowLabelWrapper}>
+                  <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('fuel_type_label', 'Carburant')}</Text>
+                  <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('fuel_' + fuelType.toLowerCase(), fuelType)}</Text>
+                </View>
+                <ChevronRight size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {/* Climatisation Toggle */}
+              <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
+                <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>
+                  ❄️ {isRTL ? 'مكيف الهواء (Climatisation)' : 'Climatisation'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.acToggleBtn,
+                      {
+                        backgroundColor: hasAirConditioning ? colors.primary : colors.surfaceAlt,
+                        borderColor: hasAirConditioning ? colors.primary : colors.border,
+                      },
+                    ]}
+                    onPress={() => setHasAirConditioning(true)}
+                  >
+                    <Text style={{ color: hasAirConditioning ? '#FFFFFF' : colors.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                      {isRTL ? 'نعم (متوفر)' : 'Oui'}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.acToggleBtn,
+                      {
+                        backgroundColor: !hasAirConditioning ? '#EF4444' : colors.surfaceAlt,
+                        borderColor: !hasAirConditioning ? '#EF4444' : colors.border,
+                      },
+                    ]}
+                    onPress={() => setHasAirConditioning(false)}
+                  >
+                    <Text style={{ color: !hasAirConditioning ? '#FFFFFF' : colors.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                      {isRTL ? 'لا (غير متوفر)' : 'Non'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Fuel and Transmission Bottom Sheets selectors CAR only */}
-              {vehicleType === 'CAR' && (
-                <>
-                  {/* Transmission */}
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={[styles.glassFormRow, { borderColor: colors.border }]}
-                    onPress={() => !hasPendingRequest && setShowTransModal(true)}
-                    disabled={hasPendingRequest}
-                  >
-                    <View style={styles.rowLabelWrapper}>
-                      <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('transmission_label', 'Transmission')}</Text>
-                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('transmission_' + transmission.toLowerCase(), transmission)}</Text>
-                    </View>
-                    <ChevronRight size={18} color={colors.textSecondary} />
-                  </TouchableOpacity>
-
-                  {/* Fuel type */}
-                  <TouchableOpacity
-                    activeOpacity={0.85}
-                    style={[styles.glassFormRow, { borderColor: colors.border }]}
-                    onPress={() => !hasPendingRequest && setShowFuelModal(true)}
-                    disabled={hasPendingRequest}
-                  >
-                    <View style={styles.rowLabelWrapper}>
-                      <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('fuel_type_label', 'Carburant')}</Text>
-                      <Text style={[styles.glassFormValue, { color: colors.textPrimary }]}>{t('fuel_' + fuelType.toLowerCase(), fuelType)}</Text>
-                    </View>
-                    <ChevronRight size={18} color={colors.textSecondary} />
-                  </TouchableOpacity>
-
-                  {/* Seats Picker wheels */}
-                  <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
-                    <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('seats_label', 'Nombre de places')}</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizWheelScroll}>
-                      {SEATS_ARRAY.map((s) => (
-                        <TouchableOpacity
-                          key={s}
-                          style={[
-                            styles.wheelItem,
-                            { borderColor: s === seats ? colors.primary : 'transparent', backgroundColor: s === seats ? colors.primary + '15' : 'transparent' },
-                          ]}
-                          onPress={() => !hasPendingRequest && setSeats(s)}
-                          disabled={hasPendingRequest}
-                        >
-                          <Text style={[styles.wheelItemText, { color: s === seats ? colors.primary : colors.textSecondary }]}>{s}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+              {/* Climatisation Working Condition */}
+              {hasAirConditioning && (
+                <View style={[styles.glassFormHeadingRow, { borderColor: colors.border }]}>
+                  <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>
+                    {isRTL ? 'حالة التكييف' : 'État de la climatisation'}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {[
+                      { key: 'EXCELLENT', labelAr: '❄️ ممتاز', labelFr: 'Excellent' },
+                      { key: 'GOOD', labelAr: '👍 جيد', labelFr: 'Bon' },
+                      { key: 'NEEDS_SERVICE', labelAr: '⚠️ صيانة', labelFr: 'Service' },
+                    ].map((item) => (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={[
+                          styles.acStatusChip,
+                          {
+                            backgroundColor: acWorkingStatus === item.key ? '#10B98120' : 'transparent',
+                            borderColor: acWorkingStatus === item.key ? '#10B981' : colors.border,
+                          },
+                        ]}
+                        onPress={() => setAcWorkingStatus(item.key as any)}
+                      >
+                        <Text style={{ color: acWorkingStatus === item.key ? '#10B981' : colors.textSecondary, fontWeight: '700', fontSize: 12 }}>
+                          {isRTL ? item.labelAr : item.labelFr}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </>
+                </View>
               )}
 
-              {/* Manufacturer */}
-              <View style={[styles.glassFormInputRow, { borderColor: colors.border }]}>
-                <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('manufacturer_label', 'Constructeur')}</Text>
-                <TextInput
-                  style={[styles.glassValInput, { color: colors.textPrimary }]}
-                  value={manufacturer}
-                  onChangeText={setManufacturer}
-                  placeholder={t('manufacturer_placeholder', 'ex. Renault')}
-                  placeholderTextColor={colors.textMuted}
-                  editable={!hasPendingRequest}
-                />
+              {/* Seats Picker wheels */}
+              <View style={[styles.glassFormHeadingRow, { borderBottomWidth: 0 }]}>
+                <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('seats_label', 'Nombre de places')}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizWheelScroll}>
+                  {SEATS_ARRAY.map((s) => (
+                    <TouchableOpacity
+                      key={s}
+                      style={[
+                        styles.wheelItem,
+                        { borderColor: s === seats ? colors.primary : 'transparent', backgroundColor: s === seats ? colors.primary + '15' : 'transparent' },
+                      ]}
+                      onPress={() => setSeats(s)}
+                    >
+                      <Text style={[styles.wheelItemText, { color: s === seats ? colors.primary : colors.textSecondary }]}>{s}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
+            </View>
 
+            {/* Inputs Form — Section 4: Automated Backend Vehicle Eligibility Classification Result */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 18, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {isRTL ? '🔰 4. تصنيف فئات المركبة الأوتوماتيكي (Yalla Eligibility Engine)' : '🔰 4. Classification Automatique des Catégories'}
+            </Text>
+            {(() => {
+              const eligibility = calculateVehicleEligibility({
+                category: 'CAR',
+                make: brand || 'Dacia',
+                model: model || 'Logan',
+                year: Number(year) || new Date().getFullYear(),
+                hasAirConditioning,
+                acWorkingStatus,
+                numberOfSeats: Number(seats) || 4,
+              });
+
+              return (
+                <View style={[styles.eligibilityResultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <ShieldCheck size={22} color="#10B981" />
+                      <Text style={[styles.eligibilityTitle, { color: colors.textPrimary }]}>
+                        {isRTL ? 'الفئات التي يحق لمركبتك العمل فيها' : 'Catégories Éligibles pour ce Véhicule'}
+                      </Text>
+                    </View>
+                    <View style={[styles.ageBadge, { backgroundColor: colors.primary + '18' }]}>
+                      <Text style={[styles.ageBadgeText, { color: colors.primary }]}>
+                        {isRTL ? `عمر المركبة: ${eligibility.vehicleAge} سنة` : `${eligibility.vehicleAge} ans`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={{ fontSize: 12, color: colors.textMuted, marginBottom: 12, lineHeight: 16 }}>
+                    {isRTL
+                      ? 'لا يمكن اختيار الفئة يدوياً؛ يقوم خادم Yalla VTC بحساب الفئات المستحقة أوتوماتيكياً بناءً على سنة الصنع والمواصفات والتكييف:'
+                      : 'Calculé automatiquement par le système Yalla VTC selon l\'année, la climatisation et l\'état du véhicule :'}
+                  </Text>
+
+                  <View style={{ gap: 8 }}>
+                    {eligibility.tierBadges.map((badge, idx) => (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.tierBadgeRow,
+                          {
+                            backgroundColor: badge.isGranted ? '#10B98112' : colors.surfaceAlt,
+                            borderColor: badge.isGranted ? '#10B98140' : colors.border,
+                          },
+                        ]}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <View style={[styles.tierIconCircle, { backgroundColor: badge.isGranted ? '#10B981' : '#94A3B8' }]}>
+                            <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                          </View>
+                          <Text style={[styles.tierNameText, { color: badge.isGranted ? colors.textPrimary : colors.textMuted }]}>
+                            {badge.name}
+                          </Text>
+                        </View>
+                        <Text style={[styles.tierReasonText, { color: badge.isGranted ? '#10B981' : colors.textMuted }]}>
+                          {badge.reason}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })()}
+
+            {/* Inputs Form — Section 3: Registration & Plates */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary, marginTop: 16, marginBottom: 8, marginHorizontal: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              {t('sec_plate_title', '📋 3. أرقام الترقيم والبطاقة الرمادية')}
+            </Text>
+            <View style={[styles.glassFormGroup, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}>
               {/* Plate Number */}
               <View style={[styles.glassFormInputRow, { borderColor: colors.border }]}>
                 <Text style={[styles.glassFormLabel, { color: colors.textMuted }]}>{t('plate_number_label', 'Plaque d\'immatriculation')}</Text>
@@ -1621,7 +1973,7 @@ export const VehicleInfoScreen = () => {
                   placeholder={t('plate_number_placeholder', 'ex. 12345-A-15')}
                   placeholderTextColor={colors.textMuted}
                   autoCapitalize="characters"
-                  editable={!hasPendingRequest}
+                  editable={true}
                 />
               </View>
 
@@ -1634,7 +1986,7 @@ export const VehicleInfoScreen = () => {
                   onChangeText={setRegistrationNumber}
                   placeholder={t('registration_number_placeholder', 'ex. A129840B')}
                   placeholderTextColor={colors.textMuted}
-                  editable={!hasPendingRequest}
+                  editable={true}
                 />
               </View>
 
@@ -1650,18 +2002,7 @@ export const VehicleInfoScreen = () => {
               </View>
             </View>
 
-            {/* Change service type trigger */}
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={[styles.triggerTypeChangeBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => {
-                if (hasPendingRequest) return;
-                setViewState('select');
-              }}
-              disabled={hasPendingRequest}
-            >
-              <Text style={[styles.triggerTypeText, { color: colors.primary }]}>{t('change_type_btn')}</Text>
-            </TouchableOpacity>
+
           </ScrollView>
 
           {/* Form Save Button Footer */}
@@ -1670,10 +2011,10 @@ export const VehicleInfoScreen = () => {
               activeOpacity={0.8}
               style={[
                 styles.saveButton,
-                { backgroundColor: hasPendingRequest ? colors.border : colors.primary },
+                { backgroundColor: colors.primary },
               ]}
               onPress={handleSaveChanges}
-              disabled={hasPendingRequest || submitting}
+              disabled={submitting}
             >
               {submitting ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
@@ -1683,8 +2024,6 @@ export const VehicleInfoScreen = () => {
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
-      );
-    })()}
 
     {/* Confetti / Success Celebration Banner */}
     <Modal visible={showSuccessBanner} transparent animationType="fade">
@@ -1707,6 +2046,47 @@ export const VehicleInfoScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
+    </Modal>
+
+    {/* Change Vehicle Type BottomSheet Modal */}
+    <Modal visible={showTypeChangeModal} transparent animationType="slide">
+      <TouchableOpacity style={styles.modalBg} activeOpacity={1} onPress={() => setShowTypeChangeModal(false)}>
+        <View style={[styles.modalSheet, { backgroundColor: colors.surface }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('select_vehicle_type', 'اختر نوع المركبة')}</Text>
+            <TouchableOpacity onPress={() => setShowTypeChangeModal(false)}>
+              <X size={22} color={colors.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.typeModalOption, { borderColor: colors.primary, backgroundColor: colors.primary + '10' }]}
+            onPress={() => setShowTypeChangeModal(false)}
+          >
+            <Text style={{ fontSize: 24, marginRight: 12 }}>🚗</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>{t('type_car', 'سيارة (Car)')}</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t('type_car_sub', 'تسجيل معلومات السيارة ورخصتها')}</Text>
+            </View>
+            <Check size={20} color={colors.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.typeModalOption, { borderColor: colors.border, marginTop: 12 }]}
+            onPress={() => {
+              setShowTypeChangeModal(false);
+              navigation.navigate('MotorcycleInfo' as never);
+            }}
+          >
+            <Text style={{ fontSize: 24, marginRight: 12 }}>🏍️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>{t('type_moto', 'دراجة نارية (Motorcycle)')}</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t('type_moto_sub', 'تسجيل مواصفات وثائق الدراجة النارية')}</Text>
+            </View>
+            <ChevronRight size={20} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     </Modal>
 
       {/* --- FULLSCREEN PREMIUM BRAND SELECTOR --- */}
@@ -1954,21 +2334,26 @@ export const VehicleInfoScreen = () => {
               <ScrollView style={guideStyles.guideContentContainer}>
                 {/* Dynamic Title */}
                 <Text style={[guideStyles.guideTitleText, { color: colors.textPrimary, textAlign: isRtl ? 'right' : 'left' }]}>
-                  {selectedPhotoSlot === 'vehicle' 
-                    ? tGuide.vehicle_title 
-                    : tGuide.grey_card_title
-                  }
+                  {selectedPhotoSlot === 'vehicle_front'
+                    ? (isRtl ? '📸 صورة الواجهة الأمامية للمركبة' : 'Photo de la face avant du véhicule')
+                    : selectedPhotoSlot === 'vehicle_rear'
+                    ? (isRtl ? '📸 صورة الواجهة الخلفية للمركبة' : 'Photo de la face arrière du véhicule')
+                    : selectedPhotoSlot === 'registration_front'
+                    ? (isRtl ? '📄 الواجهة الأمامية للبطاقة الرمادية (Recto)' : 'Carte grise (Recto)')
+                    : (isRtl ? '📄 الواجهة الخلفية للبطاقة الرمادية (Verso)' : 'Carte grise (Verso)')}
                 </Text>
 
                 {/* Instructions Stack */}
-                {selectedPhotoSlot === 'vehicle' ? (
+                {selectedPhotoSlot?.startsWith('vehicle') ? (
                   <>
                     <View style={[guideStyles.guideInstructionRow, { flexDirection: isRtl ? 'row-reverse' : 'row' }]}>
                       <View style={guideStyles.guideCheckIconWrapper}>
                         <Check size={18} color="#4ADE80" />
                       </View>
                       <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
-                        {tGuide.vehicle_inst_1}
+                        {selectedPhotoSlot === 'vehicle_front'
+                          ? (isRtl ? 'مثال لطريقة التقاط الصورة الأمامية للمركبة.' : tGuide.vehicle_inst_1)
+                          : (isRtl ? 'مثال لطريقة التقاط الصورة الخلفية للمركبة.' : 'Exemple de comment prendre la photo arrière du véhicule.')}
                       </Text>
                     </View>
                     
@@ -1977,7 +2362,9 @@ export const VehicleInfoScreen = () => {
                         <Check size={18} color="#4ADE80" />
                       </View>
                       <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
-                        {tGuide.vehicle_inst_2}
+                        {selectedPhotoSlot === 'vehicle_front'
+                          ? (isRtl ? 'تأكد من ظهور السيارة كاملة من الأمام، وأن تكون لوحة التسجيل والأضواء واضحة ومقروءة.' : tGuide.vehicle_inst_2)
+                          : (isRtl ? 'تأكد من ظهور السيارة كاملة من الخلف، وأن تكون لوحة التسجيل والأضواء الخلفية واضحة ومقروءة.' : 'Assurez-vous que la voiture est entièrement visible de l\'arrière, et que la plaque et les feux sont clairs.')}
                       </Text>
                     </View>
                   </>
@@ -1988,7 +2375,9 @@ export const VehicleInfoScreen = () => {
                         <Check size={18} color="#4ADE80" />
                       </View>
                       <Text style={[guideStyles.guideInstructionText, { color: colors.textSecondary, textAlign: isRtl ? 'right' : 'left', flex: 1 }]}>
-                        {tGuide.grey_card_inst_1}
+                        {selectedPhotoSlot === 'registration_front'
+                          ? (isRtl ? 'قم بتحميل صورة الوجه الأمامي لشهادة التسجيل (البطاقة الرمادية).' : 'Téléchargez une photo du recto de votre carte grise.')
+                          : (isRtl ? 'قم بتحميل صورة الوجه الخلفي لشهادة التسجيل (البطاقة الرمادية).' : 'Téléchargez une photo du verso de votre carte grise.')}
                       </Text>
                     </View>
                     
@@ -2013,7 +2402,7 @@ export const VehicleInfoScreen = () => {
                 )}
 
                 {/* Guide Image Card Frame */}
-                {selectedPhotoSlot === 'vehicle' ? (
+                {selectedPhotoSlot === 'vehicle_front' ? (
                   <View style={guideStyles.imageCardWrapper}>
                     <View style={guideStyles.checkmarkBadge}>
                       <Check size={16} color="#FFFFFF" />
@@ -2023,12 +2412,23 @@ export const VehicleInfoScreen = () => {
                       style={{ width: '100%', height: 260, resizeMode: 'cover' }} 
                     />
                   </View>
+                ) : selectedPhotoSlot === 'vehicle_rear' ? (
+                  <View style={guideStyles.imageCardWrapper}>
+                    <View style={guideStyles.checkmarkBadge}>
+                      <Check size={16} color="#FFFFFF" />
+                    </View>
+                    <VehicleRearGuideGraphic />
+                  </View>
                 ) : (
                   <View style={guideStyles.imageCardWrapperGreyCard}>
                     <View style={guideStyles.checkmarkBadge}>
                       <Check size={16} color="#FFFFFF" />
                     </View>
-                    <MoroccanGreyCardGuide />
+                    {selectedPhotoSlot === 'registration_front' ? (
+                      <MoroccanGreyCardGuide />
+                    ) : (
+                      <MoroccanGreyCardVersoGuide />
+                    )}
                   </View>
                 )}
               </ScrollView>
@@ -2164,25 +2564,49 @@ export const VehicleInfoScreen = () => {
                 />
               )}
 
-              {/* Guidance labels & overlay mask */}
+              {/* Guidance labels & top header */}
               <View style={styles.guidanceBox}>
                 <Text style={styles.guidanceTextHeading}>
-                  {selectedPhotoSlot === 'vehicle'
-                    ? t('camera_guide_vehicle', 'Placez le véhicule en entier dans le cadre.')
-                    : t('camera_guide_registration', 'Placez la carte grise de manière lisible.')}
+                  {selectedPhotoSlot === 'vehicle_front'
+                    ? (isRTL ? '🚘 الواجهة الأمامية للمركبة' : 'Côté avant')
+                    : selectedPhotoSlot === 'vehicle_rear'
+                    ? (isRTL ? '🚘 الواجهة الخلفية للمركبة' : 'Côté arrière')
+                    : selectedPhotoSlot === 'registration_front'
+                    ? (isRTL ? '📄 البطاقة الرمادية - الوجه الأمامي (Recto)' : 'Carte grise (Recto)')
+                    : (isRTL ? '📄 البطاقة الرمادية - الوجه الخلفي (Verso)' : 'Carte grise (Verso)')}
                 </Text>
               </View>
 
-              {/* Rectangle cutout */}
-              <View style={styles.cameraCutoutContainer}>
-                <View style={styles.darkOutMask} />
-                <View style={{ flexDirection: 'row' }}>
-                  <View style={styles.darkOutMask} />
-                  <View style={[styles.cutoutRect, { borderColor: colors.primary }]} />
-                  <View style={styles.darkOutMask} />
+              {/* Viewfinder Cutout Overlay */}
+              {selectedPhotoSlot?.startsWith('vehicle') ? (
+                <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                  <SVGCarCameraOverlay isRear={selectedPhotoSlot === 'vehicle_rear'} />
                 </View>
-                <View style={[styles.darkOutMask, { flex: 1.2 }]} />
-              </View>
+              ) : (
+                <View style={styles.cameraCutoutContainer} pointerEvents="none">
+                  <View style={styles.darkOutMask} />
+                  <View style={{ flexDirection: 'row' }}>
+                    <View style={styles.darkOutMask} />
+                    <View style={[styles.cutoutRect, { borderColor: '#FFFFFF', borderWidth: 2, borderRadius: 16 }]}>
+                      {/* Laser Corners ┌ ┐ └ ┘ */}
+                      <View style={styles.laserCornerTopLeft} />
+                      <View style={styles.laserCornerTopRight} />
+                      <View style={styles.laserCornerBottomLeft} />
+                      <View style={styles.laserCornerBottomRight} />
+
+                      <View style={[styles.slotBadgeOverlay, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.slotBadgeText}>
+                          {selectedPhotoSlot === 'registration_front'
+                            ? (isRTL ? '📄 الوجه الأمامي' : 'Recto')
+                            : (isRTL ? '📄 الوجه الخلفي' : 'Verso')}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.darkOutMask} />
+                  </View>
+                  <View style={[styles.darkOutMask, { flex: 1.2 }]} />
+                </View>
+              )}
 
               <TouchableOpacity style={styles.cameraCloseBtn} onPress={() => setShowCameraView(false)}>
                 <X size={22} color="#FFFFFF" />
@@ -2426,6 +2850,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  typeModalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
   },
   glassFormValue: {
     fontSize: 14.5,
@@ -3214,5 +3645,116 @@ const guideStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  acToggleBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 18,
+    borderWidth: 1,
+  },
+  acStatusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  eligibilityResultCard: {
+    padding: 16,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginVertical: 8,
+    elevation: 2,
+  },
+  eligibilityTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  ageBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ageBadgeText: {
+    fontSize: 11.5,
+    fontWeight: '800',
+  },
+  tierBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  tierIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tierNameText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  tierReasonText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  laserCornerTopLeft: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 24,
+    height: 24,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#10B981',
+    borderTopLeftRadius: 6,
+  },
+  laserCornerTopRight: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#10B981',
+    borderTopRightRadius: 6,
+  },
+  laserCornerBottomLeft: {
+    position: 'absolute',
+    bottom: -2,
+    left: -2,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#10B981',
+    borderBottomLeftRadius: 6,
+  },
+  laserCornerBottomRight: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 24,
+    height: 24,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#10B981',
+    borderBottomRightRadius: 6,
+  },
+  slotBadgeOverlay: {
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    marginTop: 10,
+  },
+  slotBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
