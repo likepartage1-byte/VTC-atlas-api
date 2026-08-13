@@ -104,12 +104,17 @@ export const OrderCard = memo(({
   const isMotoAny = isMoto || isDelivery;
 
   const serviceLabel = isDelivery
-    ? (isRTL ? '📦 توصيل طرد' : '📦 Livraison')
+    ? (isRTL ? '📦 توصيل طرد' : rawLang.startsWith('es') ? '📦 Entrega' : rawLang.startsWith('en') ? '📦 Package Delivery' : '📦 Livraison')
     : isMoto
-    ? (isRTL ? '🏍️ رحلة دراجة' : '🏍️ Moto Ride')
+    ? (isRTL ? '🏍️ رحلة دراجة' : rawLang.startsWith('es') ? '🏍️ Moto' : rawLang.startsWith('en') ? '🏍️ Moto Ride' : '🏍️ Course Moto')
     : null;
 
   const paymentLabel = isRTL ? 'نقداً' : rawLang.startsWith('es') ? 'Efectivo' : rawLang.startsWith('en') ? 'Cash' : 'Espèces';
+  const passengerFallback = isRTL ? 'راكب' : rawLang.startsWith('es') ? 'Pasajero' : rawLang.startsWith('en') ? 'Passenger' : 'Passager';
+  const fairPriceLabel = isRTL ? 'سعر عادل' : rawLang.startsWith('es') ? '⊙ Precio justo' : rawLang.startsWith('en') ? '⊙ Fair price' : '⊙ Prix juste';
+  const selectOnMapLabel = isRTL ? 'اختيار على الخريطة' : rawLang.startsWith('es') ? 'Ver en mapa' : rawLang.startsWith('en') ? 'Select on Map' : 'Choisir sur la carte';
+  const hideLabel = isRTL ? 'إخفاء' : rawLang.startsWith('es') ? 'Ocultar' : rawLang.startsWith('en') ? 'Hide' : 'Masquer';
+  const reportLabel = isRTL ? 'إبلاغ' : rawLang.startsWith('es') ? 'Denunciar' : rawLang.startsWith('en') ? 'Report' : 'Plainte';
 
   const cardBg = isDarkMode ? '#181A20' : '#FFFFFF';
   const cardBorder = isDarkMode ? '#2D3038' : '#E5E7EB';
@@ -218,7 +223,7 @@ export const OrderCard = memo(({
               style={[styles.avatar, { borderColor: cardBorder }]}
             />
             <Text style={[styles.passengerName, { color: textMain }]} numberOfLines={1}>
-              {passengerDetail?.name?.split(' ')[0] || (isRTL ? 'راكب' : 'Passager')}
+              {passengerDetail?.name?.split(' ')[0] || passengerFallback}
             </Text>
             <View style={styles.ratingRow}>
               <Star size={10} color="#F59E0B" fill="#F59E0B" />
@@ -238,7 +243,7 @@ export const OrderCard = memo(({
               {order.isFairPrice && (
                 <View style={[styles.fairBadge, { backgroundColor: primaryLightBg }]}>
                   <Text style={[styles.fairBadgeText, { color: primaryBrand }]}>
-                    {isRTL ? 'سعر عادل' : '⊙ Prix juste'}
+                    {fairPriceLabel}
                   </Text>
                 </View>
               )}
@@ -284,7 +289,7 @@ export const OrderCard = memo(({
             <TouchableOpacity style={styles.actionBtnItem} onPress={handleSelectOnMap}>
               <MapPin size={18} color={primaryBrand} />
               <Text style={[styles.actionBtnText, { color: textMain }]}>
-                {isRTL ? 'اختيار على الخريطة' : 'Choisir sur la carte'}
+                {selectOnMapLabel}
               </Text>
             </TouchableOpacity>
 
@@ -292,7 +297,7 @@ export const OrderCard = memo(({
             <TouchableOpacity style={styles.actionBtnItem} onPress={handleHide}>
               <EyeOff size={18} color={textSub} />
               <Text style={[styles.actionBtnText, { color: textSub }]}>
-                {isRTL ? 'إخفاء' : 'Masquer'}
+                {hideLabel}
               </Text>
             </TouchableOpacity>
 
@@ -300,7 +305,7 @@ export const OrderCard = memo(({
             <TouchableOpacity style={styles.actionBtnItem} onPress={handleReport}>
               <AlertTriangle size={18} color="#EF4444" />
               <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>
-                {isRTL ? 'إبلاغ' : 'Plainte'}
+                {reportLabel}
               </Text>
             </TouchableOpacity>
           </View>

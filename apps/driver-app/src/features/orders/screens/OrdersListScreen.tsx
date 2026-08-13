@@ -185,11 +185,11 @@ export const OrdersListScreen = () => {
           const isGpsEnabled = await checkNativeGpsEnabled();
           if (!isGpsEnabled) {
             Alert.alert(
-              isRTL ? '📍 خدمة تحديد الموقع معطلة' : '📍 Localisation désactivée',
-              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : 'Veuillez activer le GPS pour recevoir des courses.',
+              isRTL ? '📍 خدمة تحديد الموقع معطلة' : rawLang.startsWith('es') ? '📍 Ubicación desactivada' : rawLang.startsWith('en') ? '📍 Location Disabled' : '📍 Localisation désactivée',
+              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : rawLang.startsWith('es') ? 'Por favor, activa el GPS para recibir viajes.' : rawLang.startsWith('en') ? 'Please enable GPS to receive ride requests.' : 'Veuillez activer le GPS pour recevoir des courses.',
               [
-                { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
-                { text: isRTL ? 'تفعيل GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
+                { text: isRTL ? 'إلغاء' : rawLang.startsWith('es') ? 'Cancelar' : rawLang.startsWith('en') ? 'Cancel' : 'Annuler', style: 'cancel' },
+                { text: isRTL ? 'تفعيل GPS' : rawLang.startsWith('es') ? 'Activar GPS' : rawLang.startsWith('en') ? 'Enable GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
               ]
             );
             return;
@@ -206,7 +206,7 @@ export const OrdersListScreen = () => {
     } finally {
       setMotoStatusLoading(false);
     }
-  }, [motoStatus, motoStatusLoading, isRTL]);
+  }, [motoStatus, motoStatusLoading, isRTL, rawLang]);
 
   // ── Car Status Toggle ───────────────────────────────────────────────────────
   const toggleCarStatus = useCallback(async () => {
@@ -218,11 +218,11 @@ export const OrdersListScreen = () => {
           const isGpsEnabled = await checkNativeGpsEnabled();
           if (!isGpsEnabled) {
             Alert.alert(
-              isRTL ? '📍 خدمة تحديد الموقع معطلة' : '📍 Localisation désactivée',
-              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : 'Veuillez activer le GPS pour recevoir des courses.',
+              isRTL ? '📍 خدمة تحديد الموقع معطلة' : rawLang.startsWith('es') ? '📍 Ubicación desactivada' : rawLang.startsWith('en') ? '📍 Location Disabled' : '📍 Localisation désactivée',
+              isRTL ? 'يرجى تفعيل خدمة GPS لاستقبال الطلبات.' : rawLang.startsWith('es') ? 'Por favor, activa el GPS para recibir viajes.' : rawLang.startsWith('en') ? 'Please enable GPS to receive ride requests.' : 'Veuillez activer le GPS pour recevoir des courses.',
               [
-                { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
-                { text: isRTL ? 'تفعيل GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
+                { text: isRTL ? 'إلغاء' : rawLang.startsWith('es') ? 'Cancelar' : rawLang.startsWith('en') ? 'Cancel' : 'Annuler', style: 'cancel' },
+                { text: isRTL ? 'تفعيل GPS' : rawLang.startsWith('es') ? 'Activar GPS' : rawLang.startsWith('en') ? 'Enable GPS' : 'Activer GPS', onPress: () => openNativeGpsSettings() },
               ]
             );
             return;
@@ -239,7 +239,7 @@ export const OrdersListScreen = () => {
     } finally {
       setCarStatusLoading(false);
     }
-  }, [carStatus, carStatusLoading, isRTL]);
+  }, [carStatus, carStatusLoading, isRTL, rawLang]);
 
   // Driver Verification Guard State
   const [showVerificationModal, setShowVerificationModal] = useState<boolean>(false);
@@ -262,14 +262,18 @@ export const OrdersListScreen = () => {
 
     if (activeStatus === 'OFFLINE') {
       Alert.alert(
-        isRTL ? 'تنشيط الوضع متصل' : 'Passer en ligne',
+        isRTL ? 'تنشيط الوضع متصل' : rawLang.startsWith('es') ? 'Conectarse' : rawLang.startsWith('en') ? 'Go Online' : 'Passer en ligne',
         isRTL
           ? 'أنت غير متصل الآن. هل ترغب في التحويل إلى "متصل" لعرض وتفاعل الطلبات؟'
+          : rawLang.startsWith('es')
+          ? 'Estás desconectado. ¿Quieres conectarte para ver y aceptar este viaje?'
+          : rawLang.startsWith('en')
+          ? 'You are offline. Would you like to go online to view and accept this ride?'
           : 'Vous êtes hors ligne. Voulez-vous passer en ligne pour accepter cette course ?',
         [
-          { text: isRTL ? 'إلغاء' : 'Annuler', style: 'cancel' },
+          { text: isRTL ? 'إلغاء' : rawLang.startsWith('es') ? 'Cancelar' : rawLang.startsWith('en') ? 'Cancel' : 'Annuler', style: 'cancel' },
           {
-            text: isRTL ? 'تفعيل (En ligne)' : 'Passer en ligne',
+            text: isRTL ? 'تفعيل' : rawLang.startsWith('es') ? 'Conectarse' : rawLang.startsWith('en') ? 'Go Online' : 'Passer en ligne',
             onPress: async () => {
               if (isMotorcycleMode) {
                 await toggleMotoStatus();
@@ -284,7 +288,7 @@ export const OrdersListScreen = () => {
       return;
     }
     setManualPreviewOrder(order);
-  }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL]);
+  }, [activeStatus, isMotorcycleMode, toggleMotoStatus, toggleCarStatus, isRTL, rawLang]);
 
   const handleContinueVerification = useCallback(async () => {
     if (verificationState.vehicleVerificationPercentage < 100) {
@@ -300,14 +304,18 @@ export const OrdersListScreen = () => {
       setVerificationState((prev) => ({ ...prev, verificationStatus: 'PENDING_REVIEW' }));
 
       Alert.alert(
-        isRTL ? 'تم إرسال الملف للمراجعة ✓' : 'Demande envoyée ✓',
+        isRTL ? 'تم إرسال الملف للمراجعة ✓' : rawLang.startsWith('es') ? 'Solicitud enviada ✓' : rawLang.startsWith('en') ? 'Request Submitted ✓' : 'Demande envoyée ✓',
         isRTL
           ? 'تم استلام معلومات المركبة والوثائق بنجاح، وتسجيل طلب المراجعة في الخادم. سيتم مراجعتها من فريق YALLA VTC وإفادتكم.'
+          : rawLang.startsWith('es')
+          ? 'Tus datos y documentos se han recibido correctamente. El equipo de YALLA VTC los revisará pronto.'
+          : rawLang.startsWith('en')
+          ? 'Your vehicle information and documents were received successfully. The YALLA VTC team will review them.'
           : 'Votre dossier a été soumis avec succès pour examen par l’administrateur YALLA VTC.',
         [{ text: 'OK' }]
       );
     }
-  }, [navigation, verificationState, isRTL]);
+  }, [navigation, verificationState, isRTL, rawLang]);
 
   // Phase 3 Flow: Driver Accept -> Waiting 15s Passenger Confirmation -> Confirmed Trip Screen
   const handleAcceptOrder = useCallback(async (orderId: string, finalPrice: number) => {
