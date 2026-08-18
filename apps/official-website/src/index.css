@@ -18,39 +18,50 @@
 }
 
 /* Light mode overrides while keeping #683EE6 purple brand theme */
+html.light {
+  color-scheme: light;
+}
+
+html.light body {
+  @apply bg-[#F7F7FA] text-slate-900 selection:bg-purple-600 selection:text-white;
+}
+
 html.light .bg-slate-950,
 html.light .bg-slate-950\/95,
 html.light .bg-slate-950\/90,
 html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/40 {
-  background-color: rgba(248, 250, 252, 0.95) !important;
+  background-color: rgba(247, 247, 250, 0.95);
 }
 
 html.light .bg-slate-900,
 html.light .bg-slate-900\/80,
 html.light .bg-slate-900\/60 {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
+  background-color: #ffffff;
+  border-color: #e2e8f0;
 }
 
-html.light .text-white {
-  color: #0f172a !important;
+html.light .text-slate-100 {
+  color: #0f172a;
 }
 
-html.light .text-slate-400,
 html.light .text-slate-300 {
-  color: #475569 !important;
+  color: #334155;
+}
+
+html.light .text-slate-400 {
+  color: #475569;
 }
 
 html.light .text-slate-500 {
-  color: #64748b !important;
+  color: #64748b;
 }
 
 html.light .border-slate-800,
 html.light .border-slate-900,
 html.light .border-slate-800\/60,
 html.light .border-slate-900\/80 {
-  border-color: #e2e8f0 !important;
+  border-color: #e2e8f0;
 }
 
 /* Glassmorphism & Glow Utilities */
@@ -63,7 +74,7 @@ html.light .border-slate-900\/80 {
 
 html.light .glass-card {
   background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .glow-purple {
