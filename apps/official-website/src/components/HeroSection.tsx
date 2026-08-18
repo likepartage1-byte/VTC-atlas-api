@@ -6,40 +6,6 @@ interface HeroSectionProps {
   lang: SupportedLang;
 }
 
-// Hero Service Visual showing Yalla VTC Driver, Passenger & Car
-const HeroVisual: React.FC<{ isAr: boolean }> = ({ isAr }) => (
-  <div className="relative flex justify-center items-center">
-    {/* Glow behind visual */}
-    <div className="absolute inset-0 bg-purple-600/20 blur-[80px] rounded-full scale-75" />
-
-    {/* Hero Service Visual Container */}
-    <div className="relative max-w-[360px] sm:max-w-[440px] lg:max-w-[480px] rounded-[32px] border-4 border-slate-800/80 shadow-2xl shadow-purple-950/40 overflow-hidden bg-slate-900 group transition-all duration-300 hover:border-purple-500/30">
-      <picture>
-        <source media="(max-width: 640px)" srcSet="/images/hero_service_mobile.webp" type="image/webp" />
-        <img
-          src="/images/hero_service_desktop.webp"
-          alt="Yalla VTC Driver & Passenger Experience in Marrakech"
-          className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700"
-          loading="eager"
-          // @ts-ignore fetchpriority is valid HTML attribute
-          fetchpriority="high"
-          width="1024"
-          height="1024"
-        />
-      </picture>
-    </div>
-
-    {/* Floating badges */}
-    <div className={`absolute top-6 ${isAr ? 'left-0 -translate-x-1/4' : 'right-0 translate-x-1/4'} bg-emerald-500 text-white text-[10px] sm:text-xs font-black px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/30 whitespace-nowrap z-10`}>
-      {isAr ? '✓ تفاوض مباشر بين الراكب والسائق' : '✓ Direct Pricing'}
-    </div>
-
-    <div className={`absolute bottom-8 ${isAr ? 'right-0 translate-x-1/4' : 'left-0 -translate-x-1/4'} bg-[#683EE6] text-white text-[10px] sm:text-xs font-black px-3.5 py-2 rounded-full shadow-lg shadow-purple-600/30 whitespace-nowrap z-10`}>
-      🔒 OTP Protection & Secure Ride
-    </div>
-  </div>
-);
-
 export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
   const t = Translations[lang].hero;
   const isAr = lang === 'AR';
@@ -47,30 +13,58 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
   const titleLines = t.title.split('\n');
 
   return (
-    <section className="relative pt-16 pb-24 lg:pt-24 lg:pb-32 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(139,92,246,0.12),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(99,102,241,0.08),transparent_60%)]" />
+    <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center pt-20 pb-20 lg:pt-28 lg:pb-28 overflow-hidden">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-16 items-center ${isAr ? 'lg:flex-row-reverse' : ''}`}>
+      {/* Full Hero WebP Background Image Layer */}
+      <div className="absolute inset-0 z-0">
+        <picture>
+          <source media="(max-width: 768px)" srcSet="/images/hero_banner_mobile.webp" type="image/webp" />
+          <img
+            src="/images/hero_banner_desktop.webp"
+            alt="Yalla VTC Premium Experience in Marrakech"
+            className="w-full h-full object-cover object-right sm:object-center"
+            loading="eager"
+            // @ts-ignore fetchpriority is valid HTML attribute
+            fetchpriority="high"
+            width="1440"
+            height="810"
+          />
+        </picture>
+      </div>
 
-          {/* Left: Text Content */}
-          <div className={`space-y-8 text-center ${isAr ? 'lg:text-right' : 'lg:text-left'}`}>
+      {/* Adaptive Directional Overlay Layer for Text Legibility (RTL & LTR / Light & Dark) */}
+      <div
+        className={`absolute inset-0 z-0 transition-colors duration-300 ${
+          isAr
+            ? 'bg-gradient-to-l from-transparent via-slate-950/85 to-slate-950/95 dark:from-transparent dark:via-slate-950/85 dark:to-slate-950/95 html-light-overlay-rtl'
+            : 'bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-transparent dark:from-slate-950/95 dark:via-slate-950/85 dark:to-transparent html-light-overlay-ltr'
+        }`}
+      />
+
+      {/* Subtle brand glow overlay */}
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(104,62,230,0.18),transparent_70%)] pointer-events-none" />
+
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-12 items-center`}>
+
+          {/* Text Content Column */}
+          <div className={`lg:col-span-7 xl:col-span-6 space-y-8 text-center ${isAr ? 'lg:text-right' : 'lg:text-left'}`}>
+
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-black tracking-wide">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 text-xs font-black tracking-wide backdrop-blur-md">
               <Sparkles size={14} />
               <span>{t.badge}</span>
             </div>
 
             {/* Title */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.05]">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] drop-shadow-sm">
               {titleLines.map((line, i) => (
                 <React.Fragment key={i}>
                   {i === 0 ? line : (
                     <>
                       <br />
-                      <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                      <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-500 bg-clip-text text-transparent">
                         {line}
                       </span>
                     </>
@@ -80,19 +74,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-lg sm:text-xl text-slate-300 font-semibold leading-relaxed max-w-lg mx-auto lg:mx-0">
+            <p className="text-base sm:text-lg lg:text-xl text-slate-300 font-semibold leading-relaxed max-w-xl mx-auto lg:mx-0">
               {t.subtitle}
             </p>
 
-            <p className="text-sm text-slate-400 font-medium max-w-md mx-auto lg:mx-0 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-400 font-medium max-w-lg mx-auto lg:mx-0 leading-relaxed">
               {t.subtext}
             </p>
 
             {/* CTAs */}
-            <div className={`flex flex-wrap items-center justify-center gap-4 pt-2 ${isAr ? 'lg:justify-end' : 'lg:justify-start'}`}>
+            <div className={`flex flex-wrap items-center justify-center gap-4 pt-2 ${isAr ? 'lg:justify-start' : 'lg:justify-start'}`}>
               <a
                 href="#download"
-                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-purple-600/25 transition-all hover:scale-105 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-purple-600/30 transition-all hover:scale-105 hover:-translate-y-0.5"
               >
                 <Smartphone size={18} />
                 {t.downloadApp}
@@ -101,15 +95,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
 
               <a
                 href="#app-showcase"
-                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white font-black text-sm transition-all hover:scale-105 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white font-black text-sm backdrop-blur-md transition-all hover:scale-105 hover:-translate-y-0.5"
               >
                 <Car size={18} className="text-purple-400" />
                 {t.exploreExperience}
               </a>
             </div>
 
-            {/* Trust signals */}
-            <div className={`pt-6 border-t border-slate-900/80 flex flex-wrap items-center justify-center gap-6 ${isAr ? 'lg:justify-end' : 'lg:justify-start'}`}>
+            {/* Trust signals & Badges */}
+            <div className={`pt-6 border-t border-slate-800/60 flex flex-wrap items-center justify-center gap-6 ${isAr ? 'lg:justify-start' : 'lg:justify-start'}`}>
               {[
                 { icon: <Shield size={14} className="text-emerald-400" />, text: t.trustOtp },
                 { icon: <Car size={14} className="text-purple-400" />, text: t.trustNoHidden },
@@ -121,12 +115,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
                 </div>
               ))}
             </div>
+
+            {/* Floating Highlights */}
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-lg shadow-emerald-500/20 backdrop-blur-sm">
+                {isAr ? '✓ تفاوض مباشر بين الراكب والسائق' : '✓ Direct Pricing'}
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-[#683EE6]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full shadow-lg shadow-purple-600/20 backdrop-blur-sm">
+                🔒 OTP Protection & Secure Ride
+              </span>
+            </div>
+
           </div>
 
-          {/* Right: 3D Service Hero Visual */}
-          <div className="flex justify-center lg:justify-end">
-            <HeroVisual isAr={isAr} />
-          </div>
         </div>
       </div>
     </section>

@@ -93,3 +93,12 @@ html.light .glass-card {
 .animate-pulse-glow {
   animation: pulseGlow 6s ease-in-out infinite;
 }
+
+/* Light mode Hero Overlay Gradients */
+html.light .html-light-overlay-rtl {
+  background: linear-gradient(to left, transparent 0%, rgba(247, 247, 250, 0.85) 50%, rgba(247, 247, 250, 0.98) 100%) !important;
+}
+
+html.light .html-light-overlay-ltr {
+  background: linear-gradient(to right, rgba(247, 247, 250, 0.98) 0%, rgba(247, 247, 250, 0.85) 50%, transparent 100%) !important;
+}
