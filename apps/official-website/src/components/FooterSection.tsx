@@ -25,7 +25,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ lang, onOpenLegal 
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white">
                 <Car size={18} />
               </div>
-              <span className="text-lg font-black text-white tracking-tight">
+              <span className="text-lg font-black text-[#683EE6] dark:text-white tracking-tight">
                 YALLA<span className="text-purple-500">VTC</span>
               </span>
             </div>
@@ -35,7 +35,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ lang, onOpenLegal 
 
           {/* Platform & App */}
           <div className={`space-y-3 ${isAr ? 'text-right' : 'text-left'}`}>
-            <h4 className="text-sm font-black text-white">{isAr ? 'التطبيق والمنصة' : 'App & Platform'}</h4>
+            <h4 className="text-sm font-black text-slate-900 dark:text-white">{isAr ? 'التطبيق والمنصة' : 'App & Platform'}</h4>
             <ul className="space-y-2 text-xs font-medium">
               <li><a href="#how-it-works" className="hover:text-purple-400 transition-colors">{nav.howItWorks}</a></li>
               <li><a href="#app-showcase" className="hover:text-purple-400 transition-colors">{nav.appShowcase}</a></li>
@@ -46,7 +46,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ lang, onOpenLegal 
 
           {/* Pages & Journal */}
           <div className={`space-y-3 ${isAr ? 'text-right' : 'text-left'}`}>
-            <h4 className="text-sm font-black text-white">{isAr ? 'الصفحات والمحتوى' : 'Pages & Content'}</h4>
+            <h4 className="text-sm font-black text-slate-900 dark:text-white">{isAr ? 'الصفحات والمحتوى' : 'Pages & Content'}</h4>
             <ul className="space-y-2 text-xs font-medium">
               <li>
                 <button
@@ -78,7 +78,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({ lang, onOpenLegal 
 
           {/* Legal & Support */}
           <div className={`space-y-3 ${isAr ? 'text-right' : 'text-left'}`}>
-            <h4 className="text-sm font-black text-white">{t.legal}</h4>
+            <h4 className="text-sm font-black text-slate-900 dark:text-white">{t.legal}</h4>
             <ul className="space-y-2 text-xs font-medium">
               <li>
                 <button

@@ -23,7 +23,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
               {type === 'terms' ? <FileText size={20} /> : <Shield size={20} />}
             </div>
             <div>
-              <h3 className="text-lg font-black text-white">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
                 {type === 'terms'
                   ? (isAr ? 'مسودة شروط الخدمة والتعاقد' : 'Draft Terms of Service')
                   : (isAr ? 'مسودة سياسة الخصوصية وحماية البيانات' : 'Draft Privacy Policy')}
@@ -52,7 +52,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
                   ? 'تحدد هذه الوثيقة الشروط التجريبية والاسترشادية لاستخدام منصة Yalla VTC في المملكة المغربية. يتم التفاوض على أسعار الرحلات مباشرة بين الراكب والسائق بدون أي تدخل قسري في تحديد التعرفة من قبل المنصة.'
                   : 'This document defines the trial and indicative terms of use for the Yalla VTC platform in Morocco. Ride prices are negotiated directly between passenger and driver without platform fare fixing.'}
               </p>
-              <h4 className="text-sm font-bold text-white pt-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
                 {isAr ? '1. آلية التفاوض العادل (Counter-Bidding)' : '1. Fair Counter-Bidding Mechanism'}
               </h4>
               <p>
@@ -60,7 +60,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
                   ? 'يقوم الراكب باقتراح تعرفة الرحلة، ويحق للسائق قبول العرض أو تقديم عرض مضاد. العقد المبرم هو عقد مباشر بين الطرفين.'
                   : 'Passengers offer ride fares and drivers retain full freedom to accept or present counter-offers. The contract is agreed directly between both parties.'}
               </p>
-              <h4 className="text-sm font-bold text-white pt-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
                 {isAr ? '2. برنامج رصيد السائقين والحوافز' : '2. Driver Credit & Incentive Program Terms'}
               </h4>
               <p>
@@ -68,7 +68,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
                   ? 'يخضع عرض الرصيد التجريبي (10 MAD) والرصيد التحفيزي (حتى 600 MAD) لشروط الأهلية المعتمدة في البرنامج. يتم إضافة الرصيد التحفيزي إلى رصيد السائق داخل نظام Yalla VTC عند استيفاء إتمام 6 طلبات ناجحة خلال 15 يوماً، ولا يعتبر هذا الرصيد دخلاً نقدياً ثابتاً أو تحويلاً بنكياً مباشراً.'
                   : 'The 10 MAD Trial Credit and up to 600 MAD Promotional Credit are subject to program eligibility conditions. Credits are added to the driver balance inside Yalla VTC upon completing 6 successful rides within 15 days and do not constitute fixed cash income or direct bank transfers.'}
               </p>
-              <h4 className="text-sm font-bold text-white pt-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
                 {isAr ? '3. النزاهة والأمان وأكواد OTP' : '3. Integrity & OTP Verification Security'}
               </h4>
               <p>
@@ -84,7 +84,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
                   ? 'تلتزم منصة Yalla VTC بحماية البيانات الشخصية للمستخدمين والسائقين وفق القوانين المغربية لحماية المعطيات ذات الطابع الشخصي (القانون 09-08).'
                   : 'Yalla VTC is committed to protecting user and driver personal data in full compliance with Moroccan Law 09-08 on personal data protection.'}
               </p>
-              <h4 className="text-sm font-bold text-white pt-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
                 {isAr ? '1. البيانات المجمعة' : '1. Collected Personal Data'}
               </h4>
               <p>
@@ -92,7 +92,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, lang, onClose }) =
                   ? 'تشمل البيانات المجمعة: الاسم الكامل، رقم الهاتف، الموقع الجغرافي المباشر أثناء الرحلة، والوثائق الرسمية المرفوعة من قبل السائقين (رخصة السياقة، البطاقة الوطنية).'
                   : 'Collected data includes full name, phone number, real-time GPS telemetry during rides, and driver inspection documents (license, national ID).'}
               </p>
-              <h4 className="text-sm font-bold text-white pt-2">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white pt-2">
                 {isAr ? '2. حماية وتشفير البيانات' : '2. Data Security & Encryption'}
               </h4>
               <p>

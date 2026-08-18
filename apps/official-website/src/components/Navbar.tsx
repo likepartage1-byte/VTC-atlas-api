@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Car size={18} />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-lg font-black text-white tracking-tight">
+              <span className="text-lg font-black text-[#683EE6] dark:text-white tracking-tight">
                 YALLA<span className="text-purple-500">VTC</span>
               </span>
               <span className="text-[9px] text-slate-500 font-semibold tracking-widest uppercase">
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={link.label}
                   onClick={() => navigate(link.to!)}
-                  className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
+                  className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-[#683EE6] dark:hover:text-white hover:bg-slate-800/60 transition-all"
                 >
                   {link.label}
                 </button>
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <a
                   key={link.label}
                   href={link.href!}
-                  className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
+                  className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:text-[#683EE6] dark:hover:text-white hover:bg-slate-800/60 transition-all"
                 >
                   {link.label}
                 </a>
@@ -113,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setIsLangOpen(!isLangOpen)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:border-slate-700 hover:text-white transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-300 hover:border-slate-700 hover:text-[#683EE6] dark:hover:text-white transition-all"
               >
                 <Globe size={14} className="text-purple-400" />
                 <span>{lang}</span>
@@ -157,7 +157,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-white transition-colors"
+              className="lg:hidden p-2 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300 hover:text-[#683EE6] dark:hover:text-white transition-colors"
             >
               {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -172,7 +172,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   key={link.label}
                   onClick={() => { navigate(link.to!); setIsMobileMenuOpen(false); }}
-                  className="w-full text-start px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
+                  className="w-full text-start px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:text-[#683EE6] dark:hover:text-white hover:bg-slate-800/60 transition-all"
                 >
                   {link.label}
                 </button>
@@ -181,7 +181,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={link.label}
                   href={link.href!}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
+                  className="block px-3 py-2.5 rounded-xl text-sm font-bold text-slate-300 hover:text-[#683EE6] dark:hover:text-white hover:bg-slate-800/60 transition-all"
                 >
                   {link.label}
                 </a>

@@ -26,7 +26,7 @@ export const DriverExperienceSection: React.FC<DriverExperienceSectionProps> = (
           <div className="flex justify-center order-2 lg:order-1">
             <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 max-w-md w-full space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="text-xs font-black text-white">{isAr ? 'رحلة السائق في التطبيق' : 'Driver Workflow'}</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">{isAr ? 'رحلة السائق في التطبيق' : 'Driver Workflow'}</span>
                 <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-full bg-emerald-500/10">Yalla VTC Driver</span>
               </div>
 
@@ -39,7 +39,7 @@ export const DriverExperienceSection: React.FC<DriverExperienceSectionProps> = (
                 <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-950/60 border border-slate-800/60">
                   <span className="text-xs font-black text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-lg">{s.num}</span>
                   <div>
-                    <p className="text-xs font-black text-white">{s.title}</p>
+                    <p className="text-xs font-black text-slate-900 dark:text-white">{s.title}</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">{s.desc}</p>
                   </div>
                 </div>
@@ -53,7 +53,7 @@ export const DriverExperienceSection: React.FC<DriverExperienceSectionProps> = (
               {t.badge}
             </span>
 
-            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               {t.title}
             </h2>
 
@@ -67,7 +67,7 @@ export const DriverExperienceSection: React.FC<DriverExperienceSectionProps> = (
                   <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center mb-3">
                     {f.icon}
                   </div>
-                  <h3 className="text-sm font-black text-white mb-1">{f.title}</h3>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white mb-1">{f.title}</h3>
                   <p className="text-xs text-slate-400 font-medium leading-relaxed">{f.desc}</p>
                 </div>
               ))}

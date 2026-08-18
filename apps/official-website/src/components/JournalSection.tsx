@@ -57,7 +57,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({ lang }) => {
             <span className="inline-block text-amber-400 text-xs font-black uppercase tracking-widest bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 mb-4">
               {t.badge}
             </span>
-            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-3">
+            <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-3">
               {titleLines.map((line, i) => (
                 <React.Fragment key={i}>
                   {i === 0 ? line : (
@@ -122,7 +122,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({ lang }) => {
                   </span>
                 </div>
 
-                <h3 className="text-2xl sm:text-3xl font-black text-white leading-snug mb-4 group-hover:text-purple-300 transition-colors">
+                <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-snug mb-4 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
                   {featuredArticle.title}
                 </h3>
 
@@ -157,7 +157,7 @@ export const JournalSection: React.FC<JournalSectionProps> = ({ lang }) => {
                       {getCategoryLabel(article.category)}
                     </span>
 
-                    <h4 className="text-base font-black text-white leading-snug mb-2 group-hover:text-purple-300 transition-colors">
+                    <h4 className="text-base font-black text-slate-900 dark:text-white leading-snug mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">
                       {article.title}
                     </h4>
 

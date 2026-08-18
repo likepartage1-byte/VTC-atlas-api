@@ -23,7 +23,7 @@ export const OneAppShowcaseSection: React.FC<OneAppShowcaseSectionProps> = ({ la
             <Sparkles size={14} />
             <span>{t.badge}</span>
           </div>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight mb-4">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
             {t.title.split('\n').map((line, i) => (
               <React.Fragment key={i}>
                 {i === 0 ? line : (
@@ -221,7 +221,7 @@ export const OneAppShowcaseSection: React.FC<OneAppShowcaseSectionProps> = ({ la
               <span>{activeMode === 'passenger' ? t.passengerTab : t.driverTab}</span>
             </div>
 
-            <h3 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+            <h3 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               {activeMode === 'passenger' ? t.passengerTitle : t.driverTitle}
             </h3>
 
@@ -241,7 +241,7 @@ export const OneAppShowcaseSection: React.FC<OneAppShowcaseSectionProps> = ({ la
                     {f.icon}
                   </div>
                   <div>
-                    <h4 className="text-sm font-black text-white mb-0.5">{f.title}</h4>
+                    <h4 className="text-sm font-black text-slate-900 dark:text-white mb-0.5">{f.title}</h4>
                     <p className="text-xs text-slate-400 font-medium leading-relaxed">{f.desc}</p>
                   </div>
                 </div>

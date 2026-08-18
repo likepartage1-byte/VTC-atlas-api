@@ -27,7 +27,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang }) => {
           <span className="inline-block text-purple-400 text-xs font-black uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20 mb-4">
             {t.badge}
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight mb-4">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight mb-4">
             {t.title}
           </h2>
           <p className="text-slate-400 font-medium leading-relaxed">
@@ -51,7 +51,7 @@ export const FaqSection: React.FC<FaqSectionProps> = ({ lang }) => {
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className={`w-full flex items-center justify-between gap-4 px-6 py-4 text-${isAr ? 'right' : 'left'}`}
               >
-                <span className="text-sm font-black text-white flex-1">{item.q}</span>
+                <span className="text-sm font-black text-slate-900 dark:text-white flex-1">{item.q}</span>
                 <ChevronDown
                   size={18}
                   className={`text-slate-400 flex-shrink-0 transition-transform duration-200 ${

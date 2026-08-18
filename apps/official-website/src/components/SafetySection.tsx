@@ -62,7 +62,7 @@ export const SafetySection: React.FC<SafetySectionProps> = ({ lang }) => {
           <span className="inline-block text-purple-400 text-xs font-black uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20 mb-4">
             {t.badge}
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-4">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
             {titleLines.map((line, i) => (
               <React.Fragment key={i}>
                 {i === 0 ? line : (
@@ -119,7 +119,7 @@ export const SafetySection: React.FC<SafetySectionProps> = ({ lang }) => {
               <div className="w-10 h-10 rounded-xl bg-slate-800/80 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 {item.icon}
               </div>
-              <h3 className="text-sm font-black text-white mb-2">{item.title}</h3>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white mb-2">{item.title}</h3>
               <p className="text-xs text-slate-400 font-medium leading-relaxed">{item.desc}</p>
             </div>
           ))}

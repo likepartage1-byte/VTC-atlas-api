@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, Car, Shield, ArrowLeft, ArrowRight, MapPin, Sparkles } from 'lucide-react';
+import { Smartphone, Car, Shield, ArrowLeft, ArrowRight, MapPin } from 'lucide-react';
 import { SupportedLang, Translations } from '../i18n/translations';
 
 interface HeroSectionProps {
@@ -51,12 +51,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
           {/* Text Content Column */}
           <div className={`lg:col-span-7 xl:col-span-6 space-y-8 text-center ${isAr ? 'lg:text-right' : 'lg:text-left'}`}>
 
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-400 text-xs font-black tracking-wide backdrop-blur-md">
-              <Sparkles size={14} />
-              <span>{t.badge}</span>
-            </div>
-
             {/* Title */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.08] drop-shadow-sm">
               {titleLines.map((line, i) => (
@@ -64,7 +58,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
                   {i === 0 ? line : (
                     <>
                       <br />
-                      <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-500 bg-clip-text text-transparent">
+                      <span className="bg-gradient-to-r from-[#683EE6] via-indigo-600 to-purple-700 dark:from-purple-400 dark:via-indigo-300 dark:to-purple-500 bg-clip-text text-transparent">
                         {line}
                       </span>
                     </>
@@ -95,7 +89,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
 
               <a
                 href="#app-showcase"
-                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-white font-black text-sm backdrop-blur-md transition-all hover:scale-105 hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-900 dark:text-white font-black text-sm backdrop-blur-md transition-all hover:scale-105 hover:-translate-y-0.5"
               >
                 <Car size={18} className="text-purple-400" />
                 {t.exploreExperience}

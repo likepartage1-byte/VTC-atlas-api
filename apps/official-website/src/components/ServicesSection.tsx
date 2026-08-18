@@ -61,7 +61,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ lang }) => {
           <span className="inline-block text-purple-400 text-xs font-black uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20 mb-4">
             {t.badge}
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-4">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
             {titleLines.map((line, i) => (
               <React.Fragment key={i}>
                 {i === 0 ? line : (
@@ -102,7 +102,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ lang }) => {
               </div>
 
               <div className="p-6 sm:p-8 space-y-4">
-                <h3 className="text-2xl font-black text-white">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white">
                   {s.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-400 font-medium leading-relaxed">
@@ -130,7 +130,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({ lang }) => {
                 {f.icon}
               </div>
               <div>
-                <h3 className="text-base font-black text-white mb-1.5">{f.title}</h3>
+                <h3 className="text-base font-black text-slate-900 dark:text-white mb-1.5">{f.title}</h3>
                 <p className="text-sm text-slate-400 font-medium leading-relaxed">{f.desc}</p>
               </div>
             </div>

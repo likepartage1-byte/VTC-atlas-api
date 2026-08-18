@@ -50,7 +50,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ lang }) =>
           <span className="inline-block text-purple-400 text-xs font-black uppercase tracking-widest mb-4 bg-purple-500/10 px-3 py-1.5 rounded-full border border-purple-500/20">
             {t.badge}
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight mb-4">
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
             {t.title}
           </h2>
           <p className="text-slate-400 text-base font-medium leading-relaxed">
@@ -86,7 +86,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ lang }) =>
               </div>
 
               {/* Title */}
-              <h3 className="text-sm font-black text-white leading-snug mb-2">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white leading-snug mb-2">
                 {step.title}
               </h3>
 
