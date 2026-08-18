@@ -208,7 +208,7 @@ export const Translations: Record<SupportedLang, TranslationDictionary> = {
     },
     oneApp: {
       badge: 'منصة موحدة',
-      title: 'تطبيق واحد.\nتجربتان.',
+      title: 'تجربتان في تطبيق واحد.',
       subtitle: 'سواء كنت راكباً تبحث عن رحلة مريحة أو سائقاً تسعى لدخل مرن، يمنحك Yalla VTC التجربة الكاملة من تطبيق واحد.',
       passengerTab: '👤 وضع الراكب',
       driverTab: '🚗 وضع السائق',

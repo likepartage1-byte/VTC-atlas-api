@@ -24,18 +24,7 @@ export const OneAppShowcaseSection: React.FC<OneAppShowcaseSectionProps> = ({ la
             <span>{t.badge}</span>
           </div>
           <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight mb-4">
-            {t.title.split('\n').map((line, i) => (
-              <React.Fragment key={i}>
-                {i === 0 ? line : (
-                  <>
-                    <br />
-                    <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-                      {line}
-                    </span>
-                  </>
-                )}
-              </React.Fragment>
-            ))}
+            {t.title}
           </h2>
           <p className="text-slate-400 text-base sm:text-lg font-medium leading-relaxed">
             {t.subtitle}
