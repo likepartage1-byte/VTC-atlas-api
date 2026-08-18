@@ -6,31 +6,36 @@ interface HeroSectionProps {
   lang: SupportedLang;
 }
 
-// Phone Mockup showing Yalla VTC Unified App UI
-const PhoneMockup: React.FC<{ isAr: boolean }> = ({ isAr }) => (
+// Hero Service Visual showing Yalla VTC Driver, Passenger & Car
+const HeroVisual: React.FC<{ isAr: boolean }> = ({ isAr }) => (
   <div className="relative flex justify-center items-center">
-    {/* Glow behind phone */}
+    {/* Glow behind visual */}
     <div className="absolute inset-0 bg-purple-600/20 blur-[80px] rounded-full scale-75" />
 
-    {/* Real app UI mockup image */}
-    <div className="relative max-w-[320px] sm:max-w-[360px] rounded-[36px] border-4 border-slate-800 shadow-2xl shadow-purple-900/40 overflow-hidden bg-slate-900">
-      <img
-        src="/images/hero_phone.png"
-        alt="Yalla VTC App Mockup"
-        className="w-full h-auto object-cover"
-        loading="eager"
-        width="360"
-        height="720"
-      />
+    {/* Hero Service Visual Container */}
+    <div className="relative max-w-[360px] sm:max-w-[440px] lg:max-w-[480px] rounded-[32px] border-4 border-slate-800/80 shadow-2xl shadow-purple-950/40 overflow-hidden bg-slate-900 group transition-all duration-300 hover:border-purple-500/30">
+      <picture>
+        <source media="(max-width: 640px)" srcSet="/images/hero_service_mobile.webp" type="image/webp" />
+        <img
+          src="/images/hero_service_desktop.webp"
+          alt="Yalla VTC Driver & Passenger Experience in Marrakech"
+          className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700"
+          loading="eager"
+          // @ts-ignore fetchpriority is valid HTML attribute
+          fetchpriority="high"
+          width="1024"
+          height="1024"
+        />
+      </picture>
     </div>
 
     {/* Floating badges */}
-    <div className={`absolute top-8 ${isAr ? 'left-0 -translate-x-1/4' : 'right-0 translate-x-1/4'} bg-emerald-500 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-emerald-500/30 whitespace-nowrap z-10`}>
-      {isAr ? '✓ تفاوض مباشر' : '✓ Direct Pricing'}
+    <div className={`absolute top-6 ${isAr ? 'left-0 -translate-x-1/4' : 'right-0 translate-x-1/4'} bg-emerald-500 text-white text-[10px] sm:text-xs font-black px-3.5 py-2 rounded-full shadow-lg shadow-emerald-500/30 whitespace-nowrap z-10`}>
+      {isAr ? '✓ تفاوض مباشر بين الراكب والسائق' : '✓ Direct Pricing'}
     </div>
 
-    <div className={`absolute bottom-16 ${isAr ? 'right-0 translate-x-1/4' : 'left-0 -translate-x-1/4'} bg-purple-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full shadow-lg shadow-purple-600/30 whitespace-nowrap z-10`}>
-      🔒 OTP Protection
+    <div className={`absolute bottom-8 ${isAr ? 'right-0 translate-x-1/4' : 'left-0 -translate-x-1/4'} bg-[#683EE6] text-white text-[10px] sm:text-xs font-black px-3.5 py-2 rounded-full shadow-lg shadow-purple-600/30 whitespace-nowrap z-10`}>
+      🔒 OTP Protection & Secure Ride
     </div>
   </div>
 );
@@ -59,7 +64,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
             </div>
 
             {/* Title */}
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[1.05]">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.05]">
               {titleLines.map((line, i) => (
                 <React.Fragment key={i}>
                   {i === 0 ? line : (
@@ -118,9 +123,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
             </div>
           </div>
 
-          {/* Right: SVG Phone Mockup */}
+          {/* Right: 3D Service Hero Visual */}
           <div className="flex justify-center lg:justify-end">
-            <PhoneMockup isAr={isAr} />
+            <HeroVisual isAr={isAr} />
           </div>
         </div>
       </div>
