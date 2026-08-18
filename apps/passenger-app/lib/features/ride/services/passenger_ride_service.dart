@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import '../../../core/api/api_client.dart';
 
 class PassengerRideService {
@@ -46,6 +45,21 @@ class PassengerRideService {
       return response.data;
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<void> cancelRide(String rideId) async {
+    try {
+      await apiClient.dio.post('/passenger/rides/$rideId/cancel');
+    } catch (_) {}
+  }
+
+  Future<List<dynamic>> getRideHistory() async {
+    try {
+      final response = await apiClient.dio.get('/passenger/rides/history');
+      return (response.data as List<dynamic>?) ?? [];
+    } catch (e) {
+      return [];
     }
   }
 }

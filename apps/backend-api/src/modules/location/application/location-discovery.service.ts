@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../../core/redis/redis.service';
+import { PrismaService } from '../../../core/prisma/prisma.service';
 import { PresenceService } from '../../realtime/infrastructure/services/presence.service';
 import { DriverEligibilityService } from '../../drivers/application/services/driver-eligibility.service';
 
@@ -16,6 +17,7 @@ export class LocationDiscoveryService {
 
   constructor(
     private readonly redis: RedisService,
+    private readonly prisma: PrismaService,
     private readonly presence: PresenceService,
     private readonly eligibility: DriverEligibilityService
   ) {}
@@ -26,7 +28,8 @@ export class LocationDiscoveryService {
   async findNearbyDrivers(
     lat: number,
     lng: number,
-    radiusKm: number = this.DEFAULT_RADIUS_KM
+    radiusKm: number = this.DEFAULT_RADIUS_KM,
+    serviceType?: string
   ): Promise<DriverCandidate[]> {
     const redisClient = this.redis.getClient();
 
@@ -56,6 +59,21 @@ export class LocationDiscoveryService {
       const isEligible = await this.eligibility.canReceiveRides(driverId);
       if (!isEligible) continue;
 
+      // Check Vehicle Type Matching with Service Type
+      if (serviceType) {
+        const driver = await this.prisma.driver.findUnique({
+          where: { id: driverId },
+          select: { vehicleInfo: true },
+        });
+        const driverVehicleType = ((driver?.vehicleInfo as any)?.type || 'CAR').toUpperCase();
+        const isMotoRequest = ['MOTORCYCLE', 'MOTORCYCLE_DELIVERY', 'MOTO'].includes(serviceType.toUpperCase());
+        const isMotoDriver = driverVehicleType === 'MOTORCYCLE';
+
+        // Motorcycle requests only go to motorcycle drivers, non-moto requests only go to non-moto drivers
+        if (isMotoRequest && !isMotoDriver) continue;
+        if (!isMotoRequest && isMotoDriver) continue;
+      }
+
       candidates.push({
         driverId,
         distance: parseFloat(distance),
@@ -66,7 +84,7 @@ export class LocationDiscoveryService {
       if (candidates.length >= 10) break;
     }
 
-    this.logger.log(`[Discovery] Found ${candidates.length} qualified drivers near [${lat}, ${lng}]`);
+    this.logger.log(`[Discovery] Found ${candidates.length} qualified drivers near [${lat}, ${lng}] for service ${serviceType || 'ANY'}`);
     
     return candidates;
   }

@@ -57,7 +57,39 @@ class SocketService {
     // ── Inbound: Ride offer from dispatcher ──────────────────────────────
     s.on('ride.offer', (data) => {
       console.log('📢 [Socket] Ride offer received:', data);
-      this.onEvent?.('ride_offer', data);
+      // Normalise: ensure serviceType and parcelInfo are forwarded
+      const enriched = {
+        ...data,
+        serviceType: data.serviceType ?? 'ECONOMY',
+        parcelInfo: data.parcelInfo ?? null,
+      };
+      this.onEvent?.('ride_offer', enriched);
+    });
+
+    // ── Inbound: Passenger Realtime Event Isolation ───────────────────────
+    s.on('ride:statusChanged', (data) => {
+      console.log('📢 [Socket] Passenger ride statusChanged:', data);
+      try {
+        const { usePassengerRideStore } = require('../store/usePassengerRideStore');
+        const store = usePassengerRideStore.getState();
+        if (data?.status) {
+          store.setRideStatus(data.status);
+        }
+        if (data?.driver) {
+          store.setAssignedDriver(data.driver);
+        }
+      } catch (err) {
+        console.warn('[Socket] Failed to process passenger statusChanged:', err);
+      }
+    });
+
+    s.on('driver:location', (data) => {
+      try {
+        const { usePassengerRideStore } = require('../store/usePassengerRideStore');
+        if (data?.lat && data?.lng) {
+          usePassengerRideStore.getState().updateDriverLocation(data.lat, data.lng);
+        }
+      } catch (_) {}
     });
 
     return s;

@@ -23,12 +23,15 @@ import { RideAssignmentService } from './application/services/ride-assignment.se
 import { RidesNegotiationGateway } from './presentation/gateways/rides-negotiation.gateway';
 import { RideGateway } from './presentation/gateways/ride.gateway';
 
+import { IdentityModule } from '../identity/identity.module';
+
 @Module({
   imports: [
     CoreModule, 
     PricingModule, 
     LocationModule,
     FinancialModule,
+    IdentityModule,
     forwardRef(() => DriversModule)
   ],
   controllers: [

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, Ip, Request, Version } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, UseGuards, Ip, Request, Version } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { AuthService } from '../../application/services/auth.service';
 import { RedisThrottleGuard } from '../../../../core/common/guards/redis-throttle.guard';
@@ -27,9 +27,12 @@ export class AuthController {
     @Body('phoneNumber') phoneNumber: string,
     @Body('code') code: string,
     @Body('deviceId') deviceId: string,
-    @Body('role') role: UserRole, 
+    @Body('role') role: UserRole,
+    @Body('fullName') fullName?: string,
+    @Body('email') email?: string,
+    @Body('city') city?: string,
   ) {
-    return this.authService.verifyOtp(phoneNumber, code, deviceId, role);
+    return this.authService.verifyOtp(phoneNumber, code, deviceId, role, fullName, email, city);
   }
 
   /**
@@ -56,5 +59,16 @@ export class AuthController {
   @Version('1')
   async refreshToken(@Body('refreshToken') refreshToken: string) {
     return this.authService.refreshToken(refreshToken);
+  }
+
+  /**
+   * DELETE /api/v1/auth/account
+   * Authenticated endpoint to delete/deactivate user account and revoke sessions.
+   */
+  @Delete('account')
+  @Version('1')
+  @UseGuards(AuthGuard)
+  async deleteAccount(@CurrentUser('userId') userId: string) {
+    return this.authService.deleteAccount(userId);
   }
 }

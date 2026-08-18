@@ -14,6 +14,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { GrowthModule } from './modules/growth/growth.module';
 import { IntegrityModule } from './modules/integrity/integrity.module';
 import { FinancialModule } from './modules/financial/financial.module';
+import { SupportModule } from './modules/support/support.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { MonitoringModule } from './core/monitoring/monitoring.module';
 import { HealthModule } from './core/health/health.module';
@@ -58,6 +59,7 @@ import { GlobalExceptionFilter } from './core/exceptions/global-exception.filter
 
     // Layer 4: Reactions
     NotificationsModule,
+    SupportModule,
 
     // Layer 5: Insights
     AnalyticsModule,

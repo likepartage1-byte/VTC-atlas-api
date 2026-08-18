@@ -40,6 +40,11 @@ export const OffersListOverlay = memo(({
     const distance   = item.distanceKm ? `${item.distanceKm.toFixed(1)} km` : '2.3 km';
     const price      = item.priceMAD ? `${item.priceMAD} MAD` : '75 MAD';
 
+    const st = (item.serviceType ?? '').toUpperCase();
+    const isDelivery = st === 'MOTORCYCLE_DELIVERY';
+    const isMoto = ['MOTORCYCLE', 'MOTO'].includes(st);
+    const serviceLabel = isDelivery ? '📦 توصيل' : isMoto ? '🏍️ دراجة' : null;
+
     return (
       <TouchableOpacity
         style={[
@@ -51,7 +56,13 @@ export const OffersListOverlay = memo(({
       >
         <View style={styles.cardHeader}>
           <Text style={styles.cardPrice}>{price}</Text>
-          <Text style={styles.cardDist}>📍 {distance} away</Text>
+          {serviceLabel ? (
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#FF6B1A', backgroundColor: '#FF6B1A18', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              {serviceLabel}
+            </Text>
+          ) : (
+            <Text style={styles.cardDist}>📍 {distance} away</Text>
+          )}
         </View>
         <View style={styles.cardRoute}>
           <Text style={styles.routeText} numberOfLines={1}>

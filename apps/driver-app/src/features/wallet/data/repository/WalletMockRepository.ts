@@ -13,68 +13,58 @@ import {
 const delay = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 // Module-level persistent state for mock database simulation
-const mockBalanceObj: WalletBalance = { amount: 39.84, currency: 'MAD', pending: 6.24 };
+const mockBalanceObj: WalletBalance = { amount: 135.30, currency: 'MAD', pending: 0.00 };
 
 let mockTransactionsArr: Transaction[] = [
   {
-    id: 'txn-001',
-    type: 'vat',
-    status: 'pending',
-    amount: -1.04,
-    currency: 'MAD',
-    label: 'TVA',
-    description: 'Taxe sur la valeur ajoutée',
-    createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 min ago
-  },
-  {
-    id: 'txn-002',
-    type: 'service_fee',
-    status: 'pending',
-    amount: -5.20,
-    currency: 'MAD',
-    label: 'Paiement de service',
-    description: 'Frais de service Yalla VTC',
-    createdAt: new Date(Date.now() - 30 * 60 * 1000),
-  },
-  {
-    id: 'txn-003',
-    type: 'vat',
-    status: 'completed',
-    amount: -0.62,
-    currency: 'MAD',
-    label: 'TVA',
-    description: 'Ville de Marrakech',
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-  },
-  {
-    id: 'txn-004',
-    type: 'service_fee',
-    status: 'completed',
-    amount: -3.10,
-    currency: 'MAD',
-    label: 'Paiement de service',
-    description: 'Course Ménara → Palmeraie',
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-  },
-  {
-    id: 'txn-005',
+    id: 'txn-101',
     type: 'recharge',
     status: 'completed',
-    amount: 150.00,
+    amount: 100.00,
     currency: 'MAD',
-    label: 'Rechargement',
-    description: 'Visa se terminant par 4242',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    label: 'شحن رصيد',
+    description: 'تعبئة رصيد عبر بطاقة ائتمانية (CMI)',
+    createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 min ago
+    balanceBefore: 35.30,
+    balanceAfter: 135.30,
   },
   {
-    id: 'txn-006',
+    id: 'txn-102',
     type: 'commission',
     status: 'completed',
-    amount: -4.20,
+    amount: -8.50,
     currency: 'MAD',
-    label: 'Commission',
-    description: 'Commission Yalla VTC 10,4%',
-    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000),
+    label: 'خصم عمولة رحلة',
+    description: 'عمولة المنصة لرحلة جليز ← شارع محمد السادس',
+    createdAt: new Date(Date.now() - 45 * 60 * 1000), // 45 min ago
+    rideId: '#1024',
+    balanceBefore: 43.80,
+    balanceAfter: 35.30,
+  },
+  {
+    id: 'txn-103',
+    type: 'commission',
+    status: 'completed',
+    amount: -6.20,
+    currency: 'MAD',
+    label: 'خصم عمولة رحلة',
+    description: 'عمولة المنصة لرحلة المطار ← النخيل',
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hrs ago
+    rideId: '#1025',
+    balanceBefore: 50.00,
+    balanceAfter: 43.80,
+  },
+  {
+    id: 'txn-104',
+    type: 'recharge',
+    status: 'completed',
+    amount: 50.00,
+    currency: 'MAD',
+    label: 'شحن رصيد',
+    description: 'إيداع نقدي عبر الوكالة المعتمدة',
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+    balanceBefore: 0.00,
+    balanceAfter: 50.00,
   },
 ];
 

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="840" height="200">
+  <g transform="translate(10, 0)">
+    <!-- Y Icon -->
+    <path d="M 26 12 C 17.5 12, 10.5 19, 10.5 27.5 C 10.5 38.5, 26 57, 26 57 C 26 57, 41.5 38.5, 41.5 27.5 C 41.5 19, 34.5 12, 26 12 Z" fill="#683EE6" />
+    <circle cx="26" cy="27.5" r="5.5" fill="#0F172A" />
+    <path d="M 74 12 C 65.5 12, 58.5 19, 58.5 27.5 C 58.5 38.5, 74 57, 74 57 C 74 57, 89.5 38.5, 89.5 27.5 C 89.5 19, 82.5 12, 74 12 Z" fill="#683EE6" />
+    <circle cx="74" cy="27.5" r="5.5" fill="#0F172A" />
+    <path d="M 21.5 49 C 21.5 65, 46 72, 46 94" stroke="#683EE6" stroke-width="11" stroke-linecap="round" fill="none" />
+    <path d="M 78.5 49 C 78.5 65, 54 72, 54 94" stroke="#683EE6" stroke-width="11" stroke-linecap="round" fill="none" />
+    <path d="M 21.5 50 C 21.5 64, 46 70, 46 94" stroke="#0F172A" stroke-width="2.5" stroke-dasharray="4,3" stroke-linecap="round" fill="none" />
+    <path d="M 78.5 50 C 78.5 64, 54 70, 54 94" stroke="#0F172A" stroke-width="2.5" stroke-dasharray="4,3" stroke-linecap="round" fill="none" />
+  </g>
+  <!-- Typography ALLA VTC -->
+  <text x="108" y="78" font-family="System, sans-serif" font-size="64" font-weight="900" font-style="italic" fill="#FFFFFF" letter-spacing="3">ALLA <tspan fill="#683EE6">VTC</tspan></text>
+</svg>

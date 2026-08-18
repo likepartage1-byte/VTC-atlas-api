@@ -25,15 +25,17 @@ export interface WalletBalance {
 }
 
 export interface Transaction {
-  id:          string;
-  type:        TransactionType;
-  status:      TransactionStatus;
-  amount:      number;
-  currency:    CurrencyCode;
-  label:       string;
-  description: string;
-  createdAt:   Date;
-  rideId?:     string;
+  id:            string;
+  type:          TransactionType;
+  status:        TransactionStatus;
+  amount:        number;
+  currency:      CurrencyCode;
+  label:         string;
+  description:   string;
+  createdAt:     Date;
+  rideId?:       string;
+  balanceBefore?: number;
+  balanceAfter?:  number;
 }
 
 export interface PendingPayment {

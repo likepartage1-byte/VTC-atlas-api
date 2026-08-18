@@ -40,8 +40,8 @@ export class RideLifecycleService {
       throw new BadRequestException('Unauthorized: You are not the assigned driver.');
     }
 
-    // 3. Fetch Driver Location (v3: Repository Abstraction)
-    const driverLoc = await this.driverLocationRepo.get(driver.id);
+    // 3. Fetch Driver Location (v3: Repository Abstraction with userId fallback)
+    const driverLoc = (await this.driverLocationRepo.get(driver.id)) || (await this.driverLocationRepo.get(userId));
     if (!driverLoc) {
       throw new BadRequestException('Driver location unavailable for verification.');
     }

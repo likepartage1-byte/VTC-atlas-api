@@ -32,6 +32,13 @@ export interface RideOffer {
   paymentMethod?:   string;
   pickupCoords?:    { latitude: number; longitude: number };
   destCoords?:      { latitude: number; longitude: number };
+  serviceType?:     string;
+  parcelInfo?: {
+    type?: string;
+    size?: string;
+    weight?: string;
+    instructions?: string;
+  };
 }
 
 interface RideBottomSheetProps {
@@ -90,7 +97,13 @@ export const RideBottomSheet = memo(({ offer, onAccept, onReject }: RideBottomSh
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.etaText}>{eta} away ({distance})</Text>
-            <Text style={styles.orderLabel}>Ride Proposal</Text>
+            <Text style={styles.orderLabel}>
+              {offer.serviceType === 'MOTORCYCLE_DELIVERY'
+                ? '📦 Motorcycle Delivery Request'
+                : offer.serviceType === 'MOTORCYCLE'
+                ? '🏍️ Motorcycle Ride Request'
+                : 'Ride Proposal'}
+            </Text>
           </View>
           <View style={styles.priceTag}>
             <Text style={styles.priceText}>{selectedOfferPrice} MAD</Text>
@@ -113,6 +126,21 @@ export const RideBottomSheet = memo(({ offer, onAccept, onReject }: RideBottomSh
             </Text>
           </View>
         </View>
+
+        {/* Parcel details for delivery orders */}
+        {offer.serviceType === 'MOTORCYCLE_DELIVERY' && offer.parcelInfo && (
+          <View style={{ backgroundColor: '#FF6B1A12', padding: 10, borderRadius: 8, marginVertical: 6, borderWidth: 1, borderColor: '#FF6B1A40' }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF6B1A', marginBottom: 4 }}>📦 Parcel Information</Text>
+            <Text style={{ fontSize: 12, color: '#334155' }}>
+              Type: {offer.parcelInfo.type || 'Package'} | Size: {offer.parcelInfo.size || 'Medium'} | Weight: {offer.parcelInfo.weight || '2kg'}
+            </Text>
+            {offer.parcelInfo.instructions && (
+              <Text style={{ fontSize: 11, fontStyle: 'italic', color: '#64748B', marginTop: 2 }}>
+                Instructions: {offer.parcelInfo.instructions}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Rich Passenger Profile Card */}
         <View style={styles.profileCard}>

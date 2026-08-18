@@ -20,6 +20,15 @@ export interface RideOrder {
   pickupLng: number;
   dropoffLat: number;
   dropoffLng: number;
+  /** 'ECONOMY' | 'VIP' | 'MOTORCYCLE' | 'MOTORCYCLE_DELIVERY' | 'TAXI' | 'FREIGHT' */
+  serviceType?: string;
+  /** Present only for delivery orders */
+  parcelInfo?: {
+    type?: string;       // e.g. 'document', 'package', 'food'
+    size?: string;       // 'small' | 'medium' | 'large'
+    weight?: string;     // e.g. '2 kg'
+    instructions?: string;
+  };
 }
 
 interface OrdersState {

@@ -7,6 +7,7 @@ allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': set this to true or false
   '@sentry/node-cpu-profiler': set this to true or false
+  '@sentry/profiling-node': set this to true or false
   esbuild: set this to true or false
   msgpackr-extract: true
   prisma: true

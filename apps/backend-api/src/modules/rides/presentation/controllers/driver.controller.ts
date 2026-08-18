@@ -1,17 +1,21 @@
-import { Controller, Post, Patch, Body, UseGuards, Version } from '@nestjs/common';
+import { Controller, Post, Patch, Delete, Body, UseGuards, Version } from '@nestjs/common';
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
 import { Roles } from '../../../identity/presentation/decorators/roles.decorator';
 import { CurrentUser } from '../../../identity/presentation/decorators/current-user.decorator';
 import { RideOrchestrator } from '../../application/orchestration/ride.orchestrator';
+import { AuthService } from '../../../identity/application/services/auth.service';
 import type { LocationPingDto } from '../../../location/application/location.service';
 import { UpdateDriverStatusDto } from '../../presentation/dtos/update-driver-status.dto';
 
 @Controller('driver')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('DRIVER')
+@Roles('DRIVER', 'PASSENGER')
 export class DriverController {
-  constructor(private readonly orchestrator: RideOrchestrator) {}
+  constructor(
+    private readonly orchestrator: RideOrchestrator,
+    private readonly authService: AuthService,
+  ) {}
 
   @Patch('status')
   @Version('1')
@@ -31,5 +35,17 @@ export class DriverController {
   ) {
     await this.orchestrator.updateDriverLocation(driverId, dto);
     return { status: 'location_synced' };
+  }
+
+  @Delete('profile')
+  @Version('1')
+  async deleteProfile(@CurrentUser('userId') userId: string) {
+    return this.authService.deleteAccount(userId);
+  }
+
+  @Delete('account')
+  @Version('1')
+  async deleteAccount(@CurrentUser('userId') userId: string) {
+    return this.authService.deleteAccount(userId);
   }
 }

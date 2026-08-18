@@ -169,6 +169,8 @@ export const DashboardScreen = () => {
           paymentMethod:  'Cash payment',
           pickupCoords:  incoming.pickupLat ? { latitude: incoming.pickupLat, longitude: incoming.pickupLng } : undefined,
           destCoords:    incoming.dropoffLat ? { latitude: incoming.dropoffLat, longitude: incoming.dropoffLng } : undefined,
+          serviceType:   incoming.serviceType,
+          parcelInfo:    incoming.parcelInfo,
         };
         setOffers(prev => [newOffer, ...prev.filter(o => o.rideId !== newOffer.rideId)]);
 
@@ -194,6 +196,8 @@ export const DashboardScreen = () => {
           pickupLng:           incoming.pickupLng           ?? 0,
           dropoffLat:          incoming.dropoffLat          ?? 0,
           dropoffLng:          incoming.dropoffLng          ?? 0,
+          serviceType:         incoming.serviceType         ?? 'ECONOMY',
+          parcelInfo:          incoming.parcelInfo          ?? undefined,
         });
       }
     });

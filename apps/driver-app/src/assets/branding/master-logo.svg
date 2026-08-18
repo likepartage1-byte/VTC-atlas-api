@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="100%" height="100%">
+  <!-- YallaVTC Official Full Brand Logo (Icon + ALLA VTC) -->
+  <g transform="translate(40, 20)">
+    <!-- Master Y-Road Vector Icon -->
+    <g transform="scale(0.72)">
+      <!-- Left Pin -->
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M 148 45 C 105.5 45, 73 77.5, 73 120 C 73 165, 148 230, 148 230 C 148 230, 223 165, 223 120 C 223 77.5, 190.5 45, 148 45 Z M 148 94 A 26 26 0 1 0 148 146 A 26 26 0 1 0 148 94 Z" fill="#683EE6" />
+      <!-- Right Pin -->
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M 352 45 C 309.5 45, 277 77.5, 277 120 C 277 165, 352 230, 352 230 C 352 230, 427 165, 427 120 C 427 77.5, 394.5 45, 352 45 Z M 352 94 A 26 26 0 1 0 352 146 A 26 26 0 1 0 352 94 Z" fill="#683EE6" />
+      <!-- Left Road -->
+      <path d="M 125 210 C 135 285, 205 340, 255 365" stroke="#683EE6" stroke-width="54" stroke-linecap="round" fill="none" />
+      <!-- Right Road -->
+      <path d="M 378 190 C 340 260, 248 320, 235 465" stroke="#683EE6" stroke-width="54" stroke-linecap="round" fill="none" />
+      <!-- Left Dashes -->
+      <path d="M 125 210 C 135 285, 205 340, 255 365" stroke="#FFFFFF" stroke-width="12" stroke-dasharray="20,16" stroke-linecap="round" fill="none" />
+      <!-- Right Dashes -->
+      <path d="M 378 190 C 340 260, 248 320, 235 465" stroke="#FFFFFF" stroke-width="12" stroke-dasharray="20,16" stroke-linecap="round" fill="none" />
+    </g>
+
+    <!-- Brand Typography -->
+    <text x="380" y="270" font-family="System, sans-serif" font-size="210" font-weight="900" font-style="italic" fill="#FFFFFF" letter-spacing="6">ALLA<tspan dx="30" fill="#683EE6" font-weight="800">VTC</tspan></text>
+  </g>
+</svg>

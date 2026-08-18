@@ -2,6 +2,9 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// Enable VisionCamera Frame Processors for Phase 0.5 Native Proof of Life
+project.ext.VisionCamera_enableFrameProcessors = true
+
 react {
     root = file("../../")
     reactNativeDir = file("../../node_modules/react-native")
@@ -22,6 +25,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
     }
     signingConfigs {
         debug {

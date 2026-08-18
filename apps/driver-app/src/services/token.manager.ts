@@ -46,7 +46,7 @@ class TokenManager {
     try {
       const refreshToken = await AsyncStorage.getItem('driver_refresh_token');
       if (!refreshToken) {
-        console.error('[TokenManager] No refresh token — cannot refresh');
+        console.warn('[TokenManager] No refresh token — cannot refresh');
         return null;
       }
 
@@ -64,7 +64,7 @@ class TokenManager {
       return accessToken;
     } catch (err: any) {
       const status = err?.response?.status ?? 'network_error';
-      console.error(`[TokenManager] ❌ Refresh failed (${status}): ${err.message}`);
+      console.warn(`[TokenManager] ⚠️ Refresh failed (${status}): ${err.message}`);
       return null;
     }
   }

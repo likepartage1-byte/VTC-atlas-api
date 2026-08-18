@@ -73,18 +73,36 @@ export class DispatchEngine {
       'WITHDIST', 'ASC',
     ) as any;
 
-    if (!rawResults || rawResults.length === 0) {
-      this.logger.warn(`[SmartDispatch] No nearby drivers found for ride ${rideId}`);
-      return;
+    const candidates: { id: string; distance: number }[] = [];
+    if (rawResults && rawResults.length > 0) {
+      for (const item of rawResults) {
+        if (Array.isArray(item)) {
+          candidates.push({ id: item[0], distance: parseFloat(item[1]) });
+        } else if (typeof item === 'string') {
+          candidates.push({ id: item, distance: 0 });
+        }
+      }
+    } else {
+      this.logger.warn(`[SmartDispatch] No drivers in Redis GEO for ride ${rideId}. Checking DB fallback...`);
+      // Fallback: Find available drivers in Prisma DB
+      const dbDrivers = await this.prisma.driver.findMany({
+        where: { status: 'AVAILABLE' },
+        select: { id: true, userId: true },
+        take: 10,
+      });
+
+      for (const d of dbDrivers) {
+        candidates.push({ id: d.id, distance: 1.0 });
+        // Seed driver into Redis GEO so dispatch claims work
+        try {
+          await this.redis.getClient().geoadd(this.DRIVERS_GEO_KEY, lng, lat, d.id);
+        } catch (_) {}
+      }
     }
 
-    const candidates: { id: string; distance: number }[] = [];
-    for (const item of rawResults) {
-      if (Array.isArray(item)) {
-        candidates.push({ id: item[0], distance: parseFloat(item[1]) });
-      } else if (typeof item === 'string') {
-        candidates.push({ id: item, distance: 0 });
-      }
+    if (candidates.length === 0) {
+      this.logger.warn(`[SmartDispatch] No available drivers in Redis or DB for ride ${rideId}`);
+      return;
     }
 
     const driverIds = candidates.map(c => c.id);

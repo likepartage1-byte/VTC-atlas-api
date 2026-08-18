@@ -8,7 +8,7 @@ import { ProfileService } from '../../application/services/profile.service';
 
 @Controller('driver/profile')
 @UseGuards(AuthGuard, RolesGuard)
-@Roles('DRIVER')
+@Roles('DRIVER', 'PASSENGER')
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 

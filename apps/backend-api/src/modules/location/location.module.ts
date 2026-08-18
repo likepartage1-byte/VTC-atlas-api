@@ -8,9 +8,11 @@ import { ETAService } from './domain/eta/eta.service';
 import { DriverLocationRepository } from './infrastructure/repositories/driver-location.repository';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { DriversModule } from '../drivers/drivers.module';
+import { CoreModule } from '../../core/core.module';
 
 @Module({
   imports: [
+    CoreModule,
     forwardRef(() => RealtimeModule),
     forwardRef(() => DriversModule)
   ],
@@ -26,3 +28,4 @@ import { DriversModule } from '../drivers/drivers.module';
   exports: [LocationService, LocationIngestionService, LocationDiscoveryService, DriverLocationRepository],
 })
 export class LocationModule {}
+

@@ -11,7 +11,7 @@ import * as path from 'path';
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
   private readonly logger = new Logger(LocalStorageProvider.name);
-  private readonly uploadRoot = process.env.UPLOAD_DIR || '/root/atlas-uploads';
+  private readonly uploadRoot = process.env.UPLOAD_DIR || path.resolve(process.cwd(), 'uploads');
 
   constructor() {
     if (!fs.existsSync(this.uploadRoot)) {

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, Platform } from 'react-native';
 import Animated, { FadeInUp, FadeOutDown } from 'react-native-reanimated';
-import { Colors } from '../../theme/colors';
-import { CustomButton } from '../CustomButton';
-import { RideRequest } from '../../store/slices/rideSlice';
+import { Colors } from '../theme/colors';
+import { CustomButton } from './CustomButton';
+import { RideRequest } from '../store/slices/rideSlice';
 
 interface RideRequestPopupProps {
   request: RideRequest;

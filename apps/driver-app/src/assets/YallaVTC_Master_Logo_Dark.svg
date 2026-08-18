@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <!-- Physical LTR Layout: [1. Master Icon] -> [2. ALLA] -> [3. VTC] -->
+  <g transform="translate(40, 20)">
+    <!-- Master Y-Road Vector Icon -->
+    <g transform="scale(0.72)">
+      <g transform="translate(148, 120)">
+        <path d="M 0 -75 C -42.5 -75, -75 -42.5, -75 0 C -75 45, 0 110, 0 110 C 0 110, 75 45, 75 0 C 75 -42.5, 42.5 -75, 0 -75 Z" fill="#683EE6" />
+        <circle cx="0" cy="0" r="26" fill="#0F1117" />
+      </g>
+      <g transform="translate(352, 120)">
+        <path d="M 0 -75 C -42.5 -75, -75 -42.5, -75 0 C -75 45, 0 110, 0 110 C 0 110, 75 45, 75 0 C 75 -42.5, 42.5 -75, 0 -75 Z" fill="#683EE6" />
+        <circle cx="0" cy="0" r="26" fill="#0F1117" />
+      </g>
+      <path d="M 125 210 C 135 285, 205 340, 255 365" stroke="#683EE6" stroke-width="54" stroke-linecap="round" fill="none" />
+      <path d="M 378 190 C 340 260, 248 320, 235 465" stroke="#683EE6" stroke-width="54" stroke-linecap="round" fill="none" />
+      <path d="M 125 210 C 135 285, 205 340, 255 365" stroke="#0F1117" stroke-width="12" stroke-dasharray="20,16" stroke-linecap="round" fill="none" />
+      <path d="M 378 190 C 340 260, 248 320, 235 465" stroke="#0F1117" stroke-width="12" stroke-dasharray="20,16" stroke-linecap="round" fill="none" />
+    </g>
+
+    <!-- Custom Typography: ALLA VTC -->
+    <text x="380" y="270" font-family="System, sans-serif" font-size="210" font-weight="900" font-style="italic" fill="#FFFFFF" letter-spacing="6">ALLA<tspan dx="30" fill="#683EE6" font-weight="800">VTC</tspan></text>
+  </g>
+</svg>

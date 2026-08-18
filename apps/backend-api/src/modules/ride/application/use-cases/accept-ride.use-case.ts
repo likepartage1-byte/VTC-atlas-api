@@ -21,6 +21,36 @@ export class AcceptRideUseCase {
   async execute(rideId: string, driverId: string) {
     this.logger.log(`[WinnerEngine] Driver ${driverId} is attempting to CLAIM ride ${rideId}`);
 
+    // 0. BACKEND SECURITY GUARD: VehicleType Matching
+    const driver = await this.prisma.driver.findFirst({
+      where: { OR: [{ id: driverId }, { userId: driverId }] },
+      select: { vehicleInfo: true },
+    });
+    const ride = await this.prisma.ride.findUnique({
+      where: { id: rideId },
+      select: { serviceType: true, status: true },
+    });
+
+    if (!ride) {
+      throw new ConflictException('RIDE.ERRORS.RIDE_NOT_FOUND');
+    }
+
+    const driverVehicleType = (
+      (driver?.vehicleInfo as any)?.type ||
+      (driver?.vehicleInfo as any)?.vehicle_type ||
+      'CAR'
+    ).toUpperCase();
+    const rideServiceType = (ride.serviceType ?? 'ECONOMY').toUpperCase();
+    const isMotoService = ['MOTORCYCLE', 'MOTORCYCLE_DELIVERY', 'MOTO'].includes(rideServiceType);
+    const isMotoDriver = driverVehicleType === 'MOTORCYCLE';
+
+    if (isMotoService !== isMotoDriver) {
+      this.logger.warn(
+        `[WinnerEngine] 🚫 Blocked: Driver [${driverId}] (${driverVehicleType}) attempted to accept mismatched ride [${rideId}] (${rideServiceType})`
+      );
+      throw new UnauthorizedException('RIDE.ERRORS.VEHICLE_TYPE_MISMATCH');
+    }
+
     // 1. ATOMIC LOCK CHECK (Race Prevention at Redis Layer)
     const lockSecured = await this.lockService.claimRide(rideId, driverId);
     if (!lockSecured) {

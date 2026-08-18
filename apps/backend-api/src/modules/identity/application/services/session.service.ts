@@ -32,4 +32,13 @@ export class SessionService {
   async revokeSession(userId: string, deviceId: string): Promise<void> {
     await this.redis.getClient().del(`session:${userId}:${deviceId}`);
   }
+
+  async revokeAllUserSessions(userId: string): Promise<void> {
+    const redisClient = this.redis.getClient();
+    const keys = await redisClient.keys(`session:${userId}:*`);
+    if (keys && keys.length > 0) {
+      await redisClient.del(...keys);
+    }
+    this.logger.log(`[Session] Revoked all sessions for user ${userId}`);
+  }
 }

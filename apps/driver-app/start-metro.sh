@@ -27,4 +27,4 @@ done
 echo ""
 echo "🚀 Starting Metro Bundler..."
 cd "$(dirname "$0")"
-npx react-native start
+npx react-native start --reset-cache

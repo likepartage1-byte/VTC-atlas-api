@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, I18nManager } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, I18nManager, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, ArrowRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -15,11 +16,12 @@ interface WalletHeaderProps {
 
 /**
  * WalletHeader — navigation.goBack() is self-contained.
- * Optionally accepts custom onBack for multi-step flows.
+ * Automatically handles top status bar insets to align nicely on all devices.
  */
 export const WalletHeader = memo(({ title, onBack }: WalletHeaderProps) => {
   const navigation = useNavigation();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const handlePress = () => {
     if (onBack) {
@@ -29,11 +31,21 @@ export const WalletHeader = memo(({ title, onBack }: WalletHeaderProps) => {
     }
   };
 
+  const topPadding = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 28) : 0
+  );
+
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.surface, borderBottomColor: colors.border },
+        {
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
+          paddingTop: topPadding,
+          height: 56 + topPadding,
+        },
       ]}
     >
       <TouchableOpacity
@@ -62,7 +74,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    height: 56,
     borderBottomWidth: 1,
   },
   backBtn: {
@@ -81,3 +92,5 @@ const styles = StyleSheet.create({
     width: 38,
   },
 });
+
+export default WalletHeader;

@@ -1,25 +1,61 @@
 import {
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayInit,
   OnGatewayConnection,
   SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { WSAuthMiddleware } from '../../../realtime/infrastructure/guards/ws-auth.middleware';
+import { SessionService } from '../../../identity/application/services/session.service';
+import { PrismaService } from '../../../../core/prisma/prisma.service';
 
 @WebSocketGateway({
   namespace: 'rides',
   cors: { origin: '*' },
 })
-export class RideGateway implements OnGatewayConnection {
+export class RideGateway implements OnGatewayInit, OnGatewayConnection {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger(RideGateway.name);
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected to RidesGateway: ${client.id}`);
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly sessionService: SessionService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  afterInit(server: Server) {
+    server.use(WSAuthMiddleware(this.jwtService, this.sessionService, this.logger));
+    this.logger.log('RideGateway initialized with secure handshake.');
+  }
+
+  async handleConnection(client: Socket) {
+    const user = client.data.user;
+    this.logger.log(
+      `[RidesGateway Connect] SocketId: ${client.id} | User: ${user?.userId} | Role: ${user?.role}`
+    );
+    if (!user) return;
+
+    const userRoom = `${user.role.toLowerCase()}:${user.userId}`;
+    client.join(userRoom);
+
+    if (user.role === 'DRIVER') {
+      const driver = await this.prisma.driver.findUnique({
+        where: { userId: user.userId },
+        select: { id: true },
+      });
+      if (driver) {
+        client.join(`driver:${driver.id}`);
+        this.logger.log(
+          `[RidesGateway RoomJoin] Driver ${user.userId} joined rooms: [${userRoom}, driver:${driver.id}]`
+        );
+      }
+    }
   }
 
   @SubscribeMessage('joinRide')
@@ -60,3 +96,4 @@ export class RideGateway implements OnGatewayConnection {
     this.server.to(`ride:${rideId}`).emit('statusChanged', payload);
   }
 }
+
