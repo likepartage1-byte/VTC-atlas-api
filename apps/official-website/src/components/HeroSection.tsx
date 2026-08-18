@@ -36,8 +36,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
       <div
         className={`absolute inset-0 z-0 transition-colors duration-300 ${
           isAr
-            ? 'bg-gradient-to-l from-transparent via-slate-950/85 to-slate-950/95 dark:from-transparent dark:via-slate-950/85 dark:to-slate-950/95 html-light-overlay-rtl'
-            : 'bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-transparent dark:from-slate-950/95 dark:via-slate-950/85 dark:to-transparent html-light-overlay-ltr'
+            ? 'bg-gradient-to-l from-slate-950/98 via-slate-950/85 to-transparent html-light-overlay-rtl'
+            : 'bg-gradient-to-r from-slate-950/98 via-slate-950/85 to-transparent html-light-overlay-ltr'
         }`}
       />
 
