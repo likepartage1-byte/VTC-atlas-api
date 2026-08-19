@@ -32,9 +32,14 @@ export class MailService {
 
   async sendAdminOtp(toEmail: string, code: string): Promise<void> {
     const from = this.configService.get<string>('SMTP_FROM', '"Yalla VTC Security" <no-reply@yallavtc.com>');
+    const isProduction = this.configService.get<string>('NODE_ENV') === 'production';
 
     if (!this.transporter) {
-      this.logger.log(`[SIMULATION] Admin Email OTP ${code} generated for ${toEmail}`);
+      if (isProduction) {
+        this.logger.warn(`[MailService] SMTP credentials missing in production. OTP email for ${toEmail} suppressed for security.`);
+      } else {
+        this.logger.log(`[SIMULATION] Admin Email OTP generated for ${toEmail}: ${code}`);
+      }
       return;
     }
 
@@ -57,8 +62,9 @@ export class MailService {
       this.logger.log(`[MailService] Successfully sent OTP email to ${toEmail}`);
     } catch (err: any) {
       this.logger.error(`[MailService] Failed to send OTP email to ${toEmail}: ${err.message}`);
-      // Fallback log for admin audit log if SMTP fails
-      this.logger.error(`[MAIL FALLBACK CODE] OTP for ${toEmail} is: ${code}`);
+      if (!isProduction) {
+        this.logger.error(`[DEV FALLBACK CODE] OTP for ${toEmail} is: ${code}`);
+      }
     }
   }
 }
