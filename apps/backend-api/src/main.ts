@@ -21,10 +21,10 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
 
   app.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    origin: ['https://admin.yallavtc.com', 'http://localhost:5199', 'http://192.168.100.76:5199', 'http://localhost:5173'],
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-Correlation-ID', 'Accept', 'Origin'],
+    credentials: true,
   });
 
   const config = new DocumentBuilder().setTitle('Atlas VTC API').setVersion('1.0').addBearerAuth().build();
