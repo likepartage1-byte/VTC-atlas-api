@@ -8,4 +8,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://api.yallavtc.com',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 });
