@@ -36,6 +36,35 @@ export class AuthController {
   }
 
   /**
+   * POST /api/v1/auth/admin/email/request
+   * Requests a 6-digit OTP for Admin Email login.
+   * Generic anti-enumeration response returned for security.
+   */
+  @Post('admin/email/request')
+  @UseGuards(RedisThrottleGuard)
+  @Version('1')
+  async requestAdminEmailOtp(
+    @Body('email') email: string,
+    @Ip() ip: string,
+  ) {
+    return this.authService.requestAdminEmailOtp(email, ip);
+  }
+
+  /**
+   * POST /api/v1/auth/admin/email/verify
+   * Verifies the 6-digit Admin Email OTP and issues Admin JWT Access Token.
+   */
+  @Post('admin/email/verify')
+  @Version('1')
+  async verifyAdminEmailOtp(
+    @Body('email') email: string,
+    @Body('code') code: string,
+    @Body('deviceId') deviceId: string,
+  ) {
+    return this.authService.verifyAdminEmailOtp(email, code, deviceId);
+  }
+
+  /**
    * GET /api/v1/auth/me
    * Returns the current authenticated user's profile.
    * Used by the driver app heartbeat to verify session validity.

@@ -7,6 +7,7 @@ import { SessionService } from './session.service';
 import { RateLimiterService } from '../../infrastructure/security/rate-limiter.service';
 import { JwtPayload } from '../../presentation/guards/auth.guard';
 import { NotificationOrchestrator } from '../../../notifications/application/orchestrators/notification.orchestrator';
+import { MailService } from '../../infrastructure/mail/mail.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class AuthService {
     private readonly rateLimiter: RateLimiterService,
     private readonly jwtService: JwtService,
     private readonly notificationOrchestrator: NotificationOrchestrator,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -195,6 +197,86 @@ export class AuthService {
 
     this.logger.log(`[AUTH] Account ${userId} successfully deleted and sessions revoked.`);
     return { message: 'Account deleted successfully.' };
+  }
+
+  /**
+   * ADMIN EMAIL OTP REQUEST
+   * Security: Anti-User-Enumeration generic response.
+   * Only existing ACTIVE accounts with role=ADMIN are sent OTPs.
+   */
+  async requestAdminEmailOtp(rawEmail: string, ipAddress: string): Promise<{ message: string }> {
+    const genericResponse = {
+      message: 'If the provided email belongs to an active administrator, a verification code has been sent.',
+    };
+
+    if (!rawEmail || !rawEmail.trim()) {
+      return genericResponse;
+    }
+
+    const email = rawEmail.trim().toLowerCase();
+
+    // 1. Verify existence of active ADMIN account
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        email,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!adminUser) {
+      this.logger.warn(`[AUTH] Admin Email OTP request attempted for unregistered/non-admin email: ${email}`);
+      return genericResponse;
+    }
+
+    // 2. Abuse check
+    await this.rateLimiter.checkAbuse(email, ipAddress);
+
+    // 3. Generate & Save 6-digit OTP code in Redis (5-min TTL)
+    const code = await this.otpService.generateAndSaveEmailOtp(email);
+
+    // 4. Send via SMTP Mailer
+    await this.mailService.sendAdminOtp(email, code);
+
+    return genericResponse;
+  }
+
+  /**
+   * ADMIN EMAIL OTP VERIFY
+   * Verifies code, burns key from Redis, establishes session, and returns Admin JWT.
+   */
+  async verifyAdminEmailOtp(rawEmail: string, inputCode: string, deviceId: string): Promise<any> {
+    if (!rawEmail || !inputCode) {
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
+
+    const email = rawEmail.trim().toLowerCase();
+
+    // 1. Verify admin account exists & active
+    const adminUser = await this.prisma.user.findFirst({
+      where: {
+        email,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+      },
+    });
+
+    if (!adminUser) {
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
+
+    // 2. Strict Redis Email OTP Verification (Zero Master Bypass Codes)
+    const isValid = await this.otpService.verifyEmailOtp(email, inputCode);
+
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid or expired verification code.');
+    }
+
+    // 3. Session Persistence
+    await this.sessionService.createSession(adminUser.id, deviceId, adminUser.phoneNumber);
+
+    this.logger.log(`[AUTH] Admin ${adminUser.id} successfully authenticated via Email OTP.`);
+    return this.generateTokens(adminUser.id, adminUser.role, deviceId);
   }
 
   private async generateTokens(userId: string, role: string, deviceId: string) {

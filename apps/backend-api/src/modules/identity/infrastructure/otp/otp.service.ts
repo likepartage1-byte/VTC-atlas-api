@@ -38,6 +38,35 @@ export class OtpService {
     return true;
   }
 
+  /**
+   * EMAIL OTP: Generate and store 6-digit code in Redis with 5-minute TTL.
+   */
+  async generateAndSaveEmailOtp(rawEmail: string): Promise<string> {
+    const email = rawEmail.trim().toLowerCase();
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    const redisClient = this.redis.getClient();
+    await redisClient.set(`otp:email:${email}`, code, 'EX', this.OTP_TTL);
+    await redisClient.del(`otp:attempts:email:${email}`);
+
+    this.logger.log(`[OTP] Generated email OTP successfully for ${email}`);
+    return code;
+  }
+
+  async verifyEmailOtp(rawEmail: string, inputCode: string): Promise<boolean> {
+    const email = rawEmail.trim().toLowerCase();
+    const redisClient = this.redis.getClient();
+    const key = `otp:email:${email}`;
+
+    const storedCode = await redisClient.get(key);
+    if (!storedCode) return false;
+
+    if (storedCode !== inputCode) return false;
+
+    await redisClient.del(key); // Burn after single use
+    return true;
+  }
+
   private normalizePhone(phone: string, defaultCountry: CountryCode = 'MA'): string {
     try {
       return parsePhoneNumberWithError(phone, defaultCountry).format('E.164');

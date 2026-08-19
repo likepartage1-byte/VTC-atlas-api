@@ -12,6 +12,8 @@ import { RolesGuard } from './presentation/guards/roles.guard';
 import { AuthController } from './presentation/controllers/auth.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 
+import { MailService } from './infrastructure/mail/mail.service';
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -32,10 +34,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
     SessionService, 
     OtpService, 
     RateLimiterService, 
+    MailService,
     JwtStrategy, 
     AuthGuard, 
     RolesGuard
   ],
-  exports: [AuthService, SessionService, AuthGuard, RolesGuard, JwtModule],
+  exports: [AuthService, SessionService, MailService, AuthGuard, RolesGuard, JwtModule],
 })
 export class IdentityModule {}
