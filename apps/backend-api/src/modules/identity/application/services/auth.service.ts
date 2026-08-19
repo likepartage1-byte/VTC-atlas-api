@@ -140,7 +140,10 @@ export class AuthService {
         throw new UnauthorizedException('Session expired.');
       }
 
-      const user = await this.prisma.user.findUnique({ where: { id: payload.userId } });
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, status: true, role: true },
+      });
       if (!user || user.status === 'SUSPENDED' || user.status === 'INACTIVE') {
         throw new UnauthorizedException('User account has been deleted or deactivated.');
       }
@@ -222,6 +225,13 @@ export class AuthService {
         role: 'ADMIN',
         status: 'ACTIVE',
       },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        phoneNumber: true,
+      },
     });
 
     if (!adminUser) {
@@ -258,6 +268,13 @@ export class AuthService {
         email,
         role: 'ADMIN',
         status: 'ACTIVE',
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        phoneNumber: true,
       },
     });
 
