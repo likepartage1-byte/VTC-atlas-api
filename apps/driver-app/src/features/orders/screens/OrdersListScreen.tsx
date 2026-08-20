@@ -134,9 +134,9 @@ export const OrdersListScreen = () => {
     syncKeepScreenOnNativeSetting(true);
   }, [activeStatus, isMotorcycleMode]);
 
-  // Load sorted mock orders from mockOrdersRepository (Rule #3)
-  const refreshLocalMockOrders = useCallback(() => {
-    const sorted = mockOrdersRepository.getSortedOrders();
+  // Load sorted orders from repository (Rule #3)
+  const refreshLocalMockOrders = useCallback(async () => {
+    const sorted = await mockOrdersRepository.getSortedOrders();
     setMockOrders(sorted);
   }, []);
 
@@ -158,7 +158,7 @@ export const OrdersListScreen = () => {
         const { allowed } = await canDriverAccessOrder();
         if (!allowed) return; // Unapproved drivers do not receive private ride popups
 
-        const { order, priorityWindowSeconds } = mockOrdersRepository.getNearestEligiblePrivateOrder(driverTier);
+        const { order, priorityWindowSeconds } = await mockOrdersRepository.getNearestEligiblePrivateOrder(driverTier);
         if (order) {
           soundService.playNewOrderSound(order.id);
           setIncomingPrivateAlertOrder(order);

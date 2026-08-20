@@ -22,7 +22,7 @@ export interface MockOrder extends RideOrder {
 
 // ─── Centralized Configuration ──────────────────────────────────────────────
 export const MOCK_CONFIG = {
-  USE_MOCK_ORDERS: true,
+  USE_MOCK_ORDERS: false, // Connected to NestJS backend REST endpoints
   MAX_BID_PERCENTAGE: 0.30, // Max +30% price bidding ceiling
   NOTIFICATION_LIFETIME_SECONDS: 10, // Always 10 seconds lifetime for alert notification
   TIER_PRIORITY_WINDOWS: {
@@ -30,6 +30,49 @@ export const MOCK_CONFIG = {
     GOLD: 3,    // 3 seconds private priority
     PREMIER: 5, // 5 seconds private priority
   },
+};
+
+// Helper: Map NestJS backend RideResponseDto to Driver App MockOrder interface
+export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
+  const passengerName = ride.passenger?.fullName || ride.passengerName || 'Passenger';
+  const price = typeof ride.estimatedPrice === 'number'
+    ? ride.estimatedPrice
+    : (parseFloat(ride.estimatedPrice) || parseFloat(ride.actualPrice) || 50);
+
+  return {
+    id: ride.id,
+    passengerName,
+    passengerRating: ride.passenger?.rating || 4.9,
+    passengerAvatar: ride.passenger?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
+    isNewPassenger: false,
+    passengerTripsCount: ride.passenger?.tripsCount || 12,
+    isVerified: true,
+    expiresAt: ride.createdAt ? new Date(ride.createdAt).getTime() + 60_000 : Date.now() + 60_000,
+    distanceToPickup: '1.2 km',
+    pickupEta: '4 min',
+    tripDistance: '5.8 km',
+    tripDuration: '14 min',
+    offeredPrice: price,
+    pickupAddress: ride.pickupAddress || 'Pickup Location',
+    dropoffAddress: ride.dropoffAddress || 'Destination',
+    pickupLat: ride.pickupLat || 31.6295,
+    pickupLng: ride.pickupLng || -7.9811,
+    dropoffLat: ride.dropoffLat || 31.6148,
+    dropoffLng: ride.dropoffLng || -7.9912,
+    isFairPrice: true,
+    distanceKm: 1.2,
+    status: ride.status === 'REQUESTED' || ride.status === 'DISPATCHED' ? 'PENDING' : 'ACCEPTED',
+    passengerDetail: {
+      name: passengerName,
+      avatar: ride.passenger?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&auto=format&fit=crop&q=80',
+      rating: 4.9,
+      tripsCount: 12,
+      isVerified: true,
+      isNewPassenger: false,
+      memberSince: '2024',
+      paymentMethod: 'Cash payment',
+    },
+  };
 };
 
 // Helper: parse distance string to numeric km for exact sorting
@@ -323,21 +366,35 @@ let localMockOrdersState = [...MARRAKECH_MOCK_ORDERS];
 
 export const mockOrdersRepository = {
   /**
-   * Get all active mock orders sorted ascending by distance to driver (Rule #3)
+   * Get active orders (uses real backend API if USE_MOCK_ORDERS is false)
    */
-  getSortedOrders: (): MockOrder[] => {
+  getSortedOrders: async (): Promise<MockOrder[]> => {
+    if (!MOCK_CONFIG.USE_MOCK_ORDERS) {
+      try {
+        const { api } = await import('../../../api/axios.instance');
+        const response = await api.get('/driver/rides/active');
+        if (response.data) {
+          const mapped = Array.isArray(response.data)
+            ? response.data.map(mapBackendRideToMockOrder)
+            : [mapBackendRideToMockOrder(response.data)];
+          return mapped;
+        }
+      } catch (err: any) {
+        console.warn('⚠️ [DriverApp] Active ride REST fetch failed or empty, falling back safely:', err.message);
+      }
+    }
+
     return [...localMockOrdersState]
       .filter(o => o.status === 'PENDING')
       .sort((a, b) => parseDist(a.distanceToPickup) - parseDist(b.distanceToPickup));
   },
 
   /**
-   * Get the nearest eligible private order (distanceToDriver <= 5.0 km) (Rule #4)
+   * Get the nearest eligible private order (distanceToDriver <= 5.0 km)
    */
-  getNearestEligiblePrivateOrder: (tier: DriverTier = 'GOLD'): { order: MockOrder | null; priorityWindowSeconds: number } => {
-    const active = mockOrdersRepository.getSortedOrders();
+  getNearestEligiblePrivateOrder: async (tier: DriverTier = 'GOLD'): Promise<{ order: MockOrder | null; priorityWindowSeconds: number }> => {
+    const active = await mockOrdersRepository.getSortedOrders();
     const eligible = active.find(o => parseDist(o.distanceToPickup) <= 5.0);
-
     const priorityWindowSeconds = MOCK_CONFIG.TIER_PRIORITY_WINDOWS[tier] || 0;
 
     return {
@@ -347,15 +404,77 @@ export const mockOrdersRepository = {
   },
 
   /**
-   * Update order status to ACCEPTED (Rule #11)
+   * Accept order via REST endpoint POST /driver/rides/:id/accept
    */
-  acceptOrder: (orderId: string): boolean => {
+  acceptOrder: async (orderId: string): Promise<boolean> => {
+    if (!MOCK_CONFIG.USE_MOCK_ORDERS) {
+      try {
+        const { api } = await import('../../../api/axios.instance');
+        await api.post(`/driver/rides/${orderId}/accept`);
+        return true;
+      } catch (err: any) {
+        console.error('❌ [DriverApp] Accept ride API failed:', err?.response?.data || err.message);
+        return false;
+      }
+    }
+
     const target = localMockOrdersState.find(o => o.id === orderId);
     if (target) {
       target.status = 'ACCEPTED';
       return true;
     }
     return false;
+  },
+
+  /**
+   * Report arrival via REST endpoint POST /driver/rides/:id/arrive
+   */
+  reportArrival: async (orderId: string): Promise<{ success: boolean; message?: string }> => {
+    if (!MOCK_CONFIG.USE_MOCK_ORDERS) {
+      try {
+        const { api } = await import('../../../api/axios.instance');
+        const res = await api.post(`/driver/rides/${orderId}/arrive`);
+        return { success: true, message: res.data?.message };
+      } catch (err: any) {
+        console.error('❌ [DriverApp] Report arrival API failed:', err?.response?.data || err.message);
+        return { success: false, message: err?.response?.data?.message || err.message };
+      }
+    }
+    return { success: true };
+  },
+
+  /**
+   * Start trip with OTP via REST endpoint POST /driver/rides/:id/start
+   */
+  startTrip: async (orderId: string, otp: string): Promise<{ success: boolean; message?: string }> => {
+    if (!MOCK_CONFIG.USE_MOCK_ORDERS) {
+      try {
+        const { api } = await import('../../../api/axios.instance');
+        const res = await api.post(`/driver/rides/${orderId}/start`, { otp });
+        return { success: true, message: res.data?.message };
+      } catch (err: any) {
+        console.error('❌ [DriverApp] Start trip API failed:', err?.response?.data || err.message);
+        return { success: false, message: err?.response?.data?.message || err.message };
+      }
+    }
+    return { success: true };
+  },
+
+  /**
+   * Complete trip via REST endpoint POST /driver/rides/:id/complete
+   */
+  completeTrip: async (orderId: string): Promise<{ success: boolean; message?: string }> => {
+    if (!MOCK_CONFIG.USE_MOCK_ORDERS) {
+      try {
+        const { api } = await import('../../../api/axios.instance');
+        const res = await api.post(`/driver/rides/${orderId}/complete`);
+        return { success: true, message: res.data?.message };
+      } catch (err: any) {
+        console.error('❌ [DriverApp] Complete trip API failed:', err?.response?.data || err.message);
+        return { success: false, message: err?.response?.data?.message || err.message };
+      }
+    }
+    return { success: true };
   },
 
   /**
