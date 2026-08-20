@@ -96,13 +96,16 @@ export const PhoneAuth: React.FC<PhoneAuthProps> = ({
         role,
       });
 
-      const { accessToken } = response.data;
+      const { accessToken, refreshToken } = response.data;
       if (!accessToken) {
         throw new Error(t.invalidOtpError);
       }
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('admin_token', accessToken);
       localStorage.setItem('token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
 
       setStep('success');
     } catch (error: any) {
