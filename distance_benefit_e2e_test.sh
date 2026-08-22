@@ -93,17 +93,41 @@ npm --prefix apps/admin-dashboard run build 2>&1 | tail -5
 ok "Admin Dashboard built"
 
 # ─────────────────────────────────────────────────────────────
-section "[STEP 6] Deploy Admin Dashboard dist"
+section "[STEP 6] Deploy Admin Dashboard dist to Nginx web roots"
 # ─────────────────────────────────────────────────────────────
 
 ADMIN_DIST="$PROJECT_DIR/apps/admin-dashboard/dist"
-ADMIN_WWW="/var/www/atlas-admin"
 
 if [ -d "$ADMIN_DIST" ]; then
-  mkdir -p "$ADMIN_WWW"
-  rm -rf "$ADMIN_WWW/dist"
-  cp -r "$ADMIN_DIST" "$ADMIN_WWW/dist"
-  ok "Admin Dashboard dist deployed to $ADMIN_WWW/dist"
+  # Auto-detect web root from Nginx config for admin.yallavtc.com
+  NGINX_ROOT=""
+  if [ -d "/etc/nginx" ]; then
+    NGINX_ROOT=$(grep -rn "admin.yallavtc.com" /etc/nginx/ 2>/dev/null | grep -i "root" | head -n 1 | awk '{print $2}' | tr -d ';')
+  fi
+
+  POSSIBLE_TARGETS=(
+    "$NGINX_ROOT"
+    "/var/www/admin.yallavtc.com"
+    "/var/www/admin.yallavtc.com/html"
+    "/var/www/admin.yallavtc.com/dist"
+    "/var/www/atlas-admin"
+    "/var/www/atlas-admin/dist"
+    "/var/www/html"
+  )
+
+  for TARGET in "${POSSIBLE_TARGETS[@]}"; do
+    if [ -n "$TARGET" ]; then
+      info "Deploying to web root: $TARGET"
+      mkdir -p "$TARGET"
+      cp -r "$ADMIN_DIST"/* "$TARGET/" 2>/dev/null || true
+      ok "Files copied to $TARGET"
+    fi
+  done
+
+  # Reload Nginx if present
+  if command -v nginx >/dev/null 2>&1; then
+    nginx -t 2>/dev/null && systemctl reload nginx 2>/dev/null && ok "Nginx reloaded successfully" || warn "Nginx reload skipped"
+  fi
 else
   warn "Admin dist not found at $ADMIN_DIST — skipping web deploy"
 fi
