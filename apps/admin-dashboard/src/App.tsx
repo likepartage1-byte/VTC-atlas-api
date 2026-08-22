@@ -84,26 +84,29 @@ export default function App() {
              activeTab === 'operations' ? (lang === 'AR' ? 'العمليات المباشرة والخريطة' : 'Live Operations Map') :
              activeTab === 'audit' ? (lang === 'AR' ? 'مركز التدقيق والأمان' : 'Forensic Audit Center') :
              activeTab === 'financial' ? (lang === 'AR' ? 'الماليات والنسب المالية' : 'Financial Control') :
-             activeTab === 'users' ? (lang === 'AR' ? 'إدارة حسابات الركاب' : 'Passengers Management') :
+             (activeTab === 'users' || activeTab === 'passengers') ? (lang === 'AR' ? 'إدارة الركاب' : 'Passengers Management') :
              activeTab === 'drivers' ? (lang === 'AR' ? 'إدارة السائقين والأسطول' : 'Drivers Management') :
              activeTab === 'verification' ? (lang === 'AR' ? 'قائمة توثيق السائقين (KYC)' : 'Verification Queue (KYC)') :
              activeTab === 'rides' ? (lang === 'AR' ? 'مركز متابعة الرحلات' : 'Rides Center') :
              activeTab === 'support' ? (lang === 'AR' ? 'مركز الدعم والذكاء الاصطناعي' : 'Support & AI Center') :
              activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات المنصة' : 'System Settings') :
-             activeTab === 'website' ? (lang === 'AR' ? 'محرر الصفحة الرئيسية' : 'Homepage Builder') : (lang === 'AR' ? 'مراقبة النزاهة والاحتيال' : 'Integrity Monitor')}
+             activeTab === 'website' ? (lang === 'AR' ? 'محرر الصفحة الرئيسية' : 'Homepage Builder') :
+             activeTab === 'builder' ? (lang === 'AR' ? 'محرر مركز التحكم' : 'Control Center Builder') :
+             (lang === 'AR' ? 'مراقبة النزاهة والاحتيال' : 'Integrity Monitor')}
           </h2>
           <p className="text-gray-500 dark:text-slate-400 text-xs md:text-sm mt-1">
             {activeTab === 'dashboard' ? (lang === 'AR' ? 'نظرة عامة على مؤشرات المنصة والرحلات النشطة والأرباح.' : 'Real-time platform metrics and operational insights.') : 
              activeTab === 'operations' ? (lang === 'AR' ? 'تتبع فوري لمواقع السائقين وحالة التغطية الجغرافية.' : 'Real-time tracking of drivers and active trip statuses.') :
              activeTab === 'audit' ? (lang === 'AR' ? 'سجل عمليات النظير وتتبع الإجراءات الإدارية.' : 'Centralized ledger of system actions and administrative changes.') :
              activeTab === 'financial' ? (lang === 'AR' ? 'متابعة نسبة عمولة المنصة وحسابات سحب الأرباح.' : 'Manage global commission rates and financial policies.') : 
-             activeTab === 'users' ? (lang === 'AR' ? 'إدارة حسابات الركاب والملفات الشخصية.' : 'User profiles, passenger records, and account management.') :
+             (activeTab === 'users' || activeTab === 'passengers') ? (lang === 'AR' ? 'إدارة حسابات الركاب والملفات الشخصية وتفعيل خصم المسافة.' : 'User profiles, passenger records, and distance benefit management.') :
              activeTab === 'drivers' ? (lang === 'AR' ? 'فحص السائقين وتحديد حالة العمل وتراخيص المركبة.' : 'Driver verification, document review, and fleet management.') :
              activeTab === 'verification' ? (lang === 'AR' ? 'جدول توثيق ملفات السائقين الجدد ومراجعة الوثائق.' : 'Review queue for pending driver verification and documents.') :
              activeTab === 'rides' ? (lang === 'AR' ? 'متابعة الرحلات الجارية والمكتملة وإلغاء الرحلات.' : 'Live ride dispatch overview and ride lifecycle management.') :
              activeTab === 'support' ? (lang === 'AR' ? 'مركز الدعم المباشر ومحادثات المساعد الذكي.' : 'Helpdesk tickets and AI support conversations.') :
              activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات النظام العامة وتغيير عمولة المنصة.' : 'Global configuration and system preferences.') :
              activeTab === 'website' ? (lang === 'AR' ? 'تخصيص وتحرير الصفحة الرئيسية بصرياً مع معاينة مباشرة.' : 'Visually customize the homepage with live preview and draft/publish workflow.') :
+             activeTab === 'builder' ? (lang === 'AR' ? 'بناء وتعديل مكونات لوحة التحكم بصرياً.' : 'Visually customize control center elements.') :
              (lang === 'AR' ? 'تنبيهات كشف الاحتيال وتغيير الموقع الجغرافي المشبوه.' : 'Real-time fraud detection and security events feed.')}
           </p>
         </div>
