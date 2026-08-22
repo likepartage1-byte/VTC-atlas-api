@@ -103,6 +103,21 @@ class RideBloc extends Bloc<RideEvent, RideState> {
           ? (ride['estimatedPrice'] as num).toDouble()
           : targetOfferedPrice;
 
+      // ── Distance Benefit: Passenger Display Distance ──────────────────────────
+      // If the Backend froze a passengerDisplayDistanceMeters on the ride (set at
+      // ride-creation time from the active Bulk Distance Benefit configuration),
+      // use it as the displayed km for the passenger.
+      //
+      // This ONLY changes the displayed number — GPS route, ETA, and fare are
+      // completely unchanged. Old rides are never affected (they are not modified).
+      final dynamic rawPassengerMeters = ride['passengerDisplayDistanceMeters'];
+      if (rawPassengerMeters != null) {
+        final double passengerMeters = (rawPassengerMeters as num).toDouble();
+        if (passengerMeters > 0) {
+          distKm = passengerMeters / 1000.0;
+        }
+      }
+
       emit(RideSearchingDriver(
         rideId: rideId,
         routePoints: currentRoutePoints,
@@ -141,6 +156,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       ));
     }
   }
+
 
   Future<void> _onCancelRide(
     CancelRideEvent event,

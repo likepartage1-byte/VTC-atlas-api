@@ -63,6 +63,76 @@ export class SystemSettingsService {
   }
 
   /**
+   * BULK DISTANCE BENEFIT CONFIGURATION (ALL PASSENGERS)
+   */
+  async getBulkDistanceBenefitConfig(): Promise<{
+    enabled: boolean;
+    driverBenefitMeters: number;
+    passengerCreditMeters: number;
+    scope: string;
+    reason: string;
+    activatedBy?: string;
+    activatedAt?: string;
+  }> {
+    const config = await this.getSetting<any>('global_bulk_distance_benefit');
+    return config || {
+      enabled: false,
+      driverBenefitMeters: 1000,
+      passengerCreditMeters: 1000,
+      scope: 'ALL_PASSENGERS',
+      reason: '',
+      activatedBy: undefined,
+      activatedAt: undefined,
+    };
+  }
+
+  async updateBulkDistanceBenefitConfig(
+    dto: {
+      enabled: boolean;
+      driverBenefitMeters?: number;
+      passengerCreditMeters?: number;
+      reason: string;
+    },
+    actorId: string = 'Control Panel User'
+  ): Promise<any> {
+    if (dto.enabled && (!dto.reason || dto.reason.trim().length < 3)) {
+      throw new BadRequestException('Reason is mandatory and must be at least 3 characters.');
+    }
+
+    const driverBenefit = Math.max(0, Math.min(1000, Number(dto.driverBenefitMeters || 0)));
+    const passengerCredit = Math.max(0, Math.min(1000, Number(dto.passengerCreditMeters || 0)));
+
+    const newConfig = {
+      enabled: dto.enabled,
+      driverBenefitMeters: driverBenefit,
+      passengerCreditMeters: passengerCredit,
+      scope: 'ALL_PASSENGERS',
+      reason: dto.reason.trim(),
+      activatedBy: actorId,
+      activatedAt: new Date().toISOString(),
+    };
+
+    await this.updateSetting('global_bulk_distance_benefit', newConfig, actorId);
+
+    // Immutable Audit Log
+    const passengerCount = await this.prisma.user.count({ where: { role: 'PASSENGER' } });
+
+    await this.auditService.log({
+      actorId,
+      action: dto.enabled ? 'BULK_DISTANCE_BENEFIT_ENABLED' : 'BULK_DISTANCE_BENEFIT_DISABLED',
+      entityType: 'GlobalRule',
+      entityId: 'global_bulk_distance_benefit',
+      oldValue: await this.getBulkDistanceBenefitConfig(),
+      newValue: {
+        ...newConfig,
+        affectedPassengersCount: passengerCount,
+      },
+    });
+
+    return { ...newConfig, affectedPassengersCount: passengerCount };
+  }
+
+  /**
    * UI/UX THEME CONTROL: Design Tokens
    */
   async getThemeConfig() {

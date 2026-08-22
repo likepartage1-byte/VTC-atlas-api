@@ -5,17 +5,51 @@ import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 
+import { SystemSettingsService } from '../../application/services/system-settings.service';
+
 export class GrantDistanceBenefitDto {
   driverBenefitMeters?: number;   // 0 to 1000 meters
   passengerCreditMeters?: number; // 0 to 1000 meters
   reason: string;                 // Mandatory
 }
 
+export class BulkDistanceBenefitDto {
+  enabled: boolean;
+  driverBenefitMeters?: number;
+  passengerCreditMeters?: number;
+  reason: string;
+}
+
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard)
 @Roles(UserRole.ADMIN)
 export class AdminPassengerDistanceBenefitController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly systemSettingsService: SystemSettingsService,
+  ) {}
+
+  /**
+   * Get Bulk Distance Benefit global configuration
+   */
+  @Get('passengers/bulk-distance-benefit/config')
+  async getBulkConfig() {
+    const config = await this.systemSettingsService.getBulkDistanceBenefitConfig();
+    const count = await this.prisma.user.count({ where: { role: UserRole.PASSENGER } });
+    return { ...config, affectedPassengersCount: count };
+  }
+
+  /**
+   * Enable / Disable or update Bulk Distance Benefit for all passengers
+   */
+  @Post('passengers/bulk-distance-benefit')
+  async updateBulkConfig(
+    @Body() dto: BulkDistanceBenefitDto,
+    @Req() req: any
+  ) {
+    const actorId = req?.user?.id || 'Control Panel User';
+    return await this.systemSettingsService.updateBulkDistanceBenefitConfig(dto, actorId);
+  }
 
   /**
    * Get all registered passengers

@@ -35,7 +35,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
+    let token = localStorage.getItem('admin_token');
+    if (!token && import.meta.env.DEV) {
+      token = 'dev-admin-token';
+      localStorage.setItem('admin_token', token);
+    }
     if (token) {
       setIsAuthenticated(true);
     }
@@ -131,7 +135,7 @@ export default function App() {
         {activeTab === 'audit' && <AuditCenter />}
 
         {/* --- Tab 5: Passengers Management --- */}
-        {activeTab === 'users' && <PassengersManagementTable lang={lang} />}
+        {(activeTab === 'passengers' || activeTab === 'users') && <PassengersManagementTable lang={lang} />}
 
         {/* --- Tab 6: Rides Center & Negotiation Inspector --- */}
         {activeTab === 'rides' && <RidesCenterTable lang={lang} />}

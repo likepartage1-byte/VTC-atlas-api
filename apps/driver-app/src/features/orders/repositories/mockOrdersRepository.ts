@@ -39,6 +39,27 @@ export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
     ? ride.estimatedPrice
     : (parseFloat(ride.estimatedPrice) || parseFloat(ride.actualPrice) || 50);
 
+  // ── Distance Benefit Display Integration ────────────────────────────────────
+  // Priority: driverDisplayDistanceMeters (from RideResponseDto) →
+  //           distanceKm convenience field →
+  //           tripDistance (already formatted from WebSocket gateway) →
+  //           legacy fallback
+  // IMPORTANT: estimatedPrice / offeredPrice / fare are NOT modified here.
+  let tripDistance: string;
+  if (typeof ride.driverDisplayDistanceMeters === 'number' && ride.driverDisplayDistanceMeters > 0) {
+    // Real display distance from Backend (set at ride creation, frozen on the ride record)
+    tripDistance = `${(ride.driverDisplayDistanceMeters / 1000).toFixed(1)} km`;
+  } else if (typeof ride.distanceKm === 'number' && ride.distanceKm > 0) {
+    // Convenience km field from RideResponseDto
+    tripDistance = `${ride.distanceKm.toFixed(1)} km`;
+  } else if (typeof ride.tripDistance === 'string' && ride.tripDistance.length > 0) {
+    // Pre-formatted string already sent by WebSocket gateway (driverDisplayDistanceMeters path)
+    tripDistance = ride.tripDistance;
+  } else {
+    // Last-resort fallback only when Backend provides no distance data
+    tripDistance = '-- km';
+  }
+
   return {
     id: ride.id,
     passengerName,
@@ -50,7 +71,7 @@ export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
     expiresAt: ride.createdAt ? new Date(ride.createdAt).getTime() + 60_000 : Date.now() + 60_000,
     distanceToPickup: '1.2 km',
     pickupEta: '4 min',
-    tripDistance: '5.8 km',
+    tripDistance,
     tripDuration: '14 min',
     offeredPrice: price,
     pickupAddress: ride.pickupAddress || 'Pickup Location',
@@ -60,7 +81,9 @@ export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
     dropoffLat: ride.dropoffLat || 31.6148,
     dropoffLng: ride.dropoffLng || -7.9912,
     isFairPrice: true,
-    distanceKm: 1.2,
+    distanceKm: ride.driverDisplayDistanceMeters
+      ? ride.driverDisplayDistanceMeters / 1000
+      : (ride.distanceKm || 1.2),
     status: ride.status === 'REQUESTED' || ride.status === 'DISPATCHED' ? 'PENDING' : 'ACCEPTED',
     passengerDetail: {
       name: passengerName,
@@ -74,6 +97,7 @@ export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
     },
   };
 };
+
 
 // Helper: parse distance string to numeric km for exact sorting
 const parseDist = (distStr: string): number => {

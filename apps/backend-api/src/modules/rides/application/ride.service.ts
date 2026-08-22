@@ -8,6 +8,7 @@ import { RideStatus } from '../domain/state-machine/ride-transitions';
 import { RequestRideDto } from '../presentation/dtos/request-ride.dto';
 import { RideCreatedEvent } from '../domain/events/ride-created.event';
 import { RideResponseDto } from '../presentation/dtos/ride-response.dto';
+import { calculateHaversineDistance } from '../../../core/common/geo.utils';
 
 @Injectable()
 export class RideService extends BaseApplicationService {
@@ -97,6 +98,32 @@ export class RideService extends BaseApplicationService {
   }
 
   async requestRide(userId: string, dto: RequestRideDto): Promise<RideResponseDto> {
+    // 1. Calculate physical road distance
+    const distMeters = Math.round(
+      calculateHaversineDistance(dto.pickupLat, dto.pickupLng, dto.dropoffLat, dto.dropoffLng)
+    );
+
+    // 2. Read active global Bulk Distance Benefit setting
+    let driverBenefit = 0;
+    let passengerCredit = 0;
+    let benefitReason: string | undefined = undefined;
+    let benefitGrantedBy: string | undefined = undefined;
+
+    const globalSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'global_bulk_distance_benefit' },
+    }).catch(() => null);
+
+    if (globalSetting && globalSetting.value && (globalSetting.value as any).enabled === true) {
+      const cfg = globalSetting.value as any;
+      driverBenefit = Math.max(0, Math.min(1000, Number(cfg.driverBenefitMeters || 0)));
+      passengerCredit = Math.max(0, Math.min(1000, Number(cfg.passengerCreditMeters || 0)));
+      benefitReason = cfg.reason || 'Global Bulk Distance Benefit';
+      benefitGrantedBy = cfg.activatedBy || 'GLOBAL_BULK_RULE';
+    }
+
+    const driverDisplayMeters = Math.max(0, distMeters - driverBenefit);
+    const passengerDisplayMeters = distMeters + passengerCredit;
+
     const ride = await this.prisma.ride.create({
       data: {
         passengerId: userId,
@@ -109,6 +136,14 @@ export class RideService extends BaseApplicationService {
         dropoffAddress: dto.dropoffAddress,
         serviceType: dto.serviceType,
         estimatedPrice: (dto as any).estimatedPrice ?? (dto as any).offeredPrice ?? 25.0,
+        originalDistanceMeters: distMeters,
+        driverBenefitMeters: driverBenefit,
+        passengerCreditMeters: passengerCredit,
+        driverDisplayDistanceMeters: driverDisplayMeters,
+        passengerDisplayDistanceMeters: passengerDisplayMeters,
+        benefitReason: benefitReason,
+        benefitGrantedBy: benefitGrantedBy,
+        benefitGrantedAt: (driverBenefit > 0 || passengerCredit > 0) ? new Date() : undefined,
       },
     });
 
@@ -250,6 +285,28 @@ export class RideService extends BaseApplicationService {
     const driverUser = ride.driver?.user;
     const vehicleInfo = ride.driver?.vehicleInfo || { make: 'Dacia', model: 'Logan', plate: 'Marrakech 44-A-12345' };
 
+    // ── Distance Benefit Display Values ─────────────────────────────────────────
+    // Display-only: GPS route, ETA, and pricing are NOT affected.
+    const originalDistanceMeters: number | undefined = ride.originalDistanceMeters != null
+      ? Number(ride.originalDistanceMeters)
+      : undefined;
+    const driverDisplayDistanceMeters: number | undefined = ride.driverDisplayDistanceMeters != null
+      ? Number(ride.driverDisplayDistanceMeters)
+      : originalDistanceMeters;
+    const passengerDisplayDistanceMeters: number | undefined = ride.passengerDisplayDistanceMeters != null
+      ? Number(ride.passengerDisplayDistanceMeters)
+      : originalDistanceMeters;
+    const driverBenefitMeters: number | undefined = ride.driverBenefitMeters != null
+      ? Number(ride.driverBenefitMeters)
+      : undefined;
+    const passengerCreditMeters: number | undefined = ride.passengerCreditMeters != null
+      ? Number(ride.passengerCreditMeters)
+      : undefined;
+    // Convenience field: driver-visible distance in km (for Driver App / legacy consumers)
+    const distanceKm: number | undefined = driverDisplayDistanceMeters != null
+      ? Math.round(driverDisplayDistanceMeters) / 1000
+      : undefined;
+
     return {
       id: ride.id,
       status: ride.status,
@@ -267,6 +324,13 @@ export class RideService extends BaseApplicationService {
       estimatedPrice: Number(ride.estimatedPrice),
       verificationCode: ride.status === 'ARRIVED' ? ride.otpCode : undefined,
       createdAt: ride.requestedAt,
+      // ── Distance Benefit Display Fields ─────────────────────────────────────
+      originalDistanceMeters,
+      driverDisplayDistanceMeters,
+      passengerDisplayDistanceMeters,
+      driverBenefitMeters,
+      passengerCreditMeters,
+      distanceKm,
     } as any;
   }
 }
