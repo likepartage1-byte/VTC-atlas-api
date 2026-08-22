@@ -3,10 +3,10 @@
 @theme {
   --color-primary: #2563EB;
   --color-primary-dark: #1E40AF;
-  --color-bg-main: #F8FAFC;
+  --color-bg-main: #FFFFFF;
   --color-bg-card: #FFFFFF;
-  --color-text-main: #0F172A;
-  --color-text-muted: #64748B;
+  --color-text-main: #000000;
+  --color-text-muted: #475569;
 }
 
 [data-theme='dark'] {

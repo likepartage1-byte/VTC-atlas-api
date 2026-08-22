@@ -40,7 +40,7 @@ export const ControlCenterShell: React.FC<ControlCenterShellProps> = ({
   }, [isRTL, currentLang, isDark]);
 
   return (
-    <div className={`min-h-screen flex bg-bg-main text-text-main transition-colors ${isDark ? 'dark bg-[#080C14]' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex transition-colors ${isDark ? 'dark bg-[#080C14] text-white' : 'bg-white text-gray-900'}`}>
       {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
