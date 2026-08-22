@@ -113,12 +113,17 @@ export class RideService extends BaseApplicationService {
       where: { key: 'global_bulk_distance_benefit' },
     }).catch(() => null);
 
-    if (globalSetting && globalSetting.value && (globalSetting.value as any).enabled === true) {
-      const cfg = globalSetting.value as any;
-      driverBenefit = Math.max(0, Math.min(1000, Number(cfg.driverBenefitMeters || 0)));
-      passengerCredit = Math.max(0, Math.min(1000, Number(cfg.passengerCreditMeters || 0)));
-      benefitReason = cfg.reason || 'Global Bulk Distance Benefit';
-      benefitGrantedBy = cfg.activatedBy || 'GLOBAL_BULK_RULE';
+    if (globalSetting && globalSetting.value) {
+      let cfg = globalSetting.value as any;
+      if (typeof cfg === 'string') {
+        try { cfg = JSON.parse(cfg); } catch (e) {}
+      }
+      if (cfg && (cfg.enabled === true || cfg.enabled === 'true')) {
+        driverBenefit = Math.max(0, Math.min(1000, Number(cfg.driverBenefitMeters || 0)));
+        passengerCredit = Math.max(0, Math.min(1000, Number(cfg.passengerCreditMeters || 0)));
+        benefitReason = cfg.reason || 'Global Bulk Distance Benefit';
+        benefitGrantedBy = cfg.activatedBy || 'GLOBAL_BULK_RULE';
+      }
     }
 
     const driverDisplayMeters = Math.max(0, distMeters - driverBenefit);

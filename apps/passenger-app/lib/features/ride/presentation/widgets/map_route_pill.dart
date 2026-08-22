@@ -211,7 +211,14 @@ class _MapRoutePillState extends State<MapRoutePill>
                 // Distance chip
                 _Chip(
                   icon: Icons.straighten_rounded,
-                  label: '${widget.distanceKm.toStringAsFixed(1)} km',
+                  label: () {
+                    final km = widget.distanceKm;
+                    final str3 = km.toStringAsFixed(3);
+                    final formatted = str3.endsWith('000') || str3.endsWith('00')
+                        ? km.toStringAsFixed(1)
+                        : (str3.endsWith('0') ? km.toStringAsFixed(2) : str3);
+                    return '$formatted km';
+                  }(),
                 ),
 
                 const SizedBox(width: 6),

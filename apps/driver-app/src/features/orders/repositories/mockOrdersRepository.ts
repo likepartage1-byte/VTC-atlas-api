@@ -47,11 +47,15 @@ export const mapBackendRideToMockOrder = (ride: any): MockOrder => {
   // IMPORTANT: estimatedPrice / offeredPrice / fare are NOT modified here.
   let tripDistance: string;
   if (typeof ride.driverDisplayDistanceMeters === 'number' && ride.driverDisplayDistanceMeters > 0) {
-    // Real display distance from Backend (set at ride creation, frozen on the ride record)
-    tripDistance = `${(ride.driverDisplayDistanceMeters / 1000).toFixed(1)} km`;
+    const km = ride.driverDisplayDistanceMeters / 1000;
+    const str3 = km.toFixed(3);
+    const formattedKm = str3.endsWith('000') || str3.endsWith('00') ? km.toFixed(1) : (str3.endsWith('0') ? km.toFixed(2) : str3);
+    tripDistance = `${formattedKm} km`;
   } else if (typeof ride.distanceKm === 'number' && ride.distanceKm > 0) {
-    // Convenience km field from RideResponseDto
-    tripDistance = `${ride.distanceKm.toFixed(1)} km`;
+    const km = ride.distanceKm;
+    const str3 = km.toFixed(3);
+    const formattedKm = str3.endsWith('000') || str3.endsWith('00') ? km.toFixed(1) : (str3.endsWith('0') ? km.toFixed(2) : str3);
+    tripDistance = `${formattedKm} km`;
   } else if (typeof ride.tripDistance === 'string' && ride.tripDistance.length > 0) {
     // Pre-formatted string already sent by WebSocket gateway (driverDisplayDistanceMeters path)
     tripDistance = ride.tripDistance;
