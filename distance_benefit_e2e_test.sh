@@ -309,6 +309,13 @@ console.log('\n' + (pass1 && pass2 && pass3 && pass4 && pass5 ?
 section "[STEP 12] Verify SystemSetting table exists"
 # ─────────────────────────────────────────────────────────────
 
+# Load DATABASE_URL from .env file for Prisma inline node tests
+if [ -f "$PROJECT_DIR/apps/backend-api/.env" ]; then
+  export $(grep -v '^#' "$PROJECT_DIR/apps/backend-api/.env" | xargs) 2>/dev/null || true
+elif [ -f "$PROJECT_DIR/.env" ]; then
+  export $(grep -v '^#' "$PROJECT_DIR/.env" | xargs) 2>/dev/null || true
+fi
+
 info "Checking if SystemSetting table exists and is accessible..."
 cd "$PROJECT_DIR/apps/backend-api"
 node -e "
