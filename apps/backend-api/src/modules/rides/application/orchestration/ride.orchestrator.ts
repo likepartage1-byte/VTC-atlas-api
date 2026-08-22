@@ -35,16 +35,20 @@ export class RideOrchestrator {
   async requestRide(passengerId: string, dto: RequestRideDto): Promise<RideResponseDto> {
     this.logger.log(`Orchestrating new ride request for passenger: ${passengerId}`);
     
-    // 1. Calculate Estimate via shared geo utility
+    // 1. Determine final price (offeredPrice takes priority over calculated distance estimate)
     const distanceMeters = calculateHaversineDistance(dto.pickupLat, dto.pickupLng, dto.dropoffLat, dto.dropoffLng);
     const distanceKm = metersToKm(distanceMeters);
     const pricing = this.pricingService.calculateEstimate(distanceKm);
 
+    const finalPrice = (dto.offeredPrice && dto.offeredPrice > 0)
+      ? dto.offeredPrice
+      : pricing.total;
+
     try {
-      // 2. Create Ride with enforced estimate
+      // 2. Create Ride with single authoritative price decision
       const ride = await this.rideService.requestRide(passengerId, {
         ...dto,
-        estimatedPrice: pricing.total,
+        estimatedPrice: finalPrice,
       } as any);
       
       await this.trace.capture(ride.id, {

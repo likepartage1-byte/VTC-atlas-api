@@ -518,9 +518,10 @@ class _HomePageState extends State<HomePage> {
                     destAddress: _destAddress,
                     onTapWhereTo: () => _openSmartSearchModal(context),
                     onRequestRide: (serviceId) {
-                      // serviceId is available for backend when ready.
-                      // RideBloc.RequestRideEvent is unchanged.
                       if (_destLocation != null) {
+                        final currentPrice = (state is RideDestinationSelected)
+                            ? (state as RideDestinationSelected).estimatedPrice
+                            : null;
                         context.read<RideBloc>().add(
                               RequestRideEvent(
                                 pickupLat: activePickup.latitude,
@@ -529,6 +530,8 @@ class _HomePageState extends State<HomePage> {
                                 dropoffLat: _destLocation!.latitude,
                                 dropoffLng: _destLocation!.longitude,
                                 dropoffAddress: _destAddress,
+                                serviceType: serviceId,
+                                offeredPrice: currentPrice,
                               ),
                             );
                       }

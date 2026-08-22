@@ -29,6 +29,7 @@ class RequestRideEvent extends RideEvent {
   final double dropoffLng;
   final String dropoffAddress;
   final String serviceType;
+  final double? offeredPrice;
 
   RequestRideEvent({
     required this.pickupLat,
@@ -38,6 +39,7 @@ class RequestRideEvent extends RideEvent {
     required this.dropoffLng,
     required this.dropoffAddress,
     this.serviceType = 'ECONOMY',
+    this.offeredPrice,
   });
 }
 

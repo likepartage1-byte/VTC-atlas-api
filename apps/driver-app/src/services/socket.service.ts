@@ -2,11 +2,16 @@ import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { tokenManager } from './token.manager';
 
-const SOCKET_URL = 'http://187.124.34.118';
+const SOCKET_URL = 'https://api.yallavtc.com';
 
 // ─── Event Contract (Backend SocketGateway) ───────────────────────────────
-// Emits to backend:   driver.location_update  driver.presence
-// Receives from backend: ride.offer
+// Default namespace "/":
+//   Emits to backend:      driver.location_update  driver.presence
+//   Receives from backend: ride.offer
+//
+// Rides namespace "/rides":  (P1.3)
+//   Emits to backend:      joinRide
+//   Receives from backend: statusChanged
 // ─────────────────────────────────────────────────────────────────────────
 
 class SocketService {
@@ -15,6 +20,11 @@ class SocketService {
 
   // Store event callback so we can reattach on reconnect
   private onEvent: ((event: string, data: any) => void) | undefined;
+
+  // ── /rides namespace ──────────────────────────────────────────────────────
+  private ridesSocket: Socket | null = null;
+  private activeRideId: string | null = null;
+  private onRideStatusChanged: ((data: any) => void) | undefined;
 
   /** Build and wire a new socket instance with a fresh token */
   private buildSocket(token: string): Socket {
@@ -183,6 +193,138 @@ class SocketService {
     this.socket?.disconnect();
     this.socket = null;
     this.status = 'disconnected';
+
+    // Also disconnect /rides namespace when the service shuts down
+    this.disconnectRidesNamespace();
+  }
+
+  // ── /rides Namespace (P1.3) ──────────────────────────────────────────────
+
+  /**
+   * Build a socket for the /rides namespace using the same token
+   * and the same refresh strategy as the default "/" socket.
+   */
+  private buildRidesSocket(token: string): Socket {
+    const s = io(`${SOCKET_URL}/rides`, {
+      auth: { token },
+      transports: ['websocket'],
+      reconnection: false, // Manual reconnect to always use latest token
+    });
+
+    s.on('connect', () => {
+      console.log('✅ [Rides] /rides socket connected:', s.id);
+      // Re-join the active ride room after (re)connect
+      if (this.activeRideId) {
+        this.emitJoinRide(this.activeRideId);
+      }
+    });
+
+    s.on('disconnect', (reason) => {
+      console.log('❌ [Rides] /rides socket disconnected:', reason);
+      if (reason !== 'io client disconnect') {
+        this.scheduleRidesReconnect();
+      }
+    });
+
+    s.on('connect_error', async (err) => {
+      console.warn('[Rides] Connection error:', err.message);
+      if (err.message === 'Unauthorized') {
+        await this.refreshAndReconnectRides();
+      } else {
+        this.scheduleRidesReconnect();
+      }
+    });
+
+    // ── Inbound: Ride status changes from backend ────────────────────────
+    s.on('statusChanged', (data) => {
+      console.log('📡 [Rides] statusChanged received:', data);
+      this.onRideStatusChanged?.(data);
+    });
+
+    return s;
+  }
+
+  /**
+   * Connect to the /rides namespace.
+   * Call this once after the driver logs in.
+   * The onStatusChanged callback receives every statusChanged event
+   * for the ride room the driver has joined.
+   */
+  async connectRidesNamespace(onStatusChanged?: (data: any) => void) {
+    if (this.ridesSocket?.connected) return;
+
+    this.onRideStatusChanged = onStatusChanged;
+
+    const token = await AsyncStorage.getItem('driver_access_token');
+    if (!token) {
+      console.warn('[Rides] connectRidesNamespace: no access token');
+      return;
+    }
+
+    this.ridesSocket = this.buildRidesSocket(token);
+  }
+
+  /**
+   * Emit joinRide to the /rides namespace.
+   * Called by DashboardScreen (P1.4) after acceptRide() succeeds.
+   */
+  joinRideRoom(rideId: string) {
+    this.activeRideId = rideId;
+    if (!this.ridesSocket?.connected) {
+      console.warn('[Rides] joinRideRoom called but /rides socket is not connected');
+      return;
+    }
+    this.emitJoinRide(rideId);
+  }
+
+  /** Internal — emits joinRide and logs */
+  private emitJoinRide(rideId: string) {
+    console.log(`📤 [Rides] Emitting joinRide for ride ${rideId}`);
+    this.ridesSocket?.emit('joinRide', rideId);
+  }
+
+  isRidesConnected(): boolean {
+    return this.ridesSocket?.connected ?? false;
+  }
+
+  /** Disconnect /rides namespace only — does not affect the default "/" socket */
+  disconnectRidesNamespace() {
+    this.ridesSocket?.removeAllListeners();
+    this.ridesSocket?.disconnect();
+    this.ridesSocket = null;
+    this.activeRideId = null;
+  }
+
+  /** Reconnect /rides after a network blip */
+  private ridesReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private scheduleRidesReconnect(delayMs = 4000) {
+    if (this.ridesReconnectTimer) return;
+    console.log(`[Rides] Reconnecting in ${delayMs / 1000}s…`);
+    this.ridesReconnectTimer = setTimeout(async () => {
+      this.ridesReconnectTimer = null;
+      if (this.ridesSocket?.connected) return;
+      const token = await AsyncStorage.getItem('driver_access_token');
+      if (!token) return;
+      this.ridesSocket?.removeAllListeners();
+      this.ridesSocket?.disconnect();
+      this.ridesSocket = this.buildRidesSocket(token);
+    }, delayMs);
+  }
+
+  /** On Unauthorized on /rides: refresh via TokenManager then reconnect /rides */
+  private async refreshAndReconnectRides() {
+    console.log('[Rides] Token expired — refreshing via TokenManager…');
+    const newToken = await tokenManager.refresh();
+
+    if (!newToken) {
+      console.error('[Rides] Token refresh failed — /rides socket disconnected');
+      return;
+    }
+
+    console.log('[Rides] Token refreshed — reconnecting /rides…');
+    this.ridesSocket?.removeAllListeners();
+    this.ridesSocket?.disconnect();
+    this.ridesSocket = this.buildRidesSocket(newToken);
   }
 }
 

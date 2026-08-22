@@ -64,10 +64,20 @@ class RideBloc extends Bloc<RideEvent, RideState> {
   ) async {
     _isCancelled = false;
 
-    // Retain route points from previous state if available
+    // Retain route points and price context from previous state if available
     List<YallaLatLng> currentRoutePoints = const [];
+    double? targetOfferedPrice = event.offeredPrice;
+    double? distKm;
+    int? durMin;
+
     if (state is RideDestinationSelected) {
-      currentRoutePoints = (state as RideDestinationSelected).routePoints;
+      final prev = state as RideDestinationSelected;
+      currentRoutePoints = prev.routePoints;
+      distKm = prev.distanceKm;
+      durMin = prev.durationMin;
+      if (targetOfferedPrice == null || targetOfferedPrice <= 0) {
+        targetOfferedPrice = prev.estimatedPrice;
+      }
     }
 
     emit(RideRequestInProgress());
@@ -81,6 +91,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
         dropoffLng: event.dropoffLng,
         dropoffAddress: event.dropoffAddress,
         serviceType: event.serviceType,
+        offeredPrice: targetOfferedPrice,
       );
 
       if (_isCancelled) return;
@@ -88,9 +99,16 @@ class RideBloc extends Bloc<RideEvent, RideState> {
       final rideId = ride['id'] ?? ride['_id'] ?? 'ride_${DateTime.now().millisecondsSinceEpoch}';
       _activeRideId = rideId;
 
+      final confirmedPrice = (ride['estimatedPrice'] != null)
+          ? (ride['estimatedPrice'] as num).toDouble()
+          : targetOfferedPrice;
+
       emit(RideSearchingDriver(
         rideId: rideId,
         routePoints: currentRoutePoints,
+        offeredPrice: confirmedPrice,
+        distanceKm: distKm,
+        durationMin: durMin,
       ));
 
       _trackingService.connect();
@@ -188,7 +206,7 @@ class RideBloc extends Bloc<RideEvent, RideState> {
     final data = event.data ?? {};
     final rideId = data['rideId'] ?? data['id'] ?? _activeRideId ?? 'ride_active';
 
-    if (status == 'ACCEPTED') {
+    if (status == 'DRIVER_ACCEPTED') {
       emit(RideDriverAccepted(
         rideId: rideId,
         driverName: data['driverName'] ?? 'Karim Alami',

@@ -75,8 +75,9 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
       pickupLat: ride.pickupLat,
       pickupLng: ride.pickupLng,
       dropoffLat: ride.dropoffLat,
-      dropoffLng: ride.dropoffLng,
-      tripDistance: estimates?.distanceText || 'N/A',
+      tripDistance: (ride as any)?.driverDisplayDistanceMeters
+        ? `${((ride as any).driverDisplayDistanceMeters / 1000).toFixed(2)} km`
+        : (estimates?.distanceText || 'N/A'),
       tripDuration: estimates?.durationText || 'N/A',
       polyline: estimates?.polyline || '',
       expiresAt: Date.now() + 30000, // 30s countdown

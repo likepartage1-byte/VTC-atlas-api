@@ -3,11 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { navigateToLogin } from '../navigation/navigationRef';
 import { tokenManager } from '../services/token.manager';
 
-// Local Development Server (with adb reverse tcp:3000 tcp:3000)
-export const BASE_URL = 'http://localhost:3000/api/v1';
-
-// Production Hostinger Server IP (Uncomment when VPS is active)
-// export const BASE_URL = 'http://187.124.34.118/api/v1';
+// Production Domain Server (HTTPS)
+export const BASE_URL = 'https://api.yallavtc.com/api/v1';
 
 /**
  * Primary API client.
@@ -56,28 +53,28 @@ api.interceptors.response.use(
     if (status === 401 && !isAuthRoute && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      // Delegate to TokenManager (mutex prevents double-refresh with socket)
-      const newAccessToken = await tokenManager.refresh();
-
-      if (!newAccessToken) {
-        console.warn(
-          `⚠️ [Auth] Refresh failed — clearing session and redirecting to Login`
-        );
-        await clearSessionAndLogout();
-        return Promise.reject(error);
-      }
-
-      // Retry the original request with the new token
-      originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
       try {
-        return await axios(originalRequest);
-      } catch (retryError: any) {
-        console.error(
-          `❌ [Auth] Retry failed after refresh\n` +
-          `    → ${originalRequest.method?.toUpperCase()} ${originalRequest.url}\n` +
-          `    → Status: ${retryError?.response?.status ?? 'network error'}`
+        // Delegate to TokenManager (mutex prevents double-refresh with socket)
+        const newAccessToken = await tokenManager.refresh();
+
+        if (newAccessToken) {
+          // Retry the original request with the new token
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return await axios(originalRequest);
+        } else {
+          // Server explicitly returned 401/403 on /auth/refresh -> session is revoked
+          console.warn(
+            `⚠️ [Auth] Refresh token revoked by server — clearing session and redirecting to Login`
+          );
+          await clearSessionAndLogout();
+          return Promise.reject(error);
+        }
+      } catch (refreshError: any) {
+        // Network error / timeout during token refresh -> DO NOT log out! Preserve session
+        console.warn(
+          `⚠️ [Auth] Refresh encountered network glitch (${refreshError.message}) — preserving local session`
         );
-        throw retryError;
+        return Promise.reject(error);
       }
     }
 

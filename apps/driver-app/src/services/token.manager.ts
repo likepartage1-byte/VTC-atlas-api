@@ -8,7 +8,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const BASE_URL = 'http://187.124.34.118/api/v1';
+const BASE_URL = 'https://api.yallavtc.com/api/v1';
 
 class TokenManager {
   /** In-flight refresh promise — null when no refresh is in progress */
@@ -23,7 +23,7 @@ class TokenManager {
    * Refresh the access token.
    * Uses a mutex: if a refresh is already in progress, the caller joins
    * that same promise instead of issuing a second /auth/refresh request.
-   * Returns the new access token, or null if refresh failed.
+   * Returns the new access token, or null if refresh failed due to revoked token.
    */
   async refresh(): Promise<string | null> {
     if (this.refreshPromise) {
@@ -54,18 +54,27 @@ class TokenManager {
       const res = await axios.post(
         `${BASE_URL}/auth/refresh`,
         { refreshToken },
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
       );
 
       const { accessToken, refreshToken: newRefreshToken } = res.data;
-      await AsyncStorage.setItem('driver_access_token', accessToken);
-      await AsyncStorage.setItem('driver_refresh_token', newRefreshToken);
+      if (accessToken) {
+        await AsyncStorage.setItem('driver_access_token', accessToken);
+      }
+      if (newRefreshToken) {
+        await AsyncStorage.setItem('driver_refresh_token', newRefreshToken);
+      }
       console.log('[TokenManager] ✅ Tokens updated');
       return accessToken;
     } catch (err: any) {
-      const status = err?.response?.status ?? 'network_error';
-      console.warn(`[TokenManager] ⚠️ Refresh failed (${status}): ${err.message}`);
-      return null;
+      const status = err?.response?.status;
+      console.warn(`[TokenManager] ⚠️ Refresh failed (status: ${status ?? 'network_error'}): ${err.message}`);
+      // Only return null if server explicitly confirms the refresh token is invalid / revoked (401 or 403)
+      if (status === 401 || status === 403) {
+        return null;
+      }
+      // Network errors, timeouts, 5xx: throw error so session is NOT wiped
+      throw err;
     }
   }
 

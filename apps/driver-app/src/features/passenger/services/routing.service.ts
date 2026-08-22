@@ -30,7 +30,26 @@ export const routingService = {
         const durationSeconds = route.duration || 0;
 
         const distanceKm = Math.max(1, Math.round((distanceMeters / 1000) * 10) / 10);
-        const durationMins = Math.max(2, Math.round(durationSeconds / 60));
+        const osrmDurationMins = Math.max(2, Math.round(durationSeconds / 60));
+
+        // Realistic Urban Driving Traffic Model for Moroccan Cities (Marrakech)
+        let baseMinutes = 0;
+        if (distanceKm < 4) {
+          // Short trips (< 4 km): Avg speed ~21 km/h + 1.0 min signals/startup
+          baseMinutes = (distanceKm / 21) * 60 + 1.0;
+        } else if (distanceKm <= 10) {
+          // Medium trips (4 - 10 km): Avg speed ~30 km/h + 1.0 min roundabouts
+          // e.g. 7.0 km -> (7 / 30) * 60 + 1.0 = 15 mins (Google Maps benchmark)
+          baseMinutes = (distanceKm / 30) * 60 + 1.0;
+        } else {
+          // Long trips (> 10 km): Avg arterial speed ~35 km/h + 2.0 min major junctions
+          // e.g. 15.0 km -> (15 / 35) * 60 + 2.0 = 27.7 -> 28 mins
+          baseMinutes = (distanceKm / 35) * 60 + 2.0;
+        }
+
+        const urbanDurationMins = Math.ceil(baseMinutes);
+        // Ensure ETA is never lower than OSRM raw duration
+        const durationMins = Math.max(osrmDurationMins, urbanDurationMins);
 
         const coords = (route.geometry?.coordinates || []).map((pt: [number, number]) => ({
           longitude: pt[0],

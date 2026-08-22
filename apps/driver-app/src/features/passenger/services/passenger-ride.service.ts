@@ -18,10 +18,14 @@ export interface CreateRidePayload {
 export const passengerRideService = {
   createRide: async (payload: CreateRidePayload) => {
     const response = await api.post('/passenger/rides', {
-      pickupLocation: payload.pickup,
-      destinationLocation: payload.destination,
+      pickupLat: payload.pickup.lat,
+      pickupLng: payload.pickup.lng,
+      pickupAddress: payload.pickup.address || 'Pickup Location',
+      dropoffLat: payload.destination.lat,
+      dropoffLng: payload.destination.lng,
+      dropoffAddress: payload.destination.address || 'Destination Location',
       serviceType: payload.serviceType,
-      estimatedPrice: payload.estimatedFareMAD,
+      offeredPrice: payload.estimatedFareMAD,
     });
     return response.data;
   },

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -20,6 +21,10 @@ class RealtimeTrackingService {
     if (_socket != null && _socket!.connected) return;
 
     final token = await storage.read(key: 'jwt_token');
+    await _connectWithToken(token);
+  }
+
+  Future<void> _connectWithToken(String? token) async {
     final targetUrl = "$socketHost/rides";
 
     _socket = io.io(targetUrl, <String, dynamic>{
@@ -43,7 +48,59 @@ class RealtimeTrackingService {
       }
     });
 
+    _socket!.on('connect_error', (err) async {
+      final errStr = err?.toString() ?? '';
+      final isAuthError = errStr.contains('Unauthorized') ||
+          errStr.contains('401') ||
+          errStr.contains('jwt') ||
+          errStr.contains('token');
+
+      if (!isAuthError) return;
+
+      final newToken = await _refreshToken();
+      if (newToken == null) return;
+
+      _socket?.off('connect_error');
+      _socket?.disconnect();
+      _socket = null;
+      await _connectWithToken(newToken);
+    });
+
     _socket!.connect();
+  }
+
+  Future<String?> _refreshToken() async {
+    final refreshToken = await storage.read(key: 'refresh_token');
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    try {
+      final baseUrl = dotenv.env['API_BASE_URL'] ?? "http://187.124.34.118/api/v1";
+      final plainDio = Dio(BaseOptions(
+        baseUrl: baseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ));
+      final response = await plainDio.post(
+        '/auth/refresh',
+        data: {'refreshToken': refreshToken},
+      );
+      final newToken = response.data['accessToken'] ?? response.data['token'];
+      if (newToken is String) {
+        await storage.write(key: 'jwt_token', value: newToken);
+        return newToken;
+      }
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      // Only delete tokens if the server explicitly confirms the session is invalid (401 or 403)
+      if (status == 401 || status == 403) {
+        await storage.delete(key: 'jwt_token');
+        await storage.delete(key: 'refresh_token');
+      }
+      // Network errors, timeouts, 5xx: DO NOT delete tokens
+    } catch (_) {
+      // Non-Dio exception: DO NOT delete tokens
+    }
+    return null;
   }
 
   void joinRideRoom(String rideId) {

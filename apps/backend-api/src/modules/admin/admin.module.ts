@@ -8,6 +8,9 @@ import { AdminIntegrityController } from './presentation/controllers/admin-integ
 import { AdminAuditController } from './presentation/controllers/admin-audit.controller';
 import { AdminOperationsController } from './presentation/controllers/admin-operations.controller';
 import { AdminVerificationController } from './presentation/controllers/admin-verification.controller';
+import { AdminHomepageController } from './presentation/controllers/admin-homepage.controller';
+import { PublicHomepageController } from '../homepage/public-homepage.controller';
+import { AdminPassengerDistanceBenefitController } from './presentation/controllers/admin-passenger-distance-benefit.controller';
 
 @Global()
 @Module({
@@ -18,7 +21,10 @@ import { AdminVerificationController } from './presentation/controllers/admin-ve
     AdminIntegrityController,
     AdminAuditController,
     AdminOperationsController,
-    AdminVerificationController
+    AdminVerificationController,
+    AdminHomepageController,
+    PublicHomepageController,
+    AdminPassengerDistanceBenefitController,
   ],
   providers: [SystemSettingsService],
   exports: [SystemSettingsService],

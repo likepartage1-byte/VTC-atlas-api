@@ -186,6 +186,39 @@ export const SettingsCenterForm: React.FC<{ lang?: string }> = ({ lang = 'AR' })
         </form>
       </div>
 
+      {/* Homepage Builder & Visual Customization Card */}
+      <div className="bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/50 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+              <Sliders size={20} />
+            </div>
+            <div>
+              <h4 className="font-black text-sm text-gray-900 dark:text-white">
+                {isAr ? 'محرر ومخصص الصفحة الرئيسية (Homepage Builder)' : 'Homepage Visual Builder Integration'}
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-slate-400">
+                {isAr ? 'إدارة الهوية البصرية، المسودات والنشر المباشر لموقع Yalla VTC الرسمي' : 'Manage official landing site visual themes, draft configs, and live publishing.'}
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full border border-emerald-200 dark:border-emerald-800">
+            {isAr ? 'متصل بالداتابيز' : 'Database Active'}
+          </span>
+        </div>
+
+        <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 rounded-2xl border border-purple-100 dark:border-purple-900/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-xs font-bold text-gray-900 dark:text-white">
+              {isAr ? 'تحرير وتخصيص محتوى الموقع البصري' : 'Visual Homepage Customization'}
+            </span>
+            <p className="text-xs text-gray-500 dark:text-slate-400">
+              {isAr ? 'استخدم محرر الصفحة الرئيسية من السايدبار للتعديل على العناوين، الصور، الألوان ومسودات النشر.' : 'Use the Homepage Builder tab from the sidebar to edit titles, colors, images, and publish live configs.'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Raw Configuration Dump Card (Strict Zero Fake Data) */}
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-3 border-b border-gray-100 dark:border-slate-800 pb-3">

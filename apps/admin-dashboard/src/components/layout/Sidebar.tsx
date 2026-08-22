@@ -13,7 +13,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Navigation
+  Navigation,
+  Globe,
+  LayoutTemplate
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -47,10 +49,12 @@ const getSidebarTranslations = (lang: string) => {
     integrity: isAr ? 'مركز التدقيق والاحتيال' : isFr ? 'Audit & Fraude' : isEs ? 'Auditoría y Fraude' : 'Integrity Audit',
     securityAlerts: isAr ? 'تنبيهات الأمان' : isFr ? 'Alerte Sécurité' : isEs ? 'Alertas de Seguridad' : 'Security Alerts',
     settings: isAr ? 'إعدادات المنصة' : isFr ? 'Paramètres' : isEs ? 'Configuración' : 'Settings',
+    website: isAr ? 'الموقع الرسمي' : isFr ? 'Site Web' : isEs ? 'Sitio Web' : 'Website',
+    builder: isAr ? 'محرر لوحة القيادة' : isFr ? 'Éditeur de tableau de bord' : isEs ? 'Editor de panel' : 'Control Center Builder',
   };
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({
+export const Sidebar: React.FC<SidebarProps> = React.memo(({
   activeTab,
   onSelectTab,
   isCollapsed,
@@ -82,6 +86,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'financial', label: t.financials, icon: Wallet, badge: null },
         { id: 'support', label: t.support, icon: Headphones, badge: null },
+      ],
+    },
+    {
+      title: t.website,
+      items: [
+        { id: 'website', label: lang === 'AR' ? 'محرر الصفحة الرئيسية' : 'Homepage Builder', icon: Globe, badge: 'NEW' },
+        { id: 'builder', label: t.builder, icon: LayoutTemplate, badge: 'BETA' },
       ],
     },
     {
@@ -206,4 +217,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
     </aside>
   );
-};
+});

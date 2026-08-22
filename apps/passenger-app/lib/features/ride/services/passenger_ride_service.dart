@@ -13,6 +13,7 @@ class PassengerRideService {
     required double dropoffLng,
     required String dropoffAddress,
     String serviceType = 'ECONOMY',
+    double? offeredPrice,
   }) async {
     try {
       final response = await apiClient.dio.post('/passenger/rides', data: {
@@ -23,6 +24,7 @@ class PassengerRideService {
         'dropoffLng': dropoffLng,
         'dropoffAddress': dropoffAddress,
         'serviceType': serviceType,
+        if (offeredPrice != null && offeredPrice > 0) 'offeredPrice': offeredPrice,
       });
       return response.data;
     } catch (e) {

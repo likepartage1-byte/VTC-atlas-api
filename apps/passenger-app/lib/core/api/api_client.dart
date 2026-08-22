@@ -32,11 +32,22 @@ class ApiClient {
         },
         onError: (DioException e, handler) async {
           if (e.response?.statusCode == 401) {
+            // If the 401 itself came from /auth/refresh, the session is revoked
+            if (e.requestOptions.path.contains('/auth/refresh')) {
+              await storage.delete(key: 'jwt_token');
+              await storage.delete(key: 'refresh_token');
+              return handler.next(e);
+            }
+
             // Attempt token refresh once if refresh_token is available
             final refreshToken = await storage.read(key: 'refresh_token');
             if (refreshToken != null && refreshToken.isNotEmpty) {
               try {
-                final refreshResponse = await Dio(BaseOptions(baseUrl: baseUrl)).post(
+                final refreshResponse = await Dio(BaseOptions(
+                  baseUrl: baseUrl,
+                  connectTimeout: const Duration(seconds: 10),
+                  receiveTimeout: const Duration(seconds: 10),
+                )).post(
                   '/auth/refresh',
                   data: {'refreshToken': refreshToken},
                 );
@@ -47,9 +58,16 @@ class ApiClient {
                   final cloneReq = await dio.fetch(e.requestOptions);
                   return handler.resolve(cloneReq);
                 }
+              } on DioException catch (refreshErr) {
+                final status = refreshErr.response?.statusCode;
+                // Only delete tokens if the server explicitly confirms the session is invalid (401 or 403)
+                if (status == 401 || status == 403) {
+                  await storage.delete(key: 'jwt_token');
+                  await storage.delete(key: 'refresh_token');
+                }
+                // Network errors, timeouts, 5xx: DO NOT delete tokens
               } catch (_) {
-                await storage.delete(key: 'jwt_token');
-                await storage.delete(key: 'refresh_token');
+                // Non-Dio exception: DO NOT delete tokens
               }
             }
           }

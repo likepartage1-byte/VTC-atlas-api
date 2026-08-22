@@ -245,6 +245,16 @@ model Ride {
   ledgerRecord    RideLedger?
   negotiations    Negotiation[]
 
+  // Distance & Presentation Layer (Distance Credit / Benefit)
+  originalDistanceMeters          Int?     // Real physical road distance (e.g. 10000 = 10.00 km)
+  driverBenefitMeters             Int?     @default(0) // Driver distance reduction (e.g. 1000 = 1.00 km)
+  passengerCreditMeters           Int?     @default(0) // Passenger distance bonus (e.g. 1000 = 1.00 km)
+  driverDisplayDistanceMeters     Int?     // Driver visible distance (e.g. 9000 = 9.00 km)
+  passengerDisplayDistanceMeters  Int?     // Passenger visible distance (e.g. 11000 = 11.00 km)
+  benefitReason                   String?  // Mandatory reason for adjustment
+  benefitGrantedBy                String?  // Control Panel user ID or name
+  benefitGrantedAt                DateTime?
+
   requestId       String?     // Primary request that created this ride
   @@index([passengerId, status])
 }

@@ -49,9 +49,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     const bgMapColor = isDarkMode ? '#12141A' : '#F3F4F6';
 
     const hasDestination = !!destination;
-
-    const driverLat = driver?.lat || pickup.lat + 0.015;
-    const driverLng = driver?.lng || pickup.lng - 0.012;
+    const hasDriver = !!(driver && driver.lat && driver.lng);
 
     const destLat = destination?.lat || pickup.lat + 0.020;
     const destLng = destination?.lng || pickup.lng + 0.018;
@@ -60,6 +58,11 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     const cleanDriverEta = driverToPickupEta.replace(/^~/, '').trim();
     const cleanTripDist = tripDist.replace(/^~/, '').trim();
     const cleanTripEta = tripEta.replace(/^~/, '').trim();
+
+    // Map routeCoordinates [{ latitude, longitude }] to Leaflet [[lat, lng]] format
+    const routeLatLngs = routeCoordinates && routeCoordinates.length > 0
+      ? routeCoordinates.map((c) => [c.latitude, c.longitude])
+      : [];
 
     return `
 <!DOCTYPE html>
@@ -88,26 +91,23 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       font-size: 19px;
     }
 
-    /* Pickup Point A Marker Badge 🔵 */
-    .custom-pin-a {
-      width: 30px;
-      height: 30px;
+    /* Passenger Customer Avatar Marker Badge 👤 */
+    .custom-pin-passenger {
+      width: 36px;
+      height: 36px;
       background: #10B981;
       border-radius: 50%;
       border: 3px solid #FFFFFF;
-      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #FFFFFF;
-      font-size: 15px;
-      font-weight: 900;
     }
 
     /* Destination Point B Marker Badge 🟣 (Yalla Logo Purple #683EE6) */
     .custom-pin-b {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       background: #683EE6;
       border-radius: 50%;
       border: 3px solid #FFFFFF;
@@ -200,7 +200,7 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       doubleClickZoom: true,
       scrollWheelZoom: true,
       tap: true,
-    }).setView([${pickup.lat}, ${pickup.lng}], 12);
+    }).setView([${pickup.lat}, ${pickup.lng}], 13);
 
     L.tileLayer('${tileUrl}', {
       maxZoom: 19,
@@ -209,28 +209,32 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
 
     var allBounds = [];
 
-    // 1. DRIVER MARKER 🚗
+    // 1. DRIVER MARKER 🚗 (Rendered ONLY if genuine driver prop is provided)
+    ${
+      hasDriver
+        ? `
     var driverIcon = L.divIcon({
       className: '',
       html: '<div class="custom-driver-car">🚗</div>',
       iconSize: [36, 36],
       iconAnchor: [18, 18]
     });
-    var driverMarker = L.marker([${driverLat}, ${driverLng}], { icon: driverIcon }).addTo(map);
-    allBounds.push([${driverLat}, ${driverLng}]);
+    var driverMarker = L.marker([${driver?.lat}, ${driver?.lng}], { icon: driverIcon }).addTo(map);
+    allBounds.push([${driver?.lat}, ${driver?.lng}]);
+    `
+        : ''
+    }
 
-    // 2. PICKUP MARKER A 🔵 with Tag Box directly above (Distance top, ETA bottom)
+    // 2. PICKUP MARKER A 👤 (Passenger Location Person Avatar Marker)
     var pickupIcon = L.divIcon({
       className: '',
-      html: '<div style="display:flex; flex-direction:column; align-items:center;">' +
-              '<div class="tag-badge-a">' +
-                '<div>${cleanDriverDist}</div>' +
-                '<div>${cleanDriverEta}</div>' +
-              '</div>' +
-              '<div class="custom-pin-a">A</div>' +
-            '</div>',
-      iconSize: [75, 75],
-      iconAnchor: [37, 75]
+      html: ${
+        hasDriver
+          ? `'<div style="display:flex; flex-direction:column; align-items:center;"><div class="tag-badge-a"><div>${cleanDriverDist}</div><div>${cleanDriverEta}</div></div><div class="custom-pin-passenger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div></div>'`
+          : `'<div class="custom-pin-passenger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>'`
+      },
+      iconSize: ${hasDriver ? '[75, 75]' : '[36, 36]'},
+      iconAnchor: ${hasDriver ? '[37, 75]' : '[18, 18]'}
     });
     var pickupMarker = L.marker([${pickup.lat}, ${pickup.lng}], {
       icon: pickupIcon,
@@ -242,13 +246,11 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
     ${
       hasDestination
         ? `
+    var hasTripStats = ${cleanTripDist && cleanTripDist.length > 0 ? 'true' : 'false'};
     var destIcon = L.divIcon({
       className: '',
       html: '<div style="display:flex; flex-direction:column; align-items:center;">' +
-              '<div class="tag-badge-b">' +
-                '<div>${cleanTripDist}</div>' +
-                '<div>${cleanTripEta}</div>' +
-              '</div>' +
+              (hasTripStats ? '<div class="tag-badge-b"><div>${cleanTripDist}</div><div>${cleanTripEta}</div></div>' : '') +
               '<div class="custom-pin-b">B</div>' +
             '</div>',
       iconSize: [75, 75],
@@ -260,9 +262,12 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
         : ''
     }
 
-    // 4. ROUTE LINE 1: DRIVER 🚗 -> PICKUP A (Dashed Blue Line)
+    // 4. ROUTE LINE 1: DRIVER 🚗 -> PICKUP A (Rendered ONLY if genuine driver exists)
+    ${
+      hasDriver
+        ? `
     var driverToPickupPath = [
-      [${driverLat}, ${driverLng}],
+      [${driver?.lat}, ${driver?.lng}],
       [${pickup.lat}, ${pickup.lng}]
     ];
     L.polyline(driverToPickupPath, {
@@ -272,31 +277,45 @@ export const LeafletMapView: React.FC<LeafletMapViewProps> = ({
       opacity: 0.9,
       lineCap: 'round'
     }).addTo(map);
-
-    // 5. ROUTE LINE 2: PICKUP A -> DROP OFF B (Solid Yalla Purple Line #683EE6)
-    ${
-      hasDestination
-        ? `
-    var pickupToDestPath = [
-      [${pickup.lat}, ${pickup.lng}],
-      [${destLat}, ${destLng}]
-    ];
-    L.polyline(pickupToDestPath, {
-      color: '#683EE6',
-      weight: 6,
-      opacity: 0.95,
-      lineCap: 'round'
-    }).addTo(map);
     `
         : ''
     }
 
-    // 6. GUARANTEED AUTOMATIC FIT BOUNDS (Driver 🚗, Pickup A, Dropoff B)
+    // 5. ROUTE LINE 2: PICKUP A -> DROP OFF B (Real Road Driving Geometry Polyline)
+    // Prepend [pickup.lat, pickup.lng] so driving route originates directly inside Passenger Avatar A's green circle
+    ${
+      hasDestination && routeLatLngs.length > 0
+        ? `
+    var rawCoords = ${JSON.stringify(routeLatLngs)};
+    var realRoadPath = [[${pickup.lat}, ${pickup.lng}]].concat(rawCoords);
+    L.polyline(realRoadPath, {
+      color: '#683EE6',
+      weight: 6,
+      opacity: 0.95,
+      lineCap: 'round',
+      lineJoin: 'round'
+    }).addTo(map);
+
+    realRoadPath.forEach(function(pt) {
+      allBounds.push(pt);
+    });
+    `
+        : ''
+    }
+
+    // 6. GUARANTEED AUTOMATIC FIT BOUNDS (Keeping Passenger A focused at route start)
     function autoFitCamera() {
       if (allBounds.length > 1) {
         map.invalidateSize();
         var bounds = L.latLngBounds(allBounds);
-        map.fitBounds(bounds, { padding: [35, 35], maxZoom: 15, animate: false });
+        map.fitBounds(bounds, {
+          paddingTopLeft: [55, 45],
+          paddingBottomRight: [55, 75],
+          maxZoom: 16,
+          animate: false
+        });
+      } else {
+        map.setView([${pickup.lat}, ${pickup.lng}], 15);
       }
     }
 

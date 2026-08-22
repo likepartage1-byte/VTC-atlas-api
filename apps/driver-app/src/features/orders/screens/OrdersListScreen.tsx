@@ -28,6 +28,7 @@ import { WaitingPassengerConfirmationModal } from '../components/WaitingPassenge
 import { ConfirmedTripModal } from '../components/ConfirmedTripModal';
 import { VerificationRequiredModal } from '../components/VerificationRequiredModal';
 import { canDriverAccessOrder, DriverVerificationState } from '../../../services/driverVerificationGuard.service';
+import { socketService } from '../../../services/socket.service';
 import {
   mockOrdersRepository,
   MockOrder,
@@ -352,6 +353,9 @@ export const OrdersListScreen = () => {
           const parsed = JSON.parse(storedTripJson);
           if (parsed && parsed.order) {
             setConfirmedTripData({ order: parsed.order, finalPrice: parsed.finalPrice || parsed.order.priceOffer });
+            if (parsed.order.id) {
+              socketService.joinRideRoom(parsed.order.id);
+            }
           }
         }
       } catch (_) {}
@@ -362,6 +366,9 @@ export const OrdersListScreen = () => {
   const handlePassengerConfirmed = useCallback((order: MockOrder, price: number) => {
     const activeTrip = { order, finalPrice: price, status: 'DRIVER_ACCEPTED' };
     AsyncStorage.setItem('@active_driver_trip_v1', JSON.stringify(activeTrip)).catch(() => {});
+    if (order.id) {
+      socketService.joinRideRoom(order.id);
+    }
     setWaitingConfirmationData(null);
     setConfirmedTripData({ order, finalPrice: price });
   }, []);

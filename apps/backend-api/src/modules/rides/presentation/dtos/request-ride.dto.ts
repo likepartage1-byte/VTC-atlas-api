@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsNotEmpty, Min, Max } from 'class-validator';
+import { IsNumber, IsString, IsNotEmpty, IsOptional, Min, Max } from 'class-validator';
 
 export class RequestRideDto {
   @IsNumber()
@@ -32,4 +32,9 @@ export class RequestRideDto {
   @IsString()
   @IsNotEmpty()
   serviceType: string; // e.g., 'ECONOMY', 'VIP'
+
+  @IsOptional()
+  @IsNumber()
+  offeredPrice?: number;
 }
+

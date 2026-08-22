@@ -42,10 +42,16 @@ class RideRequestInProgress extends RideState {}
 class RideSearchingDriver extends RideState {
   final String rideId;
   final List<YallaLatLng> routePoints;
+  final double? offeredPrice;
+  final double? distanceKm;
+  final int? durationMin;
 
   RideSearchingDriver({
     required this.rideId,
     this.routePoints = const [],
+    this.offeredPrice,
+    this.distanceKm,
+    this.durationMin,
   });
 }
 

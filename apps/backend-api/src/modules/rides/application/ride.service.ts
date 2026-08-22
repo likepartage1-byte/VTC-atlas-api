@@ -108,7 +108,7 @@ export class RideService extends BaseApplicationService {
         dropoffLng: dto.dropoffLng,
         dropoffAddress: dto.dropoffAddress,
         serviceType: dto.serviceType,
-        estimatedPrice: 25.0, // This would normally come from PricingService
+        estimatedPrice: (dto as any).estimatedPrice ?? (dto as any).offeredPrice ?? 25.0,
       },
     });
 

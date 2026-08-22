@@ -33,6 +33,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../theme/ThemeContext';
 import { MockOrder } from '../repositories/mockOrdersRepository';
 import { LeafletMapView } from '../../../components/LeafletMapView';
+import { socketService } from '../../../services/socket.service';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -103,6 +104,21 @@ export const ConfirmedTripModal = memo(({
       } catch (_) {}
     })();
   }, []);
+
+  // P1.4: Listen to real-time statusChanged events from /rides namespace
+  useEffect(() => {
+    if (!order?.id) return;
+    socketService.connectRidesNamespace((data) => {
+      if (data?.rideId === order.id && data?.status) {
+        const newStatus = data.status as RideLifecycleStatus;
+        if (['DRIVER_ACCEPTED', 'ARRIVED', 'IN_PROGRESS', 'COMPLETED'].includes(newStatus)) {
+          setRideStatus(newStatus);
+          AsyncStorage.setItem('@active_driver_trip_v1', JSON.stringify({ order, finalPrice, status: newStatus })).catch(() => {});
+        }
+      }
+    });
+    socketService.joinRideRoom(order.id);
+  }, [order?.id, finalPrice]);
 
   // Sync active trip status to AsyncStorage cache
   const updateStatusAndSave = async (newStatus: RideLifecycleStatus) => {
@@ -309,7 +325,7 @@ export const ConfirmedTripModal = memo(({
             <Car size={14} color="#FFFFFF" />
             <Text style={styles.floatingEtaText}>
               {rideStatus === 'IN_PROGRESS'
-                ? (isRTL ? 'الوجهة (B):' : 'Destination B:') + ` ${order.distance || '8.8 km'} (${order.eta || '14 min'})`
+                ? (isRTL ? 'الوجهة (B):' : 'Destination B:') + ` ${order.tripDistance || '8.8 km'} (${order.tripDuration || '14 min'})`
                 : (isRTL ? 'وصولك له:' : 'Approche:') + ` ${order.distanceToPickup || '1.5 km'} (${order.pickupEta || '4 min'})`}
             </Text>
           </View>

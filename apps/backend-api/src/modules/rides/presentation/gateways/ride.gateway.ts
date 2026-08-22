@@ -59,8 +59,47 @@ export class RideGateway implements OnGatewayInit, OnGatewayConnection {
   }
 
   @SubscribeMessage('joinRide')
-  handleJoinRide(client: Socket, rideId: string) {
-    client.join(`ride:${rideId}`);
+  async handleJoinRide(client: Socket, rideId: string) {
+    const user = client.data.user;
+    if (!user || !user.userId) {
+      this.logger.warn(`[JoinRide Rejected] No authenticated user on socket ${client.id}`);
+      return;
+    }
+
+    if (!rideId || typeof rideId !== 'string') {
+      return;
+    }
+
+    try {
+      const ride = await this.prisma.ride.findUnique({
+        where: { id: rideId },
+        select: {
+          passengerId: true,
+          driver: { select: { userId: true } },
+        },
+      });
+
+      if (!ride) {
+        this.logger.warn(`[JoinRide Rejected] Ride ${rideId} not found (user: ${user.userId})`);
+        return;
+      }
+
+      const isPassenger = ride.passengerId === user.userId;
+      const isDriver = ride.driver?.userId === user.userId;
+
+      if (isPassenger || isDriver) {
+        client.join(`ride:${rideId}`);
+        this.logger.log(
+          `[JoinRide Allowed] Socket ${client.id} (user: ${user.userId}, role: ${user.role}) joined room ride:${rideId}`
+        );
+      } else {
+        this.logger.warn(
+          `[JoinRide Denied] Socket ${client.id} (user: ${user.userId}) attempted unauthorized join to room ride:${rideId}`
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(`[JoinRide Error] Failed to authorize join for ride ${rideId}: ${err.message}`);
+    }
   }
 
   /**

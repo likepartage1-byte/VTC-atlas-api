@@ -27,11 +27,9 @@ export const PassengersManagementTable: React.FC<{ lang?: string }> = ({ lang = 
     setLoading(true);
     setError(null);
     try {
-      // Primary: Fetch users/passengers from admin endpoint
-      const res = await api.get('/admin/growth/campaigns').catch(() => null);
-      // Fallback empty list if specific passengers endpoint is isolated
-      if (res && res.data && Array.isArray(res.data.passengers)) {
-        setPassengers(res.data.passengers);
+      const res = await api.get('/admin/passengers').catch(() => null);
+      if (res && res.data && Array.isArray(res.data)) {
+        setPassengers(res.data);
       } else if (res && Array.isArray(res.data)) {
         setPassengers(res.data);
       } else {

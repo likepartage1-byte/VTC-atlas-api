@@ -353,11 +353,15 @@ class _YallaRideSheetState extends State<YallaRideSheet>
   // ── SEARCHING DRIVER state ────────────────────────────────────────────────────
 
   Widget _buildSearchingState(String lang) {
+    final searchState = widget.rideState is RideSearchingDriver
+        ? widget.rideState as RideSearchingDriver
+        : null;
     final ds = widget.rideState is RideDestinationSelected
         ? widget.rideState as RideDestinationSelected
         : null;
-    final distKm = ds?.distanceKm;
-    final durMin = ds?.durationMin;
+    final distKm = searchState?.distanceKm ?? ds?.distanceKm;
+    final durMin = searchState?.durationMin ?? ds?.durationMin;
+    final confirmedFare = searchState?.offeredPrice ?? ds?.estimatedPrice;
     final destAddr = widget.destAddress;
 
     return Column(
@@ -465,32 +469,29 @@ class _YallaRideSheetState extends State<YallaRideSheet>
         ),
 
         // Distance + ETA if available
-        if (distKm != null) ...[
+        if (distKm != null || confirmedFare != null) ...[
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatChip(
-                icon: Icons.straighten_rounded,
-                label: '${distKm.toStringAsFixed(1)} km',
-                color: _primary,
-              ),
+              if (distKm != null)
+                _StatChip(
+                  icon: Icons.straighten_rounded,
+                  label: '${distKm.toStringAsFixed(1)} km',
+                  color: _primary,
+                ),
               if (durMin != null)
                 _StatChip(
                   icon: Icons.schedule_rounded,
                   label: '$durMin min',
                   color: _primary,
                 ),
-              _StatChip(
-                icon: Icons.payments_outlined,
-                label: FareCalculator.format(
-                  FareCalculator.calculate(
-                    serviceId: _selectedServiceId,
-                    distanceKm: distKm,
-                  ) ?? 0,
+              if (confirmedFare != null)
+                _StatChip(
+                  icon: Icons.payments_outlined,
+                  label: FareCalculator.format(confirmedFare),
+                  color: const Color(0xFF22C55E),
                 ),
-                color: const Color(0xFF22C55E),
-              ),
             ],
           ),
         ],

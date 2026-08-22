@@ -1,19 +1,32 @@
-import { useState, useEffect } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import { RefreshCw, Loader2 } from 'lucide-react';
 import { AuthPage } from './components/auth/AuthPage';
 import api from './lib/api';
-import { OperationsCenter } from './modules/operations/OperationsCenter';
-import { AuditCenter } from './modules/audit/AuditCenter';
-import { PendingVerificationsTable } from './modules/drivers/PendingVerificationsTable';
-import { DriversManagementTable } from './modules/drivers/DriversManagementTable';
-import { PassengersManagementTable } from './modules/passengers/PassengersManagementTable';
-import { RidesCenterTable } from './modules/rides/RidesCenterTable';
-import { FinancialLedgerCenter } from './modules/financial/FinancialLedgerCenter';
-import { SupportCenterTable } from './modules/support/SupportCenterTable';
-import { IntegrityCenterTable } from './modules/integrity/IntegrityCenterTable';
-import { SettingsCenterForm } from './modules/settings/SettingsCenterForm';
 import { ControlCenterShell } from './components/layout/ControlCenterShell';
 import { CommandCenterView } from './components/dashboard/CommandCenterView';
+
+// Lazy-loaded sub-modules for performance & chunk code-splitting
+const OperationsCenter = lazy(() => import('./modules/operations/OperationsCenter').then(m => ({ default: m.OperationsCenter })));
+const AuditCenter = lazy(() => import('./modules/audit/AuditCenter').then(m => ({ default: m.AuditCenter })));
+const PendingVerificationsTable = lazy(() => import('./modules/drivers/PendingVerificationsTable').then(m => ({ default: m.PendingVerificationsTable })));
+const DriversManagementTable = lazy(() => import('./modules/drivers/DriversManagementTable').then(m => ({ default: m.DriversManagementTable })));
+const PassengersManagementTable = lazy(() => import('./modules/passengers/PassengersManagementTable').then(m => ({ default: m.PassengersManagementTable })));
+const RidesCenterTable = lazy(() => import('./modules/rides/RidesCenterTable').then(m => ({ default: m.RidesCenterTable })));
+const FinancialLedgerCenter = lazy(() => import('./modules/financial/FinancialLedgerCenter').then(m => ({ default: m.FinancialLedgerCenter })));
+const SupportCenterTable = lazy(() => import('./modules/support/SupportCenterTable').then(m => ({ default: m.SupportCenterTable })));
+const IntegrityCenterTable = lazy(() => import('./modules/integrity/IntegrityCenterTable').then(m => ({ default: m.IntegrityCenterTable })));
+const SettingsCenterForm = lazy(() => import('./modules/settings/SettingsCenterForm').then(m => ({ default: m.SettingsCenterForm })));
+const HomepageBuilderShell = lazy(() => import('./modules/website/HomepageBuilderShell').then(m => ({ default: m.HomepageBuilderShell })));
+const ControlCenterBuilderShell = lazy(() => import('./modules/builder/ControlCenterBuilderShell').then(m => ({ default: m.ControlCenterBuilderShell })));
+
+function TabLoadingFallback() {
+  return (
+    <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-400">
+      <Loader2 size={28} className="animate-spin text-purple-500" />
+      <span className="text-xs font-bold uppercase tracking-widest">Loading Module...</span>
+    </div>
+  );
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -28,10 +41,14 @@ export default function App() {
     }
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('admin_token');
     setIsAuthenticated(false);
-  };
+  }, []);
+
+  const handleSelectTab = useCallback((tab: string) => {
+    setActiveTab(tab);
+  }, []);
 
   const fetchInitialData = async () => {
     try {
@@ -48,7 +65,7 @@ export default function App() {
   return (
     <ControlCenterShell
       activeTab={activeTab}
-      onSelectTab={setActiveTab}
+      onSelectTab={handleSelectTab}
       isDark={isDark}
       onToggleTheme={() => setIsDark(!isDark)}
       onLogout={handleLogout}
@@ -68,7 +85,8 @@ export default function App() {
              activeTab === 'verification' ? (lang === 'AR' ? 'قائمة توثيق السائقين (KYC)' : 'Verification Queue (KYC)') :
              activeTab === 'rides' ? (lang === 'AR' ? 'مركز متابعة الرحلات' : 'Rides Center') :
              activeTab === 'support' ? (lang === 'AR' ? 'مركز الدعم والذكاء الاصطناعي' : 'Support & AI Center') :
-             activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات المنصة' : 'System Settings') : (lang === 'AR' ? 'مراقبة النزاهة والاحتيال' : 'Integrity Monitor')}
+             activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات المنصة' : 'System Settings') :
+             activeTab === 'website' ? (lang === 'AR' ? 'محرر الصفحة الرئيسية' : 'Homepage Builder') : (lang === 'AR' ? 'مراقبة النزاهة والاحتيال' : 'Integrity Monitor')}
           </h2>
           <p className="text-gray-500 dark:text-slate-400 text-xs md:text-sm mt-1">
             {activeTab === 'dashboard' ? (lang === 'AR' ? 'نظرة عامة على مؤشرات المنصة والرحلات النشطة والأرباح.' : 'Real-time platform metrics and operational insights.') : 
@@ -81,6 +99,7 @@ export default function App() {
              activeTab === 'rides' ? (lang === 'AR' ? 'متابعة الرحلات الجارية والمكتملة وإلغاء الرحلات.' : 'Live ride dispatch overview and ride lifecycle management.') :
              activeTab === 'support' ? (lang === 'AR' ? 'مركز الدعم المباشر ومحادثات المساعد الذكي.' : 'Helpdesk tickets and AI support conversations.') :
              activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات النظام العامة وتغيير عمولة المنصة.' : 'Global configuration and system preferences.') :
+             activeTab === 'website' ? (lang === 'AR' ? 'تخصيص وتحرير الصفحة الرئيسية بصرياً مع معاينة مباشرة.' : 'Visually customize the homepage with live preview and draft/publish workflow.') :
              (lang === 'AR' ? 'تنبيهات كشف الاحتيال وتغيير الموقع الجغرافي المشبوه.' : 'Real-time fraud detection and security events feed.')}
           </p>
         </div>
@@ -95,38 +114,46 @@ export default function App() {
         </div>
       </div>
 
-      {/* --- Tab 1: Dashboard Overview (Command Center View) --- */}
-      {activeTab === 'dashboard' && <CommandCenterView lang={lang} />}
+      <Suspense fallback={<TabLoadingFallback />}>
+        {/* --- Tab 1: Dashboard Overview (Command Center View) --- */}
+        {activeTab === 'dashboard' && <CommandCenterView lang={lang} />}
 
-      {/* --- Tab 2: Operations Center Map --- */}
-      {activeTab === 'operations' && <OperationsCenter lang={lang} />}
+        {/* --- Tab 2: Operations Center Map --- */}
+        {activeTab === 'operations' && <OperationsCenter lang={lang} />}
 
-      {/* --- Tab 3: Pending Verification Queue (KYC) --- */}
-      {activeTab === 'verification' && <PendingVerificationsTable lang={lang} />}
+        {/* --- Tab 3: Pending Verification Queue (KYC) --- */}
+        {activeTab === 'verification' && <PendingVerificationsTable lang={lang} />}
 
-      {/* --- Tab 3.5: Drivers Fleet Management --- */}
-      {activeTab === 'drivers' && <DriversManagementTable lang={lang} />}
+        {/* --- Tab 3.5: Drivers Fleet Management --- */}
+        {activeTab === 'drivers' && <DriversManagementTable lang={lang} />}
 
-      {/* --- Tab 4: Audit Center --- */}
-      {activeTab === 'audit' && <AuditCenter />}
+        {/* --- Tab 4: Audit Center --- */}
+        {activeTab === 'audit' && <AuditCenter />}
 
-      {/* --- Tab 5: Passengers Management --- */}
-      {activeTab === 'users' && <PassengersManagementTable lang={lang} />}
+        {/* --- Tab 5: Passengers Management --- */}
+        {activeTab === 'users' && <PassengersManagementTable lang={lang} />}
 
-      {/* --- Tab 6: Rides Center & Negotiation Inspector --- */}
-      {activeTab === 'rides' && <RidesCenterTable lang={lang} />}
+        {/* --- Tab 6: Rides Center & Negotiation Inspector --- */}
+        {activeTab === 'rides' && <RidesCenterTable lang={lang} />}
 
-      {/* --- Tab 7: Financial Ledger & Driver RIB Payouts --- */}
-      {activeTab === 'financial' && <FinancialLedgerCenter lang={lang} />}
+        {/* --- Tab 7: Financial Ledger & Driver RIB Payouts --- */}
+        {activeTab === 'financial' && <FinancialLedgerCenter lang={lang} />}
 
-      {/* --- Tab 8: Support & AI Helpdesk --- */}
-      {activeTab === 'support' && <SupportCenterTable lang={lang} />}
+        {/* --- Tab 8: Support & AI Helpdesk --- */}
+        {activeTab === 'support' && <SupportCenterTable lang={lang} />}
 
-      {/* --- Tab 9: Integrity Monitoring & Anomaly Detection --- */}
-      {activeTab === 'integrity' && <IntegrityCenterTable lang={lang} />}
+        {/* --- Tab 9: Integrity Monitoring & Anomaly Detection --- */}
+        {activeTab === 'integrity' && <IntegrityCenterTable lang={lang} />}
 
-      {/* --- Tab 10: System Settings & Platform Commission --- */}
-      {activeTab === 'settings' && <SettingsCenterForm lang={lang} />}
+        {/* --- Tab 10: System Settings --- */}
+        {activeTab === 'settings' && <SettingsCenterForm lang={lang} />}
+
+        {/* --- Tab 11: Homepage Builder --- */}
+        {activeTab === 'website' && <HomepageBuilderShell lang={lang} />}
+
+        {/* --- Tab 12: Control Center Builder --- */}
+        {activeTab === 'builder' && <ControlCenterBuilderShell lang={lang} />}
+      </Suspense>
     </ControlCenterShell>
   );
 }

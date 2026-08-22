@@ -1,6 +1,7 @@
 import React from 'react';
 import { Smartphone, Car, ArrowLeft, ArrowRight } from 'lucide-react';
 import { SupportedLang, Translations } from '../i18n/translations';
+import { usePublishedHomepage } from '../hooks/usePublishedHomepage';
 
 interface HeroSectionProps {
   lang: SupportedLang;
@@ -9,6 +10,11 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
   const t = Translations[lang].hero;
   const isAr = lang === 'AR';
+  const { publishedConfig } = usePublishedHomepage();
+
+  // Dynamic published content override (ONLY when explicitly published)
+  const dynamicTitle = publishedConfig?.hero?.title?.text?.[lang];
+  const dynamicSubtitle = publishedConfig?.hero?.subtitle?.text?.[lang];
 
   return (
     <section className="relative min-h-[85vh] lg:min-h-[90vh] flex items-center pt-20 pb-20 lg:pt-28 lg:pb-28 overflow-hidden">
@@ -47,13 +53,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ lang }) => {
             </span>
             <br />
             <span className="text-white drop-shadow-lg">
-              {isAr ? 'طريقة أذكى للتنقل.' : 'A Smarter Way to Get Around.'}
+              {dynamicTitle || (isAr ? 'طريقة أذكى للتنقل.' : 'A Smarter Way to Get Around.')}
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg lg:text-xl text-slate-300 dark:text-white font-semibold leading-relaxed max-w-2xl mx-auto mb-10">
-            {t.subtitle}
+            {dynamicSubtitle || t.subtitle}
           </p>
 
           {/* CTAs */}

@@ -1,9 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = __DEV__ 
-  ? 'http://187.124.34.118:3000/api/v1' 
-  : 'https://api.magda-guide.com/api/v1';
+const BASE_URL = 'https://api.yallavtc.com/api/v1';
 
 export const baseApi = createApi({
   reducerPath: 'api',

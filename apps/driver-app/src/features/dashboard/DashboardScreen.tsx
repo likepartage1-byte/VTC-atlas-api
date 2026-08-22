@@ -202,6 +202,11 @@ export const DashboardScreen = () => {
       }
     });
 
+    // P1.4: Connect to /rides namespace for statusChanged events
+    socketService.connectRidesNamespace((data) => {
+      console.log('📢 [Dashboard] /rides statusChanged:', data);
+    });
+
     const heartbeat = setInterval(async () => {
       try {
         const { api } = require('../../api/axios.instance');
@@ -276,6 +281,9 @@ export const DashboardScreen = () => {
     // Call socket accept with correct details
     await socketService.acceptRide(selectedOffer.rideId);
     
+    // P1.4: Join ride room on /rides namespace for real-time status updates
+    socketService.joinRideRoom(selectedOffer.rideId);
+
     // Remove accepted offer from available list
     setOffers(prev => prev.filter(o => o.rideId !== selectedOffer.rideId));
     setSelectedOffer(null);

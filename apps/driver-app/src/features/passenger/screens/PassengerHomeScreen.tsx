@@ -346,8 +346,8 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
   }, [pickerSearchQuery]);
 
   // OSRM route details & polyline coordinates
-  const [distanceKm, setDistanceKm] = useState(4.5);
-  const [durationMins, setDurationMins] = useState(11);
+  const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const [durationMins, setDurationMins] = useState<number | null>(null);
   const [routeCoordinates, setRouteCoordinates] = useState<{ latitude: number; longitude: number }[]>([]);
   const [isCalculatingRoute, setIsCalculatingRoute] = useState(false);
 
@@ -451,25 +451,25 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
 
   // 3. Recalculate OSRM route & polyline whenever destination changes
   useEffect(() => {
-    if (!selectedDestination) return;
+    if (!selectedDestination) {
+      setDistanceKm(null);
+      setDurationMins(null);
+      setRouteCoordinates([]);
+      setIsCalculatingRoute(false);
+      return;
+    }
     let isMounted = true;
     setIsCalculatingRoute(true);
+    setDistanceKm(null);
+    setDurationMins(null);
+    setRouteCoordinates([]);
+
     routingService.calculateRoute(pickupCoord, selectedDestination).then((res) => {
       if (isMounted) {
         setDistanceKm(res.distanceKm);
         setDurationMins(res.durationMins);
         setRouteCoordinates(res.coordinates || []);
         setIsCalculatingRoute(false);
-
-        if (mapRef.current && res.coordinates.length > 0) {
-          mapRef.current.fitToCoordinates(
-            [
-              { latitude: pickupCoord.lat, longitude: pickupCoord.lng },
-              { latitude: selectedDestination.lat, longitude: selectedDestination.lng },
-            ],
-            { edgePadding: { top: 70, right: 70, bottom: 70, left: 70 }, animated: true }
-          );
-        }
       }
     });
     return () => { isMounted = false; };
@@ -655,6 +655,8 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
           isDarkMode={isDarkMode}
           pickup={{ lat: pickupCoord.lat, lng: pickupCoord.lng, title: pickupText }}
           destination={selectedDestination ? { lat: selectedDestination.lat, lng: selectedDestination.lng, title: selectedDestination.name } : undefined}
+          tripDist={distanceKm !== null ? `${distanceKm} km` : ''}
+          tripEta={durationMins !== null ? `${durationMins} min` : ''}
           routeCoordinates={routeCoordinates}
           onLocationSelect={async (pt) => {
             setPickupCoord(pt);
@@ -664,16 +666,7 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
           }}
         />
 
-        {/* Floating Route Stats Badge */}
-        {selectedDestination && (
-          <View style={styles.routeStatsBadge}>
-            <Route size={14} color="#10B981" />
-            <Text style={styles.routeStatsText}> {distanceKm} km</Text>
-            <Text style={{ color: '#94A3B8' }}> • </Text>
-            <Clock size={14} color="#F59E0B" />
-            <Text style={styles.routeStatsText}> {durationMins} min</Text>
-          </View>
-        )}
+
 
         {/* Floating Re-center GPS Location Button (◎) */}
         <TouchableOpacity
@@ -708,7 +701,7 @@ export const PassengerHomeScreen = ({ navigation }: any) => {
               : `Votre demande (${distanceKm} km • ~${durationMins} min) est diffusée.`}
           </Text>
           <View style={styles.fareBadge}>
-            <Text style={styles.fareBadgeText}>{getBaseFare(selectedService)} MAD</Text>
+            <Text style={styles.fareBadgeText}>{estimatedFareMAD || currentFare} MAD</Text>
           </View>
           <TouchableOpacity style={styles.cancelBtn} onPress={handleCancelRequest}>
             <Text style={styles.cancelBtnText}>
@@ -1318,7 +1311,7 @@ const styles = StyleSheet.create({
   },
   logoText: { fontSize: 20, fontWeight: '800' },
   mapContainer: {
-    height: 200,
+    height: Math.round(Dimensions.get('window').height * 0.46),
     backgroundColor: '#1E293B',
     alignItems: 'center',
     justifyContent: 'center',
