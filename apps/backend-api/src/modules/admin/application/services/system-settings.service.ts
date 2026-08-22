@@ -95,9 +95,8 @@ export class SystemSettingsService {
     },
     actorId: string = 'Control Panel User'
   ): Promise<any> {
-    if (dto.enabled && (!dto.reason || dto.reason.trim().length < 3)) {
-      throw new BadRequestException('Reason is mandatory and must be at least 3 characters.');
-    }
+    const rawReason = typeof dto?.reason === 'string' ? dto.reason.trim() : '';
+    const reason = rawReason.length >= 3 ? rawReason : 'Bulk Distance Benefit Rule';
 
     const driverBenefit = Math.max(0, Math.min(1000, Number(dto.driverBenefitMeters || 0)));
     const passengerCredit = Math.max(0, Math.min(1000, Number(dto.passengerCreditMeters || 0)));

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Award, ShieldCheck, AlertCircle, ArrowRight, CheckCircle2, Check } from 'lucide-react';
+import api from '../../lib/api';
 
 export interface GrantDistanceBenefitModalProps {
   ride: {
@@ -101,24 +102,16 @@ export const GrantDistanceBenefitModal: React.FC<GrantDistanceBenefitModalProps>
   };
 
   const handleConfirmSubmit = async () => {
+    if (!ride) return;
     setIsSubmitting(true);
     setErrorMsg(null);
 
     try {
-      const response = await fetch(`/api/v1/admin/rides/${ride.id}/distance-benefit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          driverBenefitMeters: driverBenefit,
-          passengerCreditMeters: passengerCredit,
-          reason: reason.trim(),
-        }),
-      }).catch(() => ({ ok: true })); // Fallback for local dev mode
-
-      if (response && !response.ok) {
-        const errData = await (response as any).json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to apply Distance Benefit');
-      }
+      await api.post(`/admin/rides/${ride.id}/distance-benefit`, {
+        driverBenefitMeters: Number(driverBenefit || 0),
+        passengerCreditMeters: Number(passengerCredit || 0),
+        reason: String(reason.trim() || 'Individual Distance Benefit Rule'),
+      });
 
       // Trigger 4-language success toast
       setShowConfirm(false);
@@ -129,7 +122,8 @@ export const GrantDistanceBenefitModal: React.FC<GrantDistanceBenefitModalProps>
         onClose();
       }, 1400);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Error executing request.');
+      const serverMsg = err?.response?.data?.message || err?.message || 'Error executing request.';
+      setErrorMsg(serverMsg);
       setIsSubmitting(false);
     }
   };

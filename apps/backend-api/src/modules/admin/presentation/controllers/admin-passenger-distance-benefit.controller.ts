@@ -44,11 +44,22 @@ export class AdminPassengerDistanceBenefitController {
    */
   @Post('passengers/bulk-distance-benefit')
   async updateBulkConfig(
-    @Body() dto: BulkDistanceBenefitDto,
+    @Body() dto: any,
     @Req() req: any
   ) {
     const actorId = req?.user?.id || 'Control Panel User';
-    return await this.systemSettingsService.updateBulkDistanceBenefitConfig(dto, actorId);
+    const enabled = dto?.enabled === true || dto?.enabled === 'true';
+    const driverBenefitMeters = Math.max(0, Math.min(1000, Number(dto?.driverBenefitMeters || 0)));
+    const passengerCreditMeters = Math.max(0, Math.min(1000, Number(dto?.passengerCreditMeters || 0)));
+    const rawReason = typeof dto?.reason === 'string' ? dto.reason.trim() : '';
+    const reason = rawReason.length >= 3 ? rawReason : 'Bulk Distance Benefit Rule';
+
+    return await this.systemSettingsService.updateBulkDistanceBenefitConfig({
+      enabled,
+      driverBenefitMeters,
+      passengerCreditMeters,
+      reason,
+    }, actorId);
   }
 
   /**
@@ -89,15 +100,14 @@ export class AdminPassengerDistanceBenefitController {
   @Post('rides/:id/distance-benefit')
   async grantDistanceBenefit(
     @Param('id') rideId: string,
-    @Body() dto: GrantDistanceBenefitDto,
+    @Body() dto: any,
     @Req() req: any
   ) {
-    if (!dto.reason || dto.reason.trim().length < 3) {
-      throw new BadRequestException('Reason is mandatory and must be at least 3 characters long.');
-    }
+    const rawReason = typeof dto?.reason === 'string' ? dto.reason.trim() : '';
+    const reason = rawReason.length >= 3 ? rawReason : 'Individual Distance Benefit Rule';
 
-    const driverBenefit = Math.max(0, Math.min(1000, Number(dto.driverBenefitMeters || 0)));
-    const passengerCredit = Math.max(0, Math.min(1000, Number(dto.passengerCreditMeters || 0)));
+    const driverBenefit = Math.max(0, Math.min(1000, Number(dto?.driverBenefitMeters || 0)));
+    const passengerCredit = Math.max(0, Math.min(1000, Number(dto?.passengerCreditMeters || 0)));
 
     const ride = await this.prisma.ride.findUnique({
       where: { id: rideId },
