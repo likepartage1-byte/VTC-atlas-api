@@ -30,7 +30,7 @@ function TabLoadingFallback() {
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false); // Default to Light Mode (Pure White Background & Black Text)
   const [lang, setLang] = useState('AR'); // Default language AR for Moroccan market
   const [activeTab, setActiveTab] = useState('dashboard');
 
