@@ -15,7 +15,8 @@ import {
   Shield,
   Navigation,
   Globe,
-  LayoutTemplate
+  LayoutTemplate,
+  Trash2,
 } from 'lucide-react';
 
 export interface SidebarProps {
@@ -79,6 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = React.memo(({
         { id: 'passengers', label: t.passengers, icon: Users, badge: null },
         { id: 'rides', label: t.rides, icon: Navigation, badge: null },
         { id: 'verification', label: t.verification, icon: FileCheck2, badge: 'KYC' },
+        { id: 'trash', label: lang === 'AR' ? 'سلة المهملات' : 'Trash Bin', icon: Trash2, badge: 'TRASH' },
       ],
     },
     {

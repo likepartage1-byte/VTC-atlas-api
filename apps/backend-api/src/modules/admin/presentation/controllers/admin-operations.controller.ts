@@ -30,6 +30,7 @@ export class AdminOperationsController {
 
     return onlineDrivers.map((d) => ({
       driverId: d.id,
+      userId: d.userId,
       lat: d.currentLat,
       lng: d.currentLng,
       status: d.status,

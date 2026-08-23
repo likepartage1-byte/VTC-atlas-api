@@ -1,5 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { DriversModule } from '../drivers/drivers.module';
+import { IdentityModule } from '../identity/identity.module';
 
 import { SystemSettingsService } from './application/services/system-settings.service';
 import { AdminGrowthController } from './presentation/controllers/admin-growth.controller';
@@ -11,10 +12,12 @@ import { AdminVerificationController } from './presentation/controllers/admin-ve
 import { AdminHomepageController } from './presentation/controllers/admin-homepage.controller';
 import { PublicHomepageController } from '../homepage/public-homepage.controller';
 import { AdminPassengerDistanceBenefitController } from './presentation/controllers/admin-passenger-distance-benefit.controller';
+import { AdminUserTrashController } from './presentation/controllers/admin-user-trash.controller';
+import { AdminUserTrashService } from './application/services/admin-user-trash.service';
 
 @Global()
 @Module({
-  imports: [DriversModule],
+  imports: [DriversModule, IdentityModule],
   controllers: [
     AdminGrowthController, 
     AdminSettingsController, 
@@ -25,8 +28,9 @@ import { AdminPassengerDistanceBenefitController } from './presentation/controll
     AdminHomepageController,
     PublicHomepageController,
     AdminPassengerDistanceBenefitController,
+    AdminUserTrashController,
   ],
-  providers: [SystemSettingsService],
-  exports: [SystemSettingsService],
+  providers: [SystemSettingsService, AdminUserTrashService],
+  exports: [SystemSettingsService, AdminUserTrashService],
 })
 export class AdminModule {}

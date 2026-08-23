@@ -8,6 +8,7 @@ import {
 
 export interface DriverFleetItem {
   driverId: string;
+  userId?: string;
   fullName?: string;
   phone?: string;
   status: 'AVAILABLE' | 'BUSY' | 'ON_TRIP' | 'OFFLINE' | string;

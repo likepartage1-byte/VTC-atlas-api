@@ -33,6 +33,10 @@ model User {
   address       String?
   avatar        String?   // Profile photo URL
 
+  deletedAt         DateTime?
+  deletedBy         String?
+  deletedFromStatus UserStatus?
+
   customerRides Ride[]    @relation("PassengerRides")
   driverProfile Driver?
   
@@ -51,6 +55,7 @@ enum UserStatus {
   INACTIVE
   SUSPENDED
   PENDING_VERIFICATION
+  TRASHED
 }
 
 // --- Driver Domain ---

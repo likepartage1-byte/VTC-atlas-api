@@ -18,6 +18,7 @@ const IntegrityCenterTable = lazy(() => import('./modules/integrity/IntegrityCen
 const SettingsCenterForm = lazy(() => import('./modules/settings/SettingsCenterForm').then(m => ({ default: m.SettingsCenterForm })));
 const HomepageBuilderShell = lazy(() => import('./modules/website/HomepageBuilderShell').then(m => ({ default: m.HomepageBuilderShell })));
 const ControlCenterBuilderShell = lazy(() => import('./modules/builder/ControlCenterBuilderShell').then(m => ({ default: m.ControlCenterBuilderShell })));
+const TrashBinManagement = lazy(() => import('./modules/trash/TrashBinManagement').then(m => ({ default: m.TrashBinManagement })));
 
 function TabLoadingFallback() {
   return (
@@ -92,6 +93,7 @@ export default function App() {
              activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات المنصة' : 'System Settings') :
              activeTab === 'website' ? (lang === 'AR' ? 'محرر الصفحة الرئيسية' : 'Homepage Builder') :
              activeTab === 'builder' ? (lang === 'AR' ? 'محرر مركز التحكم' : 'Control Center Builder') :
+             activeTab === 'trash' ? (lang === 'AR' ? 'مركز إدارة سلة المهملات' : 'Trash Bin Management Center') :
              (lang === 'AR' ? 'مراقبة النزاهة والاحتيال' : 'Integrity Monitor')}
           </h2>
           <p className="text-gray-500 dark:text-slate-400 text-xs md:text-sm mt-1">
@@ -107,6 +109,7 @@ export default function App() {
              activeTab === 'settings' ? (lang === 'AR' ? 'إعدادات النظام العامة وتغيير عمولة المنصة.' : 'Global configuration and system preferences.') :
              activeTab === 'website' ? (lang === 'AR' ? 'تخصيص وتحرير الصفحة الرئيسية بصرياً مع معاينة مباشرة.' : 'Visually customize the homepage with live preview and draft/publish workflow.') :
              activeTab === 'builder' ? (lang === 'AR' ? 'بناء وتعديل مكونات لوحة التحكم بصرياً.' : 'Visually customize control center elements.') :
+             activeTab === 'trash' ? (lang === 'AR' ? 'معاينة الحسابات المنسقة في السلة، الاسترجاع والحذف النهائي الآمن.' : 'Review trashed profiles, restore account states, or anonymize PII.') :
              (lang === 'AR' ? 'تنبيهات كشف الاحتيال وتغيير الموقع الجغرافي المشبوه.' : 'Real-time fraud detection and security events feed.')}
           </p>
         </div>
@@ -160,6 +163,9 @@ export default function App() {
 
         {/* --- Tab 12: Control Center Builder --- */}
         {activeTab === 'builder' && <ControlCenterBuilderShell lang={lang} />}
+
+        {/* --- Tab 13: Trash Bin Management --- */}
+        {activeTab === 'trash' && <TrashBinManagement lang={lang} />}
       </Suspense>
     </ControlCenterShell>
   );

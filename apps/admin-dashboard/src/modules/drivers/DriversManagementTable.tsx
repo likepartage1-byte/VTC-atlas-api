@@ -8,7 +8,12 @@ import {
   Clock,
   Eye,
   AlertCircle,
-  Star
+  Star,
+  Trash2,
+  Lock,
+  CheckSquare,
+  Square,
+  ShieldAlert,
 } from 'lucide-react';
 import api from '../../lib/api';
 import { DriverProfileDrawer } from './DriverProfileDrawer';
@@ -22,6 +27,14 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'AVAILABLE' | 'ON_TRIP' | 'BUSY' | 'OFFLINE'>('ALL');
   const [selectedDriver, setSelectedDriver] = useState<DriverFleetItem | null>(null);
 
+  // Checkbox selection & Action State
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    action: 'TRASH' | 'WIPE_SESSIONS' | null;
+  }>({ isOpen: false, action: null });
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
+
   const isAr = lang === 'AR';
 
   useEffect(() => {
@@ -32,7 +45,6 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
     setLoading(true);
     setError(null);
     try {
-      // Primary: Fetch live location & status telemetry for driver fleet
       const res = await api.get('/admin/location/live');
       let fleetData: DriverFleetItem[] = [];
       if (Array.isArray(res.data)) {
@@ -41,12 +53,13 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
         fleetData = res.data.drivers;
       }
 
-      setDrivers(fleetData);
+      setDrivers(fleetData.filter((d: any) => d.status !== 'TRASHED'));
     } catch (err: any) {
       console.error('Failed to fetch drivers fleet data', err);
       setError(err.response?.data?.message || 'Unable to load drivers fleet. Please check network connection.');
     } finally {
       setLoading(false);
+      setSelectedIds([]);
     }
   };
 
@@ -65,6 +78,55 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
   const onTripCount = drivers.filter((d) => d.status === 'ON_TRIP').length;
   const busyCount = drivers.filter((d) => d.status === 'BUSY').length;
 
+  const isAllSelected =
+    filteredDrivers.length > 0 &&
+    filteredDrivers.every((d) => selectedIds.includes(d.userId || d.driverId));
+
+  const toggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredDrivers.map((d) => d.userId || d.driverId));
+    }
+  };
+
+  const toggleSelectDriver = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter((item) => item !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleExecuteAction = async () => {
+    if (!confirmModal.action || selectedIds.length === 0) return;
+    setActionLoading(true);
+    try {
+      if (confirmModal.action === 'TRASH') {
+        await api.post('/admin/users/bulk-trash', { userIds: selectedIds });
+      } else if (confirmModal.action === 'WIPE_SESSIONS') {
+        await api.post('/admin/users/bulk-wipe-sessions', { userIds: selectedIds });
+      }
+      setConfirmModal({ isOpen: false, action: null });
+      fetchDriversFleet();
+    } catch (err: any) {
+      console.error('[BulkDriverTrash Diagnostics]', {
+        status: err.response?.status,
+        url: err.config?.url,
+        requestData: err.config?.data,
+        responseData: err.response?.data,
+        message: err.message,
+      });
+      const errorMsg = isAr
+        ? (err.response?.data?.message ? `فشلت العملية: ${err.response.data.message}` : 'فشلت العملية. يرجى المحاولة مرة أخرى.')
+        : (err.response?.data?.message || 'Operation failed. Please try again.');
+      setError(errorMsg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
       {/* Header & Controls */}
@@ -76,8 +138,8 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
           </h3>
           <p className="text-gray-500 dark:text-slate-400 text-xs md:text-sm mt-1">
             {isAr
-              ? 'استعراض بيانات الأسطول والتغطية الجغرافية المباشرة وحالة السائقين.'
-              : 'Browse active driver fleet, operational telemetry status, and profile details.'}
+              ? 'استعراض أسطول السائقين، طرد الجلسات، ونقل السائقين لسلة المهملات بأمان.'
+              : 'Browse active driver fleet, wipe active sessions, or move drivers to trash.'}
           </p>
         </div>
 
@@ -91,9 +153,40 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
         </button>
       </div>
 
+      {/* Action Bar (shown when items are selected) */}
+      {selectedIds.length > 0 && (
+        <div className="p-4 bg-purple-50 dark:bg-slate-800 border border-purple-200 dark:border-slate-700 rounded-2xl flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2 text-xs font-black text-purple-900 dark:text-purple-300">
+            <CheckSquare size={16} className="text-purple-600 dark:text-purple-400" />
+            <span>
+              {isAr
+                ? `تم تحديد ${selectedIds.length} سائق`
+                : `${selectedIds.length} drivers selected`}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setConfirmModal({ isOpen: true, action: 'WIPE_SESSIONS' })}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Lock size={14} />
+              <span>{isAr ? '🔐 تنظيف الجلسات (Wipe Sessions)' : '🔐 Wipe Sessions'}</span>
+            </button>
+
+            <button
+              onClick={() => setConfirmModal({ isOpen: true, action: 'TRASH' })}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all active:scale-[0.98]"
+            >
+              <Trash2 size={14} />
+              <span>{isAr ? '🗑️ نقل إلى السلة (Trash)' : '🗑️ Move to Trash'}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Filter Tabs & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 dark:border-slate-800">
-        {/* Status Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto">
           <button
             onClick={() => setStatusFilter('ALL')}
@@ -149,13 +242,13 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={isAr ? 'بحث باسم السائق أو الهاتف...' : 'Search driver name, phone...'}
-            className="w-full pl-9 pr-3 py-1.5 bg-gray-100 dark:bg-slate-800 border border-transparent dark:border-slate-700 rounded-xl text-xs font-medium focus:outline-none focus:border-purple-500 transition-colors"
+            placeholder={isAr ? 'بحث باسم السائق أو الهاتف أو ID...' : 'Search driver name, phone, ID...'}
+            className="w-full pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-slate-800/80 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold focus:outline-none focus:border-purple-600 transition-colors"
           />
         </div>
       </div>
 
-      {/* Error Alert */}
+      {/* Error Banner */}
       {error && (
         <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 flex items-center justify-between gap-3 text-xs font-bold">
           <div className="flex items-center gap-2">
@@ -164,31 +257,36 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
           </div>
           <button
             onClick={fetchDriversFleet}
-            className="px-3 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
             Retry
           </button>
         </div>
       )}
 
-      {/* Drivers Fleet Table */}
+      {/* Drivers Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
-          <thead className="text-gray-400 text-[10px] uppercase font-black tracking-widest border-b border-gray-100 dark:border-slate-800">
+          <thead className="text-gray-400 dark:text-slate-400 text-[11px] uppercase font-mono tracking-widest border-b border-gray-100 dark:border-slate-800">
             <tr>
-              <th className="pb-4 font-bold">{isAr ? 'اسم السائق' : 'Driver Name'}</th>
-              <th className="pb-4 font-bold">{isAr ? 'رقم الهاتف' : 'Phone Number'}</th>
-              <th className="pb-4 font-bold">{isAr ? 'حالة التغطية' : 'Coverage Status'}</th>
-              <th className="pb-4 font-bold">{isAr ? 'المصنّع والسيارة' : 'Vehicle'}</th>
-              <th className="pb-4 font-bold">{isAr ? 'التقييم' : 'Rating'}</th>
-              <th className="pb-4 font-bold text-right">{isAr ? 'معاينة الملف' : 'Inspect Profile'}</th>
+              <th className="py-3 px-3 w-10 text-center">
+                <button onClick={toggleSelectAll} className="text-gray-400 hover:text-purple-600 transition-colors">
+                  {isAllSelected ? <CheckSquare size={16} className="text-purple-600" /> : <Square size={16} />}
+                </button>
+              </th>
+              <th className="py-3">{isAr ? 'السائق' : 'Driver'}</th>
+              <th className="py-3">{isAr ? 'الهاتف' : 'Phone'}</th>
+              <th className="py-3">{isAr ? 'الحالة الحالية' : 'Status'}</th>
+              <th className="py-3">{isAr ? 'المركبة' : 'Vehicle'}</th>
+              <th className="py-3">{isAr ? 'التقييم' : 'Rating'}</th>
+              <th className="py-3 text-right">{isAr ? 'الإجراءات' : 'Actions'}</th>
             </tr>
           </thead>
 
           <tbody className="text-sm divide-y divide-gray-100 dark:divide-slate-800/60">
             {loading ? (
               <tr>
-                <td colSpan={6} className="py-16 text-center text-gray-400">
+                <td colSpan={7} className="py-16 text-center text-gray-400">
                   <div className="flex flex-col items-center gap-3">
                     <RefreshCw className="animate-spin text-purple-500" size={28} />
                     <span className="text-xs font-bold uppercase tracking-widest">{isAr ? 'جاري تحميل الأسطول...' : 'Loading drivers fleet...'}</span>
@@ -196,68 +294,79 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
                 </td>
               </tr>
             ) : filteredDrivers.length > 0 ? (
-              filteredDrivers.map((item) => (
-                <tr
-                  key={item.driverId}
-                  onClick={() => setSelectedDriver(item)}
-                  className="hover:bg-purple-50/50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group"
-                >
-                  <td className="py-4 font-bold">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-purple-600/10 text-purple-600 dark:text-purple-400 font-black flex items-center justify-center text-xs">
-                        {item.fullName ? item.fullName.charAt(0).toUpperCase() : 'D'}
+              filteredDrivers.map((item) => {
+                const targetId = item.userId || item.driverId;
+                const isSelected = selectedIds.includes(targetId);
+                return (
+                  <tr
+                    key={item.driverId}
+                    onClick={() => setSelectedDriver(item)}
+                    className={`hover:bg-purple-50/50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group ${
+                      isSelected ? 'bg-purple-50/80 dark:bg-slate-800/80' : ''
+                    }`}
+                  >
+                    <td className="py-4 px-3 text-center" onClick={(e) => toggleSelectDriver(targetId, e)}>
+                      <button className="text-gray-400 hover:text-purple-600 transition-colors">
+                        {isSelected ? <CheckSquare size={16} className="text-purple-600" /> : <Square size={16} />}
+                      </button>
+                    </td>
+                    <td className="py-4 font-bold">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-600/10 text-purple-600 dark:text-purple-400 font-black flex items-center justify-center text-xs">
+                          {item.fullName ? item.fullName.charAt(0).toUpperCase() : 'D'}
+                        </div>
+                        <div>
+                          <span className="block font-bold group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                            {item.fullName || 'Unnamed Driver'}
+                          </span>
+                          <span className="text-[10px] text-gray-400 font-mono">ID: {item.driverId}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="block font-bold group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                          {item.fullName || 'Unnamed Driver'}
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-mono">ID: {item.driverId}</span>
+                    </td>
+                    <td className="py-4 font-mono text-xs font-medium text-gray-600 dark:text-slate-300">
+                      {item.phone || '—'}
+                    </td>
+                    <td className="py-4">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border ${
+                        item.status === 'AVAILABLE' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
+                        item.status === 'ON_TRIP' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
+                        item.status === 'BUSY' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                        'bg-slate-500/10 border-slate-500/20 text-slate-400'
+                      }`}>
+                        {item.status === 'AVAILABLE' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-4">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-slate-200">
+                        <Car size={14} className="text-gray-400" />
+                        <span>{item.vehicleInfo?.make ? `${item.vehicleInfo.make} ${item.vehicleInfo.model || ''}` : '—'}</span>
                       </div>
-                    </div>
-                  </td>
-                  <td className="py-4 font-mono text-xs font-medium text-gray-600 dark:text-slate-300">
-                    {item.phone || '—'}
-                  </td>
-                  <td className="py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black border ${
-                      item.status === 'AVAILABLE' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' :
-                      item.status === 'ON_TRIP' ? 'bg-purple-500/10 border-purple-500/20 text-purple-500' :
-                      item.status === 'BUSY' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
-                      'bg-slate-500/10 border-slate-500/20 text-slate-400'
-                    }`}>
-                      {item.status === 'AVAILABLE' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-gray-700 dark:text-slate-200">
-                      <Car size={14} className="text-gray-400" />
-                      <span>{item.vehicleInfo?.make ? `${item.vehicleInfo.make} ${item.vehicleInfo.model || ''}` : '—'}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 font-bold text-xs">
-                    <div className="flex items-center gap-1 text-amber-500">
-                      <Star size={14} className="fill-amber-500" />
-                      <span>{item.rating ? item.rating.toFixed(1) : '—'}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedDriver(item);
-                      }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 rounded-xl font-bold text-xs transition-colors"
-                    >
-                      <Eye size={14} />
-                      <span>{isAr ? 'عرض الملف' : 'Inspect'}</span>
-                    </button>
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td className="py-4 font-bold text-xs">
+                      <div className="flex items-center gap-1 text-amber-500">
+                        <Star size={14} className="fill-amber-500" />
+                        <span>{item.rating ? item.rating.toFixed(1) : '—'}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDriver(item);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-slate-800 hover:bg-purple-600 hover:text-white dark:hover:bg-purple-600 rounded-xl font-bold text-xs transition-colors"
+                      >
+                        <Eye size={14} />
+                        <span>{isAr ? 'عرض الملف' : 'Inspect'}</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan={6} className="py-16 text-center text-gray-400">
+                <td colSpan={7} className="py-16 text-center text-gray-400">
                   <div className="flex flex-col items-center gap-2">
                     <Users size={36} className="opacity-30 mb-1" />
                     <p className="font-bold text-sm">{isAr ? 'لا يوجد سائقين يطابقون خيارات البحث.' : 'No drivers matching query.'}</p>
@@ -268,6 +377,58 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
           </tbody>
         </table>
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 text-gray-900 dark:text-white border border-gray-100 dark:border-slate-800">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
+              <ShieldAlert size={28} />
+              <h4 className="text-lg font-black tracking-tight">
+                {confirmModal.action === 'TRASH'
+                  ? (isAr ? 'تأكيد نقل السائقين إلى سلة المهملات' : 'Confirm Move Drivers to Trash')
+                  : (isAr ? 'تأكيد تنظيف الجلسات والكاش' : 'Confirm Driver Session Wipe')}
+              </h4>
+            </div>
+
+            <p className="text-xs font-semibold text-gray-600 dark:text-slate-300 leading-relaxed">
+              {confirmModal.action === 'TRASH'
+                ? (isAr
+                    ? `هل أنت متأكد من نقل ${selectedIds.length} سائقين إلى سلة المهملات؟ سيتم تسجيل خروجهم وإلغاء حضورهم اللحظي على الخريطة. الرحلات والمعاملات المالية التاريخية لن يتم حذفها.`
+                    : `Are you sure you want to move ${selectedIds.length} drivers to the trash bin? They will be logged out and removed from live map presence. Historical rides and financial ledgers will NOT be deleted.`)
+                : (isAr
+                    ? `هل أنت متأكد من تنظيف جلسات ${selectedIds.length} سائقين؟ سيتم تسجيل خروجهم وتصفية كاش التواجد، ولن يتم حذف الحسابات أو الرحلات.`
+                    : `Are you sure you want to wipe sessions for ${selectedIds.length} drivers? They will be logged out without deleting accounts or ride history.`)}
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-slate-800">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, action: null })}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+
+              <button
+                onClick={handleExecuteAction}
+                disabled={actionLoading}
+                className={`px-5 py-2 text-white rounded-xl font-bold text-xs shadow-md transition-all ${
+                  confirmModal.action === 'TRASH'
+                    ? 'bg-red-600 hover:bg-red-700 shadow-red-600/20'
+                    : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
+                }`}
+              >
+                {actionLoading
+                  ? (isAr ? 'جاري التنفيذ...' : 'Processing...')
+                  : confirmModal.action === 'TRASH'
+                  ? (isAr ? '🗑️ نقل إلى السلة' : 'Move to Trash')
+                  : (isAr ? '🔐 تنظيف الجلسات' : 'Wipe Sessions')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Driver Profile Inspector Drawer */}
       <DriverProfileDrawer

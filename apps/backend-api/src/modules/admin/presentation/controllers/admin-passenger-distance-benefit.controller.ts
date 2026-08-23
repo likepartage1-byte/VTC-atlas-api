@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Param, Body, BadRequestException, NotFoundException, UseGuards, Req } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
+import { UserRole, UserStatus } from '@prisma/client';
 import { Roles } from '../../../identity/presentation/decorators/roles.decorator';
 import { AuthGuard } from '../../../identity/presentation/guards/auth.guard';
 import { RolesGuard } from '../../../identity/presentation/guards/roles.guard';
@@ -68,7 +68,7 @@ export class AdminPassengerDistanceBenefitController {
   @Get('passengers')
   async getAllPassengers() {
     const passengers = await this.prisma.user.findMany({
-      where: { role: UserRole.PASSENGER },
+      where: { role: UserRole.PASSENGER, status: { not: UserStatus.TRASHED } },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

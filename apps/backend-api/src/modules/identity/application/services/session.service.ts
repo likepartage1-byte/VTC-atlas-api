@@ -33,12 +33,38 @@ export class SessionService {
     await this.redis.getClient().del(`session:${userId}:${deviceId}`);
   }
 
-  async revokeAllUserSessions(userId: string): Promise<void> {
+  async revokeAllUserSessions(userId: string, driverId?: string): Promise<void> {
     const redisClient = this.redis.getClient();
+
+    // 1. Delete session keys for this specific user
     const keys = await redisClient.keys(`session:${userId}:*`);
     if (keys && keys.length > 0) {
       await redisClient.del(...keys);
     }
-    this.logger.log(`[Session] Revoked all sessions for user ${userId}`);
+
+    // 2. Delete single-user presence keys
+    await redisClient.del(`presence:${userId}`);
+    await redisClient.del(`driver:${userId}:state`);
+    await redisClient.del(`driver:${userId}:location`);
+
+    if (driverId) {
+      await redisClient.del(`presence:${driverId}`);
+      await redisClient.del(`driver:${driverId}:state`);
+      await redisClient.del(`driver:${driverId}:location`);
+    }
+
+    // 3. TARGETED REMOVAL from shared Redis GEO sets without deleting shared sets
+    try {
+      await redisClient.zrem('drivers:location', userId);
+      await redisClient.zrem('geo:drivers:available', userId);
+      if (driverId) {
+        await redisClient.zrem('drivers:location', driverId);
+        await redisClient.zrem('geo:drivers:available', driverId);
+      }
+    } catch (err) {
+      this.logger.warn(`[Session] Targeted zrem failed: ${(err as Error).message}`);
+    }
+
+    this.logger.log(`[Session] Revoked all sessions and presence for user ${userId}${driverId ? ` / driver ${driverId}` : ''}`);
   }
 }
