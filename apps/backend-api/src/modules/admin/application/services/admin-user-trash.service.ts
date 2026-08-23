@@ -254,17 +254,21 @@ export class AdminUserTrashService {
           city: null,
           firstName: null,
           lastName: null,
+          status: UserStatus.INACTIVE,
+          deletedAt: null,
+          deletedBy: null,
+          deletedFromStatus: null,
         },
       });
 
       anonymizedResults.push(anonymizedUser);
     }
 
-    this.logger.log(`[AdminUserTrash] Safely PII anonymized ${anonymizedResults.length} users, preserving ride history.`);
+    this.logger.log(`[AdminUserTrash] Safely PII anonymized and removed ${anonymizedResults.length} users from trash, preserving ride history.`);
     return {
       success: true,
       count: anonymizedResults.length,
-      message: `${anonymizedResults.length} users permanently anonymized. Historical ride records preserved.`,
+      message: `${anonymizedResults.length} users permanently anonymized and removed from trash. Historical ride records preserved.`,
     };
   }
 

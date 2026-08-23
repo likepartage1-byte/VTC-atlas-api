@@ -107,7 +107,9 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
       let toast = '';
       if (confirmModal.action === 'TRASH') {
         await api.post('/admin/users/bulk-trash', { userIds: selectedIds });
-        toast = isAr ? 'تم نقل السائق إلى سلة المهملات بنجاح.' : 'Driver moved to trash bin successfully.';
+        toast = isAr
+          ? `تم نقل ${selectedIds.length} حسابات إلى سلة المهملات بنجاح.`
+          : `${selectedIds.length} accounts moved to trash successfully.`;
       } else if (confirmModal.action === 'WIPE_SESSIONS') {
         await api.post('/admin/users/bulk-wipe-sessions', { userIds: selectedIds });
         toast = isAr ? 'تم تنظيف وإلغاء جميع جلسات السائق بنجاح.' : 'Driver sessions wiped successfully.';

@@ -90,13 +90,15 @@ export const TrashBinManagement: React.FC<{ lang?: string }> = ({ lang = 'AR' })
       let toast = '';
       if (modalState.type === 'RESTORE' && selectedIds.length > 0) {
         await api.post('/admin/users/bulk-restore', { userIds: selectedIds });
-        toast = isAr ? 'تم استرجاع الحساب بنجاح وإعادته للقائمة النشطة.' : 'Account restored successfully.';
+        toast = isAr ? 'تم استرجاع الحسابات بنجاح.' : 'Accounts restored successfully.';
       } else if (modalState.type === 'PERMANENT_DELETE' && selectedIds.length > 0) {
         await api.delete('/admin/trash/permanent', { data: { userIds: selectedIds } });
-        toast = isAr ? 'تم حذف المستخدم نهائياً بنجاح مع حفظ سجل الرحلات التاريخية.' : 'User permanently anonymized.';
+        toast = isAr
+          ? 'تم حذف البيانات الشخصية نهائياً وإزالة الحسابات من سلة المهملات.'
+          : 'Personal data permanently anonymized and accounts removed from trash.';
       } else if (modalState.type === 'EMPTY_TRASH') {
         await api.delete('/admin/trash/empty');
-        toast = isAr ? 'تم تنظيف سلة المهملات بالكامل بنجاح.' : 'Trash bin emptied successfully.';
+        toast = isAr ? 'تم تنظيف سلة المهملات بنجاح.' : 'Trash bin emptied successfully.';
       }
       setModalState({ isOpen: false, type: null });
       setSuccessMsg(toast);

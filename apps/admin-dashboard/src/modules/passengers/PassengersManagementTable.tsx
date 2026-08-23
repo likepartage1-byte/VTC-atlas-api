@@ -134,7 +134,9 @@ export const PassengersManagementTable: React.FC<{ lang?: string }> = ({ lang = 
       let toast = '';
       if (confirmModal.action === 'TRASH') {
         await api.post('/admin/users/bulk-trash', { userIds: selectedIds });
-        toast = isAr ? 'تم نقل الراكب إلى سلة المهملات بنجاح.' : 'Passenger moved to trash bin successfully.';
+        toast = isAr
+          ? `تم نقل ${selectedIds.length} حسابات إلى سلة المهملات بنجاح.`
+          : `${selectedIds.length} accounts moved to trash successfully.`;
       } else if (confirmModal.action === 'WIPE_SESSIONS') {
         await api.post('/admin/users/bulk-wipe-sessions', { userIds: selectedIds });
         toast = isAr ? 'تم تنظيف وإلغاء جميع جلسات الراكب بنجاح.' : 'Passenger sessions wiped successfully.';
