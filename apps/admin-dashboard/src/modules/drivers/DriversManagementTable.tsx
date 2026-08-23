@@ -29,6 +29,7 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
 
   // Checkbox selection & Action State
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     action: 'TRASH' | 'WIPE_SESSIONS' | null;
@@ -103,12 +104,18 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
     if (!confirmModal.action || selectedIds.length === 0) return;
     setActionLoading(true);
     try {
+      let toast = '';
       if (confirmModal.action === 'TRASH') {
         await api.post('/admin/users/bulk-trash', { userIds: selectedIds });
+        toast = isAr ? 'تم نقل السائق إلى سلة المهملات بنجاح.' : 'Driver moved to trash bin successfully.';
       } else if (confirmModal.action === 'WIPE_SESSIONS') {
         await api.post('/admin/users/bulk-wipe-sessions', { userIds: selectedIds });
+        toast = isAr ? 'تم تنظيف وإلغاء جميع جلسات السائق بنجاح.' : 'Driver sessions wiped successfully.';
       }
       setConfirmModal({ isOpen: false, action: null });
+      setSuccessMsg(toast);
+      setTimeout(() => setSuccessMsg(null), 5000);
+      setSelectedIds([]);
       fetchDriversFleet();
     } catch (err: any) {
       console.error('[BulkDriverTrash Diagnostics]', {
@@ -182,6 +189,17 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
               <span>{isAr ? '🗑️ نقل إلى السلة (Trash)' : '🗑️ Move to Trash'}</span>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Success Toast Banner */}
+      {successMsg && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-3 text-xs font-bold animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✅</span>
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-gray-400 hover:text-emerald-600">✕</button>
         </div>
       )}
 

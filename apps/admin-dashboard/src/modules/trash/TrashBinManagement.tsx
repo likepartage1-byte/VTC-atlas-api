@@ -23,6 +23,7 @@ export const TrashBinManagement: React.FC<{ lang?: string }> = ({ lang = 'AR' })
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
 
@@ -86,14 +87,20 @@ export const TrashBinManagement: React.FC<{ lang?: string }> = ({ lang = 'AR' })
     setActionLoading(true);
     setError(null);
     try {
+      let toast = '';
       if (modalState.type === 'RESTORE' && selectedIds.length > 0) {
         await api.post('/admin/users/bulk-restore', { userIds: selectedIds });
+        toast = isAr ? 'تم استرجاع الحساب بنجاح وإعادته للقائمة النشطة.' : 'Account restored successfully.';
       } else if (modalState.type === 'PERMANENT_DELETE' && selectedIds.length > 0) {
         await api.delete('/admin/trash/permanent', { data: { userIds: selectedIds } });
+        toast = isAr ? 'تم حذف المستخدم نهائياً بنجاح مع حفظ سجل الرحلات التاريخية.' : 'User permanently anonymized.';
       } else if (modalState.type === 'EMPTY_TRASH') {
         await api.delete('/admin/trash/empty');
+        toast = isAr ? 'تم تنظيف سلة المهملات بالكامل بنجاح.' : 'Trash bin emptied successfully.';
       }
       setModalState({ isOpen: false, type: null });
+      setSuccessMsg(toast);
+      setTimeout(() => setSuccessMsg(null), 5000);
       fetchTrashItems();
     } catch (err: any) {
       console.error('Trash action failed', err);
@@ -199,6 +206,17 @@ export const TrashBinManagement: React.FC<{ lang?: string }> = ({ lang = 'AR' })
           </div>
         )}
       </div>
+
+      {/* Success Notification Banner */}
+      {successMsg && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-400 flex items-center justify-between gap-3 text-xs font-bold animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✅</span>
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-gray-400 hover:text-emerald-600">✕</button>
+        </div>
+      )}
 
       {/* Error Alert */}
       {error && (
