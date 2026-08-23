@@ -92,13 +92,19 @@ export const TrashBinManagement: React.FC<{ lang?: string }> = ({ lang = 'AR' })
         await api.post('/admin/users/bulk-restore', { userIds: selectedIds });
         toast = isAr ? 'تم استرجاع الحسابات بنجاح.' : 'Accounts restored successfully.';
       } else if (modalState.type === 'PERMANENT_DELETE' && selectedIds.length > 0) {
-        await api.delete('/admin/trash/permanent', { data: { userIds: selectedIds } });
+        const res = await api.delete('/admin/trash/permanent', { data: { userIds: selectedIds } });
+        const physCount = res.data?.physicallyDeletedCount ?? 0;
+        const anonCount = res.data?.anonymizedCount ?? 0;
         toast = isAr
-          ? 'تم حذف البيانات الشخصية نهائياً وإزالة الحسابات من سلة المهملات.'
-          : 'Personal data permanently anonymized and accounts removed from trash.';
+          ? `تم تنفيذ الحذف بنجاح: (${physCount} حذف فيزيائي كامل، ${anonCount} مجهّل للتاريخ المالي).`
+          : `Deletion processed: (${physCount} physically deleted, ${anonCount} anonymized with history preserved).`;
       } else if (modalState.type === 'EMPTY_TRASH') {
-        await api.delete('/admin/trash/empty');
-        toast = isAr ? 'تم تنظيف سلة المهملات بنجاح.' : 'Trash bin emptied successfully.';
+        const res = await api.delete('/admin/trash/empty');
+        const physCount = res.data?.physicallyDeletedCount ?? 0;
+        const anonCount = res.data?.anonymizedCount ?? 0;
+        toast = isAr
+          ? `تم تفريغ السلة بنجاح: (${physCount} حذف فيزيائي كامل، ${anonCount} مجهّل للتاريخ المالي).`
+          : `Trash emptied: (${physCount} physically deleted, ${anonCount} anonymized with history preserved).`;
       }
       setModalState({ isOpen: false, type: null });
       setSuccessMsg(toast);

@@ -54,7 +54,14 @@ export const DriversManagementTable: React.FC<{ lang?: string }> = ({ lang = 'AR
         fleetData = res.data.drivers;
       }
 
-      setDrivers(fleetData.filter((d: any) => d.status !== 'TRASHED'));
+      setDrivers(
+        fleetData.filter(
+          (d: any) =>
+            d.status !== 'TRASHED' &&
+            d.status !== 'SUSPENDED' &&
+            !d.fullName?.startsWith('Deleted User (')
+        )
+      );
     } catch (err: any) {
       console.error('Failed to fetch drivers fleet data', err);
       setError(err.response?.data?.message || 'Unable to load drivers fleet. Please check network connection.');

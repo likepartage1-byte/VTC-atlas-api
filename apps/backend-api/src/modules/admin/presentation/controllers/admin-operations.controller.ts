@@ -18,6 +18,16 @@ export class AdminOperationsController {
         status: {
           not: DriverStatus.OFFLINE,
         },
+        user: {
+          status: {
+            notIn: ['TRASHED', 'SUSPENDED'],
+          },
+          NOT: {
+            fullName: {
+              startsWith: 'Deleted User (',
+            },
+          },
+        },
       },
       include: {
         user: {
@@ -54,9 +64,22 @@ export class AdminOperationsController {
       recentAuditLogs,
     ] = await Promise.all([
       this.prisma.driver.count({
-        where: { status: { not: DriverStatus.OFFLINE } },
+        where: {
+          status: { not: DriverStatus.OFFLINE },
+          user: {
+            status: { notIn: ['TRASHED', 'SUSPENDED'] },
+            NOT: { fullName: { startsWith: 'Deleted User (' } },
+          },
+        },
       }),
-      this.prisma.driver.count(),
+      this.prisma.driver.count({
+        where: {
+          user: {
+            status: { notIn: ['TRASHED', 'SUSPENDED'] },
+            NOT: { fullName: { startsWith: 'Deleted User (' } },
+          },
+        },
+      }),
       this.prisma.ride.count({
         where: {
           status: {

@@ -218,6 +218,12 @@ export class AdminUserTrashService {
    * - Releases real phone number for fresh re-registration
    * - PRESERVES User record ID, Ride history, and RideLedger foreign keys 100% intact
    */
+  /**
+   * Permanent Delete with Safe Cascade or PII Anonymization
+   * - Strict Guard: Target users MUST be in TRASHED status and cannot be ADMIN.
+   * - Path A (No Ride/Financial History): True physical database deletion via cascading transaction.
+   * - Path B (Has Ride/Financial History): PII anonymization + Terminal SUSPENDED state (permanently excluded from fleet).
+   */
   async permanentDeleteUsers(userIds: string[]) {
     if (!userIds || userIds.length === 0) {
       throw new BadRequestException('userIds array cannot be empty.');
@@ -226,49 +232,123 @@ export class AdminUserTrashService {
     const users = await this.prisma.user.findMany({
       where: {
         status: UserStatus.TRASHED,
+        role: { not: 'ADMIN' },
         OR: [
           { id: { in: userIds } },
           { driverProfile: { id: { in: userIds } } },
         ],
       },
+      include: {
+        driverProfile: {
+          include: {
+            _count: {
+              select: {
+                rides: true,
+                transactions: true,
+                ledgerEntries: true,
+                withdrawals: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            customerRides: true,
+          },
+        },
+      },
     });
 
     if (users.length === 0) {
-      throw new NotFoundException('No trashed users found for permanent anonymization.');
+      throw new NotFoundException('No eligible trashed users found for permanent deletion.');
     }
 
-    const anonymizedResults: any[] = [];
+    let physicallyDeletedCount = 0;
+    let anonymizedCount = 0;
 
     for (const user of users) {
-      const anonTag = `deleted_${Date.now()}_${user.id.slice(0, 6)}`;
+      const passengerRidesCount = user._count.customerRides || 0;
+      const driverProfile = user.driverProfile;
+      const driverRidesCount = driverProfile?._count?.rides || 0;
+      const driverTxCount = driverProfile?._count?.transactions || 0;
+      const driverLedgerCount = driverProfile?._count?.ledgerEntries || 0;
+      const driverWithdrawalCount = driverProfile?._count?.withdrawals || 0;
 
-      const anonymizedUser = await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          fullName: `Deleted User (${user.id.slice(0, 6)})`,
-          phoneNumber: anonTag, // Releases original phone number while satisfying @unique constraint
-          email: null,
-          fcmToken: null,
-          avatar: null,
-          address: null,
-          city: null,
-          firstName: null,
-          lastName: null,
-          status: UserStatus.INACTIVE,
-          deletedAt: null,
-          deletedBy: null,
-          deletedFromStatus: null,
-        },
-      });
+      const hasHistory =
+        passengerRidesCount > 0 ||
+        driverRidesCount > 0 ||
+        driverTxCount > 0 ||
+        driverLedgerCount > 0 ||
+        driverWithdrawalCount > 0;
 
-      anonymizedResults.push(anonymizedUser);
+      if (!hasHistory) {
+        // Path A: Physical Cascade Delete
+        await this.prisma.$transaction(async (tx) => {
+          await tx.pushToken.deleteMany({ where: { userId: user.id } });
+          await tx.notification.deleteMany({ where: { userId: user.id } });
+
+          if (driverProfile) {
+            const driverId = driverProfile.id;
+            await tx.driverLocationHistory.deleteMany({ where: { driverId } });
+
+            const verification = await tx.driverVerification.findUnique({
+              where: { driverId },
+            });
+            if (verification) {
+              await tx.verificationEvent.deleteMany({
+                where: { verificationId: verification.id },
+              });
+              await tx.driverDocument.deleteMany({
+                where: { verificationId: verification.id },
+              });
+              await tx.driverVerification.delete({
+                where: { id: verification.id },
+              });
+            }
+
+            await tx.driverAccount.deleteMany({ where: { driverId } });
+            await tx.driver.delete({ where: { id: driverId } });
+          }
+
+          await tx.user.delete({ where: { id: user.id } });
+        });
+
+        physicallyDeletedCount++;
+        this.logger.log(`[AdminUserTrash] Physically deleted user [${user.id}] (${user.fullName}) from database.`);
+      } else {
+        // Path B: Anonymization & Terminal Hidden State
+        const anonTag = `deleted_${Date.now()}_${user.id.slice(0, 6)}`;
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            fullName: `Deleted User (${user.id.slice(0, 6)})`,
+            phoneNumber: anonTag,
+            email: null,
+            fcmToken: null,
+            avatar: null,
+            address: null,
+            city: null,
+            firstName: null,
+            lastName: null,
+            status: UserStatus.SUSPENDED,
+            deletedAt: user.deletedAt || new Date(),
+            deletedBy: user.deletedBy,
+            deletedFromStatus: UserStatus.TRASHED,
+          },
+        });
+
+        anonymizedCount++;
+        this.logger.log(`[AdminUserTrash] Anonymized user [${user.id}] preserving historical ride/ledger data.`);
+      }
     }
 
-    this.logger.log(`[AdminUserTrash] Safely PII anonymized and removed ${anonymizedResults.length} users from trash, preserving ride history.`);
+    const totalCount = physicallyDeletedCount + anonymizedCount;
     return {
       success: true,
-      count: anonymizedResults.length,
-      message: `${anonymizedResults.length} users permanently anonymized and removed from trash. Historical ride records preserved.`,
+      count: totalCount,
+      physicallyDeletedCount,
+      anonymizedCount,
+      message: `${physicallyDeletedCount} user(s) physically deleted from database, ${anonymizedCount} user(s) anonymized with historical records preserved.`,
     };
   }
 

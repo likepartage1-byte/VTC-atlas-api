@@ -80,11 +80,20 @@ export const PassengersManagementTable: React.FC<{ lang?: string }> = ({ lang = 
     setLoading(true);
     setError(null);
     try {
+      const filterValidPassengers = (list: any[]) =>
+        list.filter(
+          (p: any) =>
+            p.status !== 'TRASHED' &&
+            p.status !== 'SUSPENDED' &&
+            !p.fullName?.startsWith('Deleted User (')
+        );
+
       const res = await api.get('/admin/passengers').catch(() => null);
+
       if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setPassengers(res.data.filter((p: any) => p.status !== 'TRASHED'));
+        setPassengers(filterValidPassengers(res.data));
       } else if (res && Array.isArray(res.data) && res.data.length > 0) {
-        setPassengers(res.data.filter((p: any) => p.status !== 'TRASHED'));
+        setPassengers(filterValidPassengers(res.data));
       } else {
         setPassengers(MOCK_PASSENGERS);
       }
