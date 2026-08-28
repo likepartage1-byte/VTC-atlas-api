@@ -11,21 +11,23 @@ export type RideStatus =
   | 'ARRIVED'
   | 'IN_PROGRESS'
   | 'COMPLETED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'EXPIRED';
 
 /**
  * Canonical transition graph.
  * Every possible (from → to[]) mapping is defined here.
  */
 export const ALLOWED_TRANSITIONS: Record<RideStatus, RideStatus[]> = {
-  REQUESTED: ['DISPATCHED', 'DRIVER_ACCEPTED', 'CANCELLED'],
+  REQUESTED: ['DISPATCHED', 'DRIVER_ACCEPTED', 'CANCELLED', 'EXPIRED'],
 
-  DISPATCHED: ['DRIVER_ACCEPTED', 'CANCELLED'],
+  DISPATCHED: ['DRIVER_ACCEPTED', 'CANCELLED', 'EXPIRED'],
   DRIVER_ACCEPTED: ['ARRIVED', 'CANCELLED'],
   ARRIVED: ['IN_PROGRESS', 'CANCELLED'],
   IN_PROGRESS: ['COMPLETED'],
   COMPLETED: [],
   CANCELLED: [],
+  EXPIRED: [],
 };
 
 /**

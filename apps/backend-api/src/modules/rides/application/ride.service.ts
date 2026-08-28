@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { BaseApplicationService } from '../../../core/common/base-application.service';
 import { DomainEventBus } from '../../../core/events/domain-event-bus';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -98,10 +98,63 @@ export class RideService extends BaseApplicationService {
   }
 
   async requestRide(userId: string, dto: RequestRideDto): Promise<RideResponseDto> {
+    // 0. Fetch dynamic Intercity Business Rules for validation
+    let intercityRules = {
+      sharedMinPriceMAD: 30,
+      privateMinPriceMAD: 100,
+      parcelMinPriceMAD: 20,
+    };
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'intercity_business_rules' },
+      });
+      if (setting && setting.value) {
+        intercityRules = { ...intercityRules, ...(setting.value as any) };
+      }
+    } catch (_) {}
+
+    const isParcel = dto.serviceType === 'COURSIER' || (dto.rideMode as string) === 'PARCEL';
+    const isIntercity = dto.tripType === 'INTERCITY';
+
     // 1. Calculate physical road distance
     const distMeters = Math.round(
       calculateHaversineDistance(dto.pickupLat, dto.pickupLng, dto.dropoffLat, dto.dropoffLng)
     );
+    const distKm = distMeters / 1000.0;
+
+    // PARCEL & Intercity price validation rules
+    if (isParcel) {
+      // Price is OPTIONAL for PARCEL:
+      // If provided, must be >= parcelMinPriceMAD (default 20 MAD)
+      if (dto.offeredPrice !== undefined && dto.offeredPrice !== null) {
+        if (dto.offeredPrice < intercityRules.parcelMinPriceMAD) {
+          throw new BadRequestException(
+            `الحد الأدنى لسعر الإرسالية هو ${intercityRules.parcelMinPriceMAD} درهم`
+          );
+        }
+      }
+    } else if (isIntercity) {
+      if (dto.rideMode === 'SHARED') {
+        const pCount = Math.min(4, Math.max(1, dto.seatsBooked ?? 1));
+        const sharedMinRates: Record<number, number> = { 1: 0.90, 2: 1.30, 3: 1.70, 4: 2.12 };
+        const minRate = sharedMinRates[pCount] ?? 2.12;
+        const distMinFloor = Math.round(distKm * minRate);
+        const effectiveMin = Math.max(intercityRules.sharedMinPriceMAD, distMinFloor);
+
+        if (dto.offeredPrice === undefined || dto.offeredPrice === null || dto.offeredPrice < effectiveMin) {
+          throw new BadRequestException(
+            `الحد الأدنى لسعر الرحلة المشتركة (${pCount} شخص) هو ${effectiveMin} درهم`
+          );
+        }
+      } else {
+        const minPrice = intercityRules.privateMinPriceMAD;
+        if (dto.offeredPrice === undefined || dto.offeredPrice === null || dto.offeredPrice < minPrice) {
+          throw new BadRequestException(
+            `الحد الأدنى لسعر الرحلة الخاصة بين المدن هو ${minPrice} درهم`
+          );
+        }
+      }
+    }
 
     // 2. Read active global Bulk Distance Benefit setting
     let driverBenefit = 0;
@@ -129,6 +182,11 @@ export class RideService extends BaseApplicationService {
     const driverDisplayMeters = Math.max(0, distMeters - driverBenefit);
     const passengerDisplayMeters = distMeters + passengerCredit;
 
+    // Calculate estimated price: if PARCEL with no offered price, keep null
+    const finalEstimatedPrice = isParcel && (dto.offeredPrice === null || dto.offeredPrice === undefined)
+      ? null
+      : (dto.offeredPrice ?? 25.0);
+
     const ride = await this.prisma.ride.create({
       data: {
         passengerId: userId,
@@ -140,7 +198,7 @@ export class RideService extends BaseApplicationService {
         dropoffLng: dto.dropoffLng,
         dropoffAddress: dto.dropoffAddress,
         serviceType: dto.serviceType,
-        estimatedPrice: (dto as any).estimatedPrice ?? (dto as any).offeredPrice ?? 25.0,
+        estimatedPrice: finalEstimatedPrice,
         originalDistanceMeters: distMeters,
         driverBenefitMeters: driverBenefit,
         passengerCreditMeters: passengerCredit,
@@ -149,8 +207,17 @@ export class RideService extends BaseApplicationService {
         benefitReason: benefitReason,
         benefitGrantedBy: benefitGrantedBy,
         benefitGrantedAt: (driverBenefit > 0 || passengerCredit > 0) ? new Date() : undefined,
+        // ── Intercity fields ─────────────────────────────────────────
+        ...(dto.tripType && { tripType: dto.tripType }),
+        ...(dto.departureCity && { departureCity: dto.departureCity }),
+        ...(dto.arrivalCity && { arrivalCity: dto.arrivalCity }),
+        ...(dto.departureDateTime && { departureDateTime: new Date(dto.departureDateTime) }),
+        ...(dto.rideMode && { rideMode: dto.rideMode }),
+        ...(dto.seatsBooked && { seatsBooked: dto.seatsBooked }),
+        ...(dto.passengerNotes && { passengerNotes: dto.passengerNotes }),
       },
     });
+
 
     await this.eventBus.publish(
       new RideCreatedEvent(ride.id, {
