@@ -23,12 +23,17 @@ export class NegotiationService {
       throw new BadRequestException('Ride is no longer open for negotiation.');
     }
 
+    const basePrice = ride.estimatedPrice ?? ride.actualPrice;
+    if (basePrice === null || basePrice === undefined) {
+      throw new BadRequestException('Cannot propose counter-offer: Ride does not have a valid base price.');
+    }
+
     const negotiation = await this.prisma.negotiation.create({
       data: {
         rideId,
         driverId,
         passengerId: ride.passengerId,
-        proposedPrice: ride.estimatedPrice,
+        proposedPrice: basePrice,
         counterPrice: price,
         status: 'PENDING',
       },
