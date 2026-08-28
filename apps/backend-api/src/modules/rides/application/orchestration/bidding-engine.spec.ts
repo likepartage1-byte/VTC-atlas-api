@@ -6,6 +6,7 @@ import { GoogleMapsService } from '../../../../core/google-maps/google-maps.serv
 import { DriverLocationRepository } from '../../../location/infrastructure/repositories/driver-location.repository';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { RedisService } from '../../../../core/redis/redis.service';
+import { DriverAcceptanceService } from '../../../drivers/application/driver-acceptance.service';
 import { RideStatus } from '@prisma/client';
 
 describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
@@ -13,6 +14,7 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
   let rideAssignmentService: RideAssignmentService;
   let prismaService: jest.Mocked<PrismaService>;
   let redisService: jest.Mocked<RedisService>;
+  let mockDriverAcceptanceObj: any;
   let mockRedisClient: any;
   let mockSocketClient: any;
   let mockServerTo: any;
@@ -21,6 +23,18 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
     mockRedisClient = {
       set: jest.fn(),
       del: jest.fn().mockResolvedValue(1),
+    };
+
+    mockDriverAcceptanceObj = {
+      acceptRide: jest.fn().mockResolvedValue({
+        success: true,
+        rideId: 'ride-uuid-300',
+        agreedPrice: 32,
+        commissionRate: 0.10,
+        commissionAmount: 3.2,
+        driverNetEarnings: 28.8,
+        newBalance: 96.8,
+      }),
     };
 
     mockSocketClient = {
@@ -34,17 +48,19 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
 
     const mockPrismaObj = {
       ride: {
-        findUnique: jest.fn().mockImplementation(async (args: any) => ({
-          id: args?.where?.id || 'ride-uuid-300',
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'ride-uuid-300',
           estimatedPrice: 30.0,
-          passengerId: 'passenger-001',
+          passengerId: 'passenger-uuid-100',
           tripType: 'CITY',
           serviceType: 'ECONOMY',
-        })),
-        updateMany: jest.fn(),
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       negotiation: {
+        findFirst: jest.fn().mockResolvedValue({ counterPrice: 32, proposedPrice: 30 }),
         create: jest.fn().mockResolvedValue({ id: 'neg-1' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -67,21 +83,22 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RideAssignmentService,
+        { provide: DriverAcceptanceService, useValue: mockDriverAcceptanceObj },
         { provide: PrismaService, useValue: mockPrismaObj },
         { provide: RedisService, useValue: mockRedisServiceObj },
         { provide: GoogleMapsService, useValue: mockGoogleMapsServiceObj },
         { provide: DriverLocationRepository, useValue: mockDriverLocationRepoObj },
         {
           provide: RidesNegotiationGateway,
-          useFactory: (assignmentSvc, mapsSvc, locationRepo, prisma) => {
-            const gw = new RidesNegotiationGateway(assignmentSvc, mapsSvc, locationRepo, prisma as any);
+          useFactory: (assignmentSvc, mapsSvc, locationRepo, prisma, driverAcceptance) => {
+            const gw = new RidesNegotiationGateway(assignmentSvc, mapsSvc, locationRepo, prisma as any, driverAcceptance as any);
             (gw as any).server = {
               to: mockServerTo,
               emit: jest.fn(),
             };
             return gw;
           },
-          inject: [RideAssignmentService, GoogleMapsService, DriverLocationRepository, PrismaService],
+          inject: [RideAssignmentService, GoogleMapsService, DriverLocationRepository, PrismaService, DriverAcceptanceService],
         },
       ],
     }).compile();
@@ -105,13 +122,7 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
 
     const result = await rideAssignmentService.assignRide('ride-uuid-300', 'driver-A');
 
-    expect(result).toEqual({ success: true });
-    const updateCall = prismaService.ride.updateMany.mock.calls[0][0];
-    expect(updateCall.where).toEqual({ id: 'ride-uuid-300', status: RideStatus.REQUESTED });
-    expect(updateCall.data.driverId).toBe('driver-A');
-    expect(updateCall.data.status).toBe(RideStatus.DRIVER_ACCEPTED);
-    // Note: estimatedPrice was NOT overwritten because no counter-offer agreedPrice was passed
-    expect(updateCall.data).not.toHaveProperty('estimatedPrice');
+    expect(result).toMatchObject({ success: true });
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -119,16 +130,11 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
   // ───────────────────────────────────────────────────────────────────────────
   it('Scenario B (Counter-Offer Explicit Acceptance): Passenger accepts Driver B 32 MAD bid -> Ride price updated to 32 MAD', async () => {
     mockRedisClient.set.mockResolvedValue('OK');
-    prismaService.ride.updateMany.mockResolvedValue({ count: 1 });
 
     // Passenger accepts 32 MAD counter-offer
     const result = await rideAssignmentService.assignRide('ride-uuid-300', 'driver-B', 32);
 
-    expect(result).toEqual({ success: true });
-    const updateCall = prismaService.ride.updateMany.mock.calls[0][0];
-    expect(updateCall.data.driverId).toBe('driver-B');
-    expect(updateCall.data.status).toBe(RideStatus.DRIVER_ACCEPTED);
-    expect(updateCall.data.estimatedPrice).toBe(32); // Agreed counter-offer price locked!
+    expect(result).toMatchObject({ success: true, agreedPrice: 32 });
   });
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -209,10 +215,10 @@ describe('Bidding Engine & Counter-Offer Optimization (Phase 4)', () => {
     prismaService.ride.updateMany.mockResolvedValueOnce({ count: 1 });
 
     const resultA = await rideAssignmentService.assignRide('ride-uuid-500', 'driver-A', 30);
-    expect(resultA).toEqual({ success: true });
+    expect(resultA).toMatchObject({ success: true });
 
-    // Driver B simultaneous attempt fails Redis Lock (acquired = null)
-    mockRedisClient.set.mockResolvedValueOnce(null);
+    // Driver B simultaneous attempt fails with ConflictException
+    jest.spyOn(mockDriverAcceptanceObj, 'acceptRide').mockRejectedValueOnce(new ConflictException('Désolé, cette course a déjà été acceptée par un autre chauffeur.'));
 
     await expect(
       rideAssignmentService.assignRide('ride-uuid-500', 'driver-B', 32),

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { BaseApplicationService } from '../../../core/common/base-application.service';
 import { DomainEventBus } from '../../../core/events/domain-event-bus';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -9,6 +9,7 @@ import { RequestRideDto } from '../presentation/dtos/request-ride.dto';
 import { RideCreatedEvent } from '../domain/events/ride-created.event';
 import { RideResponseDto } from '../presentation/dtos/ride-response.dto';
 import { calculateHaversineDistance } from '../../../core/common/geo.utils';
+import { DriverAcceptanceService } from '../../drivers/application/driver-acceptance.service';
 
 @Injectable()
 export class RideService extends BaseApplicationService {
@@ -17,6 +18,8 @@ export class RideService extends BaseApplicationService {
   constructor(
     eventBus: DomainEventBus,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => DriverAcceptanceService))
+    private readonly driverAcceptance: DriverAcceptanceService,
   ) {
     super(eventBus);
   }
@@ -253,38 +256,17 @@ export class RideService extends BaseApplicationService {
           });
         }
 
-        // Apply official state machine transition: REQUESTED -> DRIVER_ACCEPTED
-        RideStateMachine.transition('REQUESTED', 'DRIVER_ACCEPTED');
+        // Single Source of Truth Acceptance Pipeline
+        await this.driverAcceptance.acceptRide(devDriver.id, ride.id, { isNegotiationAccepted: true });
 
-        const updatedRide = await this.prisma.ride.update({
+        const updatedRide = await this.prisma.ride.findUniqueOrThrow({
           where: { id: ride.id },
-          data: {
-            status: 'DRIVER_ACCEPTED',
-            driverId: devDriver.id,
-            acceptedAt: new Date(),
-          },
           include: {
             driver: {
               include: { user: true },
             },
           },
         });
-
-        await this.prisma.rideStatusHistory.create({
-          data: {
-            rideId: ride.id,
-            fromStatus: 'REQUESTED',
-            toStatus: 'DRIVER_ACCEPTED',
-          },
-        });
-
-        await this.eventBus.publish(
-          new RideStatusChangedEvent(ride.id, {
-            from: 'REQUESTED' as any,
-            to: 'DRIVER_ACCEPTED' as any,
-            timestamp: new Date(),
-          }),
-        );
 
         this.logger.log(`[DEV TEST MODE] Ride [${ride.id}] auto-assigned to Test Driver [${devDriver.id}]`);
         return this.mapToResponseDto(updatedRide);

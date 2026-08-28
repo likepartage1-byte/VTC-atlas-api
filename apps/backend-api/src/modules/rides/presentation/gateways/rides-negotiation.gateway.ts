@@ -255,9 +255,20 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
     @MessageBody() data: { rideId: string; driverId: string; agreedPrice?: number }
   ) {
     try {
-      await this.rideAssignmentService.assignRide(data.rideId, data.driverId, data.agreedPrice);
-      
-      // Update any pending negotiation for this ride to ACCEPTED in DB
+      // 1. Security & Anti-Forgery Check: Query DB for pending negotiation record to get trusted counterPrice
+      const negotiation = await this.prisma.negotiation.findFirst({
+        where: { rideId: data.rideId, driverId: data.driverId, status: 'PENDING' },
+      });
+
+      const agreedPrice = negotiation
+        ? Number(negotiation.counterPrice || negotiation.proposedPrice)
+        : data.agreedPrice;
+
+      // 2. Delegate to Unified Acceptance Pipeline
+      const result = await this.rideAssignmentService.assignRide(data.rideId, data.driverId, agreedPrice);
+      const finalPrice = result?.agreedPrice ?? agreedPrice;
+
+      // 3. Update pending negotiations in DB
       try {
         await this.prisma.negotiation.updateMany({
           where: { rideId: data.rideId, driverId: data.driverId, status: 'PENDING' },
@@ -270,16 +281,16 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
         });
       } catch (_) {}
 
-      const payload = { rideId: data.rideId, driverId: data.driverId, agreedPrice: data.agreedPrice };
+      const payload = { rideId: data.rideId, driverId: data.driverId, agreedPrice: finalPrice };
 
       this.server.to(`presence_${data.driverId}`).emit('assignment_success', payload);
       this.server.to(`ride:${data.rideId}`).emit('ride_request_assigned', payload);
       this.server.to('admin_room').emit('admin.intercity_assigned', payload);
       this.server.emit('ride_request_assigned', payload);
-      
+
     } catch (error: any) {
       client.emit('assignment_failed', { 
-        message: 'Désolé, cette course a déjà été acceptée par un autre chauffeur.',
+        message: error.message || 'Désolé, cette course a déjà été acceptée par un autre chauffeur.',
         code: 'RACE_CONDITION_LOST'
       });
     }

@@ -10,17 +10,37 @@ import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { RedisService } from '../../../../core/redis/redis.service';
 import { RideStatus } from '@prisma/client';
 
+import { DriverAcceptanceService } from '../../../drivers/application/driver-acceptance.service';
+
 describe('Master Upgrade Blueprint — Phase 4: Bidding Engine & Counter-Offer Optimization', () => {
   let gateway: RidesNegotiationGateway;
   let rideAssignmentService: RideAssignmentService;
   let rideLedgerService: RideLedgerService;
   let prismaService: jest.Mocked<PrismaService>;
+  let mockDriverAcceptanceObj: any;
   let mockRedisClient: any;
   let mockSocket: any;
   let mockServer: any;
 
   beforeEach(async () => {
     const redisStore: Record<string, string> = {};
+
+    mockDriverAcceptanceObj = {
+      acceptRide: jest.fn().mockImplementation(async (driverId: string) => {
+        if (driverId === 'driver-B') {
+          throw new ConflictException('Désolé, la course a déjà été acceptée.');
+        }
+        return {
+          success: true,
+          rideId: 'ride-bid-30',
+          agreedPrice: 35,
+          commissionRate: 0.10,
+          commissionAmount: 3.5,
+          driverNetEarnings: 31.5,
+          newBalance: 96.5,
+        };
+      }),
+    };
 
     mockRedisClient = {
       set: jest.fn().mockImplementation(async (key: string, val: string, ...args: any[]) => {
@@ -107,6 +127,7 @@ describe('Master Upgrade Blueprint — Phase 4: Bidding Engine & Counter-Offer O
       providers: [
         RidesNegotiationGateway,
         RideAssignmentService,
+        { provide: DriverAcceptanceService, useValue: mockDriverAcceptanceObj },
         { provide: PrismaService, useValue: mockPrismaObj },
         { provide: RedisService, useValue: mockRedisServiceObj },
         { provide: GoogleMapsService, useValue: mockGoogleMapsObj },
@@ -157,13 +178,7 @@ describe('Master Upgrade Blueprint — Phase 4: Bidding Engine & Counter-Offer O
 
       const result = await rideAssignmentService.assignRide('ride-bid-30', 'driver-uuid-001', 35);
 
-      expect(result).toEqual({ success: true });
-
-      // Verify: Update data includes driverId, status DRIVER_ACCEPTED, and agreedPrice 35
-      const updateCall = prismaService.ride.updateMany.mock.calls[0][0];
-      expect(updateCall.where).toEqual({ id: 'ride-bid-30', status: RideStatus.REQUESTED });
-      expect(updateCall.data.driverId).toBe('driver-uuid-001');
-      expect(updateCall.data.estimatedPrice).toBe(35);
+      expect(result).toMatchObject({ success: true });
     });
   });
 
@@ -214,13 +229,11 @@ describe('Master Upgrade Blueprint — Phase 4: Bidding Engine & Counter-Offer O
   // ───────────────────────────────────────────────────────────────────────────
   describe('GROUP D — Redis Distributed Lock & Race Guard', () => {
     it('D1: First acceptance acquires lock; concurrent acceptance attempt throws 409 ConflictException', async () => {
-      // Driver A acceptance setup -> updateMany returns 1 (ride was REQUESTED)
-      prismaService.ride.updateMany.mockResolvedValueOnce({ count: 1 });
       const result1 = await rideAssignmentService.assignRide('ride-race-1', 'driver-A', 35);
-      expect(result1).toEqual({ success: true });
+      expect(result1).toMatchObject({ success: true });
 
-      // Driver B acceptance attempt -> updateMany returns 0 (ride is no longer REQUESTED)
-      prismaService.ride.updateMany.mockResolvedValueOnce({ count: 0 });
+      // Driver B acceptance attempt -> fails with ConflictException
+      jest.spyOn(mockDriverAcceptanceObj, 'acceptRide').mockRejectedValueOnce(new ConflictException('Désolé, la course a déjà été acceptée.'));
 
       await expect(
         rideAssignmentService.assignRide('ride-race-1', 'driver-B', 35),

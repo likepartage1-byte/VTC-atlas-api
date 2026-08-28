@@ -15,6 +15,11 @@ import { RideStateMachine } from '../../rides/domain/state-machine/ride-state-ma
 import { DriverEligibilityService } from './services/driver-eligibility.service';
 import { InsufficientBalanceException } from '../../../core/exceptions/insufficient-balance.exception';
 
+export interface AcceptRideOptions {
+  agreedPrice?: number;
+  isNegotiationAccepted?: boolean;
+}
+
 export interface AcceptRideResponse {
   success: boolean;
   rideId: string;
@@ -40,11 +45,15 @@ export class DriverAcceptanceService extends BaseApplicationService {
   }
 
   /**
-   * Strong Consistency Pipeline:
-   * Redis Claim → Atomic Wallet Commission Debit Transaction → GEO Sync → Event Emission
+   * Strong Consistency Single Source of Truth Acceptance Pipeline:
+   * Eligibility Gate → Claim/Lock Gate → Atomic DB Wallet Commission Debit Transaction → GEO Eviction → Domain Event
    */
-  async acceptRide(userIdOrDriverId: string, rideId: string): Promise<AcceptRideResponse> {
-    this.logger.log(`Driver [${userIdOrDriverId}] attempting ACCEPT for Ride [${rideId}]`);
+  async acceptRide(
+    userIdOrDriverId: string,
+    rideId: string,
+    options?: AcceptRideOptions,
+  ): Promise<AcceptRideResponse> {
+    this.logger.log(`Driver [${userIdOrDriverId}] attempting ACCEPT for Ride [${rideId}] (options: ${JSON.stringify(options ?? {})})`);
 
     const driver = await this.prisma.driver.findFirst({
       where: { OR: [{ id: userIdOrDriverId }, { userId: userIdOrDriverId }] },
@@ -59,11 +68,21 @@ export class DriverAcceptanceService extends BaseApplicationService {
       throw new ConflictException('You are not eligible to accept rides. Please check your verification status.');
     }
 
-    // 1. Validate & consume Redis Claim (first gate)
-    const isClaimValid = await this.dispatchEngine.validateAndConsume(rideId, driverId);
-    if (!isClaimValid) {
-      this.logger.warn(`Stale/missing claim: Driver [${driverId}] / Ride [${rideId}]`);
-      throw new ConflictException('Ride is no longer available or claim has expired.');
+    // 1. Race Protection & Claim/Lock Validation
+    if (!options?.isNegotiationAccepted) {
+      const isClaimValid = await this.dispatchEngine.validateAndConsume(rideId, driverId);
+      if (!isClaimValid) {
+        this.logger.warn(`Stale/missing claim: Driver [${driverId}] / Ride [${rideId}]`);
+        throw new ConflictException('Ride is no longer available or claim has expired.');
+      }
+    } else {
+      // Distributed Lock for Negotiation Acceptance
+      const lockKey = `lock:ride_assignment:${rideId}`;
+      const acquired = await this.redis.getClient().set(lockKey, driverId, 'EX', 5, 'NX');
+      if (acquired !== 'OK') {
+        this.logger.warn(`Race condition detected: Driver [${driverId}] failed lock for Ride [${rideId}]`);
+        throw new ConflictException('Désolé, cette course est en cours de traitement.');
+      }
     }
 
     try {
@@ -92,11 +111,16 @@ export class DriverAcceptanceService extends BaseApplicationService {
           }
         }
 
-        // State Machine Check
+        // State Machine Transition Check (supports REQUESTED -> DRIVER_ACCEPTED & DISPATCHED -> DRIVER_ACCEPTED)
         RideStateMachine.transition(ride.status as any, 'DRIVER_ACCEPTED');
 
         // Financial Calculation: Agreed Price & 10% Platform Commission
-        const agreedPriceNum = Number(ride.actualPrice ?? ride.estimatedPrice ?? 0);
+        const agreedPriceNum = Number(
+          options?.agreedPrice !== undefined && Number.isFinite(options.agreedPrice) && options.agreedPrice >= 5
+            ? options.agreedPrice
+            : (ride.actualPrice ?? ride.estimatedPrice ?? 0)
+        );
+
         const commissionRate = 0.10; // 10% Platform Commission
         const requiredCommissionNum = Math.round(agreedPriceNum * commissionRate * 100) / 100;
         const driverNetEarningsNum = Math.round((agreedPriceNum - requiredCommissionNum) * 100) / 100;
@@ -158,7 +182,7 @@ export class DriverAcceptanceService extends BaseApplicationService {
           },
         });
 
-        // Update Ride State
+        // Update Ride State (Preserve passenger original offered price in estimatedPrice)
         await tx.ride.update({
           where: { id: rideId },
           data: {
@@ -166,6 +190,7 @@ export class DriverAcceptanceService extends BaseApplicationService {
             driverId,
             acceptedAt: new Date(),
             actualPrice: agreedPriceNum,
+            ...(ride.estimatedPrice === null || ride.estimatedPrice === undefined ? { estimatedPrice: agreedPriceNum } : {}),
           },
         });
 

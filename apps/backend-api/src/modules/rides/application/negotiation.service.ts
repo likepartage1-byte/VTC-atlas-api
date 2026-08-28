@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DomainEventBus } from '../../../core/events/domain-event-bus';
 import { RedisService } from '../../../core/redis/redis.service';
+import { DriverAcceptanceService } from '../../drivers/application/driver-acceptance.service';
 
 @Injectable()
 export class NegotiationService {
@@ -11,6 +12,8 @@ export class NegotiationService {
     private readonly prisma: PrismaService,
     private readonly eventBus: DomainEventBus,
     private readonly redis: RedisService,
+    @Inject(forwardRef(() => DriverAcceptanceService))
+    private readonly driverAcceptance: DriverAcceptanceService,
   ) {}
 
   /**
@@ -76,6 +79,11 @@ export class NegotiationService {
         throw new BadRequestException('Ride or offer is no longer available.');
       }
 
+      await this.driverAcceptance.acceptRide(negotiation.driverId, negotiation.rideId, {
+        agreedPrice: Number(negotiation.counterPrice || negotiation.proposedPrice),
+        isNegotiationAccepted: true
+      });
+
       await this.prisma.$transaction(async (tx) => {
         await tx.negotiation.update({
           where: { id: negotiationId },
@@ -85,16 +93,6 @@ export class NegotiationService {
         await tx.negotiation.updateMany({
           where: { rideId: negotiation.rideId, id: { not: negotiationId } },
           data: { status: 'REJECTED' },
-        });
-
-        await tx.ride.update({
-          where: { id: negotiation.rideId },
-          data: {
-            driverId: negotiation.driverId,
-            status: 'DRIVER_ACCEPTED',
-            actualPrice: negotiation.counterPrice || negotiation.proposedPrice,
-            acceptedAt: new Date(),
-          },
         });
       });
 

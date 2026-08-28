@@ -1,7 +1,7 @@
-import { Injectable, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, ConflictException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../core/prisma/prisma.service';
 import { RedisService } from '../../../../core/redis/redis.service';
-import { RideStatus } from '@prisma/client';
+import { DriverAcceptanceService } from '../../../drivers/application/driver-acceptance.service';
 
 @Injectable()
 export class RideAssignmentService {
@@ -10,56 +10,19 @@ export class RideAssignmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
+    @Inject(forwardRef(() => DriverAcceptanceService))
+    private readonly driverAcceptance: DriverAcceptanceService,
   ) {}
 
   /**
-   * التعيين الذري للرحلة باستخدام Redis Lock و Conditional Update
+   * Delegates ride assignment to the unified DriverAcceptanceService pipeline
+   * to guarantee wallet balance checking, 10% commission debit, driver eligibility, and state logging.
    */
   async assignRide(rideId: string, driverId: string, agreedPrice?: number) {
-    const lockKey = `lock:ride_assignment:${rideId}`;
-    const client = this.redis.getClient();
-
-    // 1. صمام الأمان الأول: Redis Atomic Lock (NX EX)
-    const acquired = await client.set(lockKey, driverId, 'EX', 5, 'NX');
-
-    if (acquired !== 'OK') {
-      this.logger.warn(`Race condition detected: Driver ${driverId} failed to lock ride ${rideId}`);
-      throw new ConflictException('Désolé, cette course est en cours de traitement.');
-    }
-
-    try {
-      const updateData: any = {
-        driverId,
-        status: RideStatus.DRIVER_ACCEPTED,
-        acceptedAt: new Date(),
-      };
-
-      if (agreedPrice !== undefined && typeof agreedPrice === 'number' && Number.isFinite(agreedPrice) && agreedPrice >= 5) {
-        updateData.estimatedPrice = agreedPrice;
-      }
-
-      // 2. التحديث المشروط الذرّي (Conditional Update)
-      // نضمن على مستوى الـ Query أن القاعدة لن تُحدّث إلا إذا كانت الحالة REQUESTED
-      const result = await this.prisma.ride.updateMany({
-        where: { 
-          id: rideId, 
-          status: RideStatus.REQUESTED 
-        },
-        data: updateData,
-      });
-
-      if (result.count === 0) {
-        throw new ConflictException('Désolé, la course a déjà été acceptée.');
-      }
-
-      return { success: true };
-    } catch (error) {
-      this.logger.error(`Assignment failed for Driver ${driverId} on Ride ${rideId}: ${error.message}`);
-      throw error;
-    } finally {
-      // 3. تحرير القفل
-      await client.del(lockKey);
-    }
+    return this.driverAcceptance.acceptRide(driverId, rideId, {
+      agreedPrice,
+      isNegotiationAccepted: true,
+    });
   }
 
   /**
