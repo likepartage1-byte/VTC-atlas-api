@@ -15,7 +15,7 @@ export class RideAssignmentService {
   /**
    * التعيين الذري للرحلة باستخدام Redis Lock و Conditional Update
    */
-  async assignRide(rideId: string, driverId: string) {
+  async assignRide(rideId: string, driverId: string, agreedPrice?: number) {
     const lockKey = `lock:ride_assignment:${rideId}`;
     const client = this.redis.getClient();
 
@@ -28,6 +28,16 @@ export class RideAssignmentService {
     }
 
     try {
+      const updateData: any = {
+        driverId,
+        status: RideStatus.DRIVER_ACCEPTED,
+        acceptedAt: new Date(),
+      };
+
+      if (agreedPrice !== undefined && typeof agreedPrice === 'number' && Number.isFinite(agreedPrice) && agreedPrice >= 5) {
+        updateData.estimatedPrice = agreedPrice;
+      }
+
       // 2. التحديث المشروط الذرّي (Conditional Update)
       // نضمن على مستوى الـ Query أن القاعدة لن تُحدّث إلا إذا كانت الحالة REQUESTED
       const result = await this.prisma.ride.updateMany({
@@ -35,11 +45,7 @@ export class RideAssignmentService {
           id: rideId, 
           status: RideStatus.REQUESTED 
         },
-        data: {
-          driverId,
-          status: RideStatus.DRIVER_ACCEPTED,
-          acceptedAt: new Date()
-        }
+        data: updateData,
       });
 
       if (result.count === 0) {

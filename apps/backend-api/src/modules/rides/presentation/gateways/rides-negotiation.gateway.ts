@@ -143,15 +143,15 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
         id: true,
         passengerId: true,
         estimatedPrice: true,
-        tripType: true,
         serviceType: true,
-        rideMode: true,
-        seatsBooked: true,
         pickupLat: true,
         pickupLng: true,
         dropoffLat: true,
         dropoffLng: true,
         status: true,
+        tripType: true,
+        rideMode: true,
+        seatsBooked: true,
       },
     }) : null;
 
@@ -164,11 +164,14 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
     }
 
     const basePrice = ride.estimatedPrice !== null ? Number(ride.estimatedPrice) : 0;
+    const tripType = ride.tripType;
+    const rideMode = ride.rideMode;
+    const seatsBooked = ride.seatsBooked;
 
     // Enforce dynamic Intercity negotiation rules if intercity
-    if (ride.tripType === 'INTERCITY') {
+    if (tripType === 'INTERCITY') {
       const intercityRules = await this.settings.getIntercityBusinessRules();
-      const isParcel = ride.serviceType === 'COURSIER' || (ride as any).rideMode === 'PARCEL';
+      const isParcel = ride.serviceType === 'COURSIER' || rideMode === 'PARCEL';
 
       if (isParcel && basePrice === 0) {
         // PARCEL optional price: Driver can propose counter offer starting from parcelMinPriceMAD (20 MAD)
@@ -179,10 +182,10 @@ export class RidesNegotiationGateway implements OnGatewayConnection, OnGatewayDi
           });
           return;
         }
-      } else if (ride.rideMode === 'SHARED') {
+      } else if (rideMode === 'SHARED') {
         const distM = calculateHaversineDistance(ride.pickupLat, ride.pickupLng, ride.dropoffLat, ride.dropoffLng);
         const distKm = distM / 1000.0;
-        const pCount = Math.min(4, Math.max(1, ride.seatsBooked ?? 1));
+        const pCount = Math.min(4, Math.max(1, seatsBooked ?? 1));
         const sharedMinRates: Record<number, number> = { 1: 0.90, 2: 1.30, 3: 1.70, 4: 2.12 };
         const minRate = sharedMinRates[pCount] ?? 2.12;
         const distMinFloor = Math.round(distKm * minRate);

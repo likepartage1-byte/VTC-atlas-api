@@ -194,4 +194,78 @@ export class SystemSettingsService {
   async getHomepagePublishedConfig(): Promise<any> {
     return await this.getSetting('homepage_published_config');
   }
+
+  /**
+   * DYNAMIC INTERCITY BUSINESS RULES (CITY → CITY ECOSYSTEM)
+   */
+  async getIntercityBusinessRules(): Promise<{
+    sharedEnabled: boolean;
+    privateEnabled: boolean;
+    parcelEnabled: boolean;
+    sharedMinPriceMAD: number;
+    privateMinPriceMAD: number;
+    parcelMinPriceMAD: number;
+    maxCounterOfferPercent: number;
+    offerTimeoutSeconds: number;
+    maxNegotiationRounds: number;
+    commissionRate: number;
+  }> {
+    const rules = await this.getSetting<any>('intercity_business_rules');
+    return {
+      sharedEnabled: rules?.sharedEnabled ?? true,
+      privateEnabled: rules?.privateEnabled ?? true,
+      parcelEnabled: rules?.parcelEnabled ?? true,
+      sharedMinPriceMAD: rules?.sharedMinPriceMAD ?? 30,
+      privateMinPriceMAD: rules?.privateMinPriceMAD ?? 100,
+      parcelMinPriceMAD: rules?.parcelMinPriceMAD ?? 20,
+      maxCounterOfferPercent: rules?.maxCounterOfferPercent ?? 30,
+      offerTimeoutSeconds: rules?.offerTimeoutSeconds ?? 120,
+      maxNegotiationRounds: rules?.maxNegotiationRounds ?? 3,
+      commissionRate: rules?.commissionRate ?? 0.10,
+    };
+  }
+
+  async updateIntercityBusinessRules(
+    dto: Partial<{
+      sharedEnabled: boolean;
+      privateEnabled: boolean;
+      parcelEnabled: boolean;
+      sharedMinPriceMAD: number;
+      privateMinPriceMAD: number;
+      parcelMinPriceMAD: number;
+      maxCounterOfferPercent: number;
+      offerTimeoutSeconds: number;
+      maxNegotiationRounds: number;
+      commissionRate: number;
+    }>,
+    actorId: string = 'Admin User'
+  ): Promise<any> {
+    const current = await this.getIntercityBusinessRules();
+    const updated = {
+      ...current,
+      ...dto,
+      // Validations
+      sharedMinPriceMAD: Math.max(5, dto.sharedMinPriceMAD ?? current.sharedMinPriceMAD),
+      privateMinPriceMAD: Math.max(10, dto.privateMinPriceMAD ?? current.privateMinPriceMAD),
+      parcelMinPriceMAD: Math.max(5, dto.parcelMinPriceMAD ?? current.parcelMinPriceMAD),
+      maxCounterOfferPercent: Math.min(100, Math.max(5, dto.maxCounterOfferPercent ?? current.maxCounterOfferPercent)),
+      offerTimeoutSeconds: Math.max(30, dto.offerTimeoutSeconds ?? current.offerTimeoutSeconds),
+      maxNegotiationRounds: Math.max(1, dto.maxNegotiationRounds ?? current.maxNegotiationRounds),
+      commissionRate: Math.min(0.5, Math.max(0, dto.commissionRate ?? current.commissionRate)),
+    };
+
+    await this.updateSetting('intercity_business_rules', updated, actorId);
+
+    await this.auditService.log({
+      actorId,
+      action: 'UPDATE_INTERCITY_BUSINESS_RULES',
+      entityType: 'SystemSetting',
+      entityId: 'intercity_business_rules',
+      oldValue: current,
+      newValue: updated,
+    });
+
+    this.logger.log(`Intercity business rules updated by ${actorId}`);
+    return updated;
+  }
 }

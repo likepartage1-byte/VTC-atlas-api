@@ -1,3 +1,5 @@
+
+
 // ============================================================
 // Atlas Ride-Hailing Platform - Canonical Schema v1.0
 // ============================================================
@@ -233,7 +235,7 @@ model Ride {
   dropoffLng      Float
   dropoffAddress  String
   
-  estimatedPrice  Decimal     @db.Decimal(10, 2)
+  estimatedPrice  Decimal?    @db.Decimal(10, 2)
   actualPrice     Decimal?    @db.Decimal(10, 2)
   currency        String      @default("MAD")
   
@@ -261,7 +263,19 @@ model Ride {
   benefitGrantedAt                DateTime?
 
   requestId       String?     // Primary request that created this ride
+
+  // ── Intercity (City → City) fields ─────────────────────────────
+  // Null = standard city ride (backward-compatible)
+  tripType          String?     // 'CITY' | 'INTERCITY'
+  departureCity     String?     // e.g. "Marrakech"
+  arrivalCity       String?     // e.g. "Casablanca"
+  departureDateTime DateTime?   // Scheduled departure (UTC)
+  rideMode          String?     // 'SHARED' | 'PRIVATE'
+  seatsBooked       Int?        @default(1) // Passenger count for SHARED intercity (1..4)
+  passengerNotes    String?     // Passenger notes e.g. "2 personnes avec bagages"
+
   @@index([passengerId, status])
+  @@index([tripType, status])   // Fast Intercity queries
 }
 
 model Negotiation {
@@ -297,6 +311,7 @@ enum RideStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 model RideStatusHistory {
