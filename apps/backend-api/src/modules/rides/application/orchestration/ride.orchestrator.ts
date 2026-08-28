@@ -68,7 +68,7 @@ export class RideOrchestrator {
   /**
    * Orchestrates the "Driver Handshake" phase.
    */
-  async acceptRide(driverId: string, rideId: string): Promise<void> {
+  async acceptRide(driverId: string, rideId: string) {
     await this.trace.capture(rideId, {
       step: 'DRIVER_ACCEPTANCE_START',
       source: 'DriverController',
@@ -77,13 +77,16 @@ export class RideOrchestrator {
     });
 
     try {
-      await this.driverAcceptance.acceptRide(driverId, rideId);
+      const result = await this.driverAcceptance.acceptRide(driverId, rideId);
       
       await this.trace.capture(rideId, {
         step: 'DRIVER_ACCEPTED',
         source: 'DriverAcceptanceService',
         status: 'SUCCESS',
+        data: result,
       });
+
+      return result;
     } catch (error) {
       await this.trace.capture(rideId, {
         step: 'DRIVER_ACCEPTANCE_FAILED',

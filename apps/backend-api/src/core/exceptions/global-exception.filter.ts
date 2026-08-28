@@ -38,11 +38,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     
     this.logger.error(`[${request.method}] ${request.url} - Status: ${status} - Error: ${message}`);
 
-    response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message: message,
-    });
+    const exceptionResp = exception instanceof HttpException ? exception.getResponse() : null;
+    const body = (typeof exceptionResp === 'object' && exceptionResp !== null)
+      ? { statusCode: status, timestamp: new Date().toISOString(), path: request.url, ...(exceptionResp as object) }
+      : { statusCode: status, timestamp: new Date().toISOString(), path: request.url, message };
+
+    response.status(status).json(body);
   }
 }

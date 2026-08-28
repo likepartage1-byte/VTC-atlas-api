@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Yalla VTC needs camera access to capture cargo and freight photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Yalla VTC needs photo library access to upload cargo and freight images.</string>
 </dict>
 </plist>

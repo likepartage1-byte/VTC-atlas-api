@@ -26,13 +26,14 @@ export const ordersRepository = {
    * Accept an assigned ride
    * Endpoint: POST /api/v1/driver/rides/:id/accept
    */
-  acceptRide: async (rideId: string): Promise<boolean> => {
+  acceptRide: async (rideId: string): Promise<{ success: boolean; data?: any; errorData?: any }> => {
     try {
-      await api.post(`/driver/rides/${rideId}/accept`);
-      return true;
+      const response = await api.post(`/driver/rides/${rideId}/accept`);
+      return { success: true, data: response.data };
     } catch (err: any) {
-      console.error('❌ [ordersRepository] Accept ride failed:', err?.response?.data || err.message);
-      return false;
+      const errorData = err.response?.data || { message: err.message };
+      console.error('❌ [ordersRepository] Accept ride failed:', errorData);
+      return { success: false, errorData };
     }
   },
 
